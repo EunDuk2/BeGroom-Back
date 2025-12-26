@@ -1,6 +1,6 @@
 package com.example.BeGroom.member.controller;
 
-import com.example.BeGroom.common.dto.CommonSuccessDto;
+import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.dto.MemberCreateReqDto;
 import com.example.BeGroom.member.service.MemberService;

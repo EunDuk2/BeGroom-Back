@@ -1,4 +1,4 @@
-package com.example.BeGroom.common.auth.original;
+package com.example.BeGroom.common.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

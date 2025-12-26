@@ -1,8 +1,8 @@
 package com.example.BeGroom.common.config;
 
-import com.example.BeGroom.common.auth.original.JwtAutenticationHandler;
-import com.example.BeGroom.common.auth.original.JwtAuthorizationHandler;
-import com.example.BeGroom.common.auth.original.JwtTokenFilter;
+import com.example.BeGroom.common.security.JwtAutenticationHandler;
+import com.example.BeGroom.common.security.JwtAuthorizationHandler;
+import com.example.BeGroom.common.security.JwtTokenFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

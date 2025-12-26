@@ -1,4 +1,4 @@
-package com.example.BeGroom.common.auth.dto;
+package com.example.BeGroom.auth.dto;
 
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;

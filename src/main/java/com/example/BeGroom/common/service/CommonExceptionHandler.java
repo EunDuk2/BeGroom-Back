@@ -1,7 +1,6 @@
 package com.example.BeGroom.common.service;
 
-import com.example.BeGroom.common.dto.CommonErrorDto;
-import jakarta.persistence.EntityExistsException;
+import com.example.BeGroom.common.response.CommonErrorDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

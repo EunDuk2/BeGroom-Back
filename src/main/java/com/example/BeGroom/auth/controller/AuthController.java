@@ -1,9 +1,9 @@
-package com.example.BeGroom.common.auth.controller;
+package com.example.BeGroom.auth.controller;
 
-import com.example.BeGroom.common.auth.dto.MemberLoginReqDto;
-import com.example.BeGroom.common.auth.original.JwtTokenProvider;
-import com.example.BeGroom.common.auth.service.AuthService;
-import com.example.BeGroom.common.dto.CommonSuccessDto;
+import com.example.BeGroom.auth.dto.MemberLoginReqDto;
+import com.example.BeGroom.common.security.JwtTokenProvider;
+import com.example.BeGroom.auth.service.AuthService;
+import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.member.domain.Member;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
