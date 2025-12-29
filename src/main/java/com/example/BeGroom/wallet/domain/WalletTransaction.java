@@ -9,6 +9,10 @@ public class WalletTransaction extends BaseEntity {
     @Id @GeneratedValue
     private Long id;
 
+    @JoinColumn(name = "wallet_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Wallet wallet;
+
     @Column(nullable = false, columnDefinition = "VARCHAR(20)")
     private TransactionType transactionType;
 

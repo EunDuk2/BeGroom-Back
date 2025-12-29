@@ -10,8 +10,8 @@ public class Wallet extends BaseEntity {
     @Id @GeneratedValue
     private Long id;
 
-    @JoinColumn(name = "member")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    @OneToOne(fetch = FetchType.LAZY)
     private Member member;
 
     @Column(nullable = false)
