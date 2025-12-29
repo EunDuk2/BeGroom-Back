@@ -9,14 +9,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberLoginReqDto {
+public class MemberLoginResDto {
 
     @NotEmpty
-    @Schema(example = "hong@naver.com")
-    private String email;
-
-    @NotEmpty
-    @Schema(example = "1234")
-    private String password;
+    @Schema(example = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJob25nQG5hdmVyLmNvbSIsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzY2NzM5NjAzLCJleHAiOjE3NjY3OTk2MDN9.N4fVghRunMOYOHjTHPXnEPoPBvxymO0GPFvzd-ORot_ZZxGqaLKF1x2LIgeXdH8pwMqXlDqQI9_7A0w2FiV7pw")
+    private String token;
 
 }

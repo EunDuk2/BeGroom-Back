@@ -11,23 +11,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberCreateReqDto {
+public class MemberCreateResDto {
     @NotEmpty
-    @Schema(example = "hong@naver.com")
-    private String email;
-
-    @NotEmpty
-    @Schema(example = "hong")
-    private String name;
-
-    @NotEmpty
-    @Schema(example = "1234")
-    private String password;
-
-    @Schema(example = "01012341234")
-    private String phoneNumber;
-
-    @NotNull
-    @Schema(example = "USER")
-    private Role role;
+    @Schema(example = "1")
+    private Long memberId;
 }
