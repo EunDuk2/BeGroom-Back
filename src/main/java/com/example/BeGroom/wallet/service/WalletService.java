@@ -8,4 +8,5 @@ public interface WalletService {
     void chargePoint(Long memberId, Long amount, Long referenceId);
     void payPoint(Long memberId, Long amount, Long referenceId);
     void refundPoint(Long memberId, Long amount, Long referenceId);
+    Long getBalance(Long memberId);
 }

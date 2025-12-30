@@ -92,4 +92,14 @@ public class WalletServiceImpl implements WalletService {
         walletTransactionRepository.save(walletTransaction);
     }
 
+    @Override
+    public Long getBalance(Long memberId) {
+        // 사용자 검증
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        // 지갑 조회
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 wallet입니다."));
+
+        return wallet.getBalance();
+    }
+
 }
