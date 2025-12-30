@@ -11,10 +11,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Getter
 public class BaseEntity {
     @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdTime;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedTime;
+    private LocalDateTime updatedAt;
 }
