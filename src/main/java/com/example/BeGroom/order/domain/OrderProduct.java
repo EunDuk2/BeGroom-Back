@@ -1,7 +1,7 @@
 package com.example.BeGroom.order.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
-import com.example.BeGroom.member.domain.Member;
+import com.example.BeGroom.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,20 +10,24 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Order extends BaseEntity {
+public class OrderProduct extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JoinColumn(name = "member_id")
+    @JoinColumn(name = "order_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    private Member member;
+    private Order order;
+
+    @JoinColumn(name = "product_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Product product;
 
     @Column(nullable = false)
-    private Long totalAmount;
+    private Integer quantity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "VARCHAR(20)")
-    private OrderStatus orderStatus;
+    @Column(nullable = false)
+    private Integer price;
+
 
 }
