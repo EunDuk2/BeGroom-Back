@@ -1,6 +1,7 @@
 package com.example.BeGroom.payment.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.order.domain.Order;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,6 +16,10 @@ public class Payment extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @JoinColumn(name = "order_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    private Order order;
 
     @Column(nullable = false)
     private Long amount;
@@ -32,5 +37,17 @@ public class Payment extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "VARCHAR(20)")
     private RefundReason refundReason;
+
+    private Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
+        this.order = order;
+        this.amount = amount;
+        this.paymentMethod = paymentMethod;
+        this.paymentStatus = paymentStatus;
+    }
+
+    public static Payment create(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
+        return new Payment(order, amount, paymentMethod, paymentStatus);
+    }
+
 
 }
