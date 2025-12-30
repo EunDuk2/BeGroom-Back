@@ -1,4 +1,4 @@
 package com.example.BeGroom.wallet.service;
 
-public interface WalletTransaction {
+public interface WalletTransactionService {
 }
