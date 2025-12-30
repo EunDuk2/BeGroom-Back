@@ -73,4 +73,23 @@ public class WalletServiceImpl implements WalletService {
         // 원장 저장
         walletTransactionRepository.save(walletTransaction);
     }
+
+    @Override
+    @Transactional
+    public void refundPoint(Long memberId, Long amount, Long referenceId) {
+        // 사용자 검증
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        // 지갑 조회
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 wallet입니다."));
+        Long balanceBefore = wallet.getBalance();
+        // 환불 금액 증가
+        wallet.increaseBalance(amount);
+        Long balanceAfter = wallet.getBalance();
+        // 원장 생성
+        WalletTransaction walletTransaction
+                = WalletTransaction.create(wallet, TransactionType.REFUND, balanceBefore, amount, balanceAfter, ReferenceType.ORDER, referenceId);
+        // 원장 저장
+        walletTransactionRepository.save(walletTransaction);
+    }
+
 }

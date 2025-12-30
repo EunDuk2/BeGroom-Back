@@ -7,4 +7,5 @@ public interface WalletService {
     Wallet create(Member member);
     void chargePoint(Long memberId, Long amount, Long referenceId);
     void payPoint(Long memberId, Long amount, Long referenceId);
+    void refundPoint(Long memberId, Long amount, Long referenceId);
 }
