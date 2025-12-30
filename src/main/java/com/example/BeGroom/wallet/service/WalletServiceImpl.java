@@ -55,4 +55,22 @@ public class WalletServiceImpl implements WalletService {
         // 원장 저장
         walletTransactionRepository.save(walletTransaction);
     }
+
+    @Override
+    @Transactional
+    public void payPoint(Long memberId, Long amount, Long referenceId) {
+        // 사용자 검증
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        // 지갑 조회
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 wallet입니다."));
+        Long balanceBefore = wallet.getBalance();
+        // 결제 금액 차감
+        wallet.decreaseBalance(amount);
+        Long balanceAfter = wallet.getBalance();
+        // 원장 생성
+        WalletTransaction walletTransaction
+                = WalletTransaction.create(wallet, TransactionType.PAYMENT, balanceBefore, amount, balanceAfter, ReferenceType.ORDER, referenceId);
+        // 원장 저장
+        walletTransactionRepository.save(walletTransaction);
+    }
 }
