@@ -26,9 +26,10 @@ public class JwtTokenProvider {
         secret_at_key = new SecretKeySpec(java.util.Base64.getDecoder().decode(secretKeyAt), SignatureAlgorithm.HS512.getJcaName());
     }
 
-    public String createToken(String email, String role) {
+    public String createToken(Long id, String email, String role) {
 
         Claims claims = Jwts.claims().setSubject(email);
+        claims.put("memberId", id);
         claims.put("role", role);
 
         Date now = new Date();

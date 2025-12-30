@@ -1,5 +1,6 @@
 package com.example.BeGroom.common.security;
 
+import com.example.BeGroom.auth.domain.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.*;
@@ -40,9 +41,15 @@ public class JwtTokenFilter extends GenericFilter {
                     .parseClaimsJws(token)
                     .getBody();
 
+            Long memberId = claims.get("memberId", Long.class);
+            String email = claims.getSubject();
+            String role = claims.get("role", String.class);
+
+            UserPrincipal principal = new UserPrincipal(memberId, email);
+
             List<GrantedAuthority> authorityList = new ArrayList<>();
-            authorityList.add(new SimpleGrantedAuthority("ROLE_"+claims.get("role")));
-            Authentication authentication = new UsernamePasswordAuthenticationToken(claims.getSubject(), "", authorityList);
+            authorityList.add(new SimpleGrantedAuthority("ROLE_"+role));
+            Authentication authentication = new UsernamePasswordAuthenticationToken(principal, "", authorityList);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (Exception e) {
