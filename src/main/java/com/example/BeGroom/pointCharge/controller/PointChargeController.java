@@ -32,7 +32,7 @@ public class PointChargeController {
             @AuthenticationPrincipal UserPrincipal user,
             @Valid @RequestBody PointChargeReqDto reqDto
             ) {
-        PointCharge pointCharge =pointChargeService.pointCharge(user.getMemberId(), reqDto);
+        PointCharge pointCharge = pointChargeService.pointCharge(user.getMemberId(), reqDto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(
