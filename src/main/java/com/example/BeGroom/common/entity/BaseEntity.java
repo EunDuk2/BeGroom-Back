@@ -10,8 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Getter
 public class BaseEntity {
     @CreationTimestamp
-    private LocalDateTime createdTime;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedTime;
+    private LocalDateTime updatedAt;
 }
