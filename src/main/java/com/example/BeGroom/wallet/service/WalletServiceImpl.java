@@ -67,9 +67,10 @@ public class WalletServiceImpl implements WalletService {
         // 결제 금액 차감
         wallet.decreaseBalance(amount);
         Long balanceAfter = wallet.getBalance();
+        Long changeAmount = -amount;
         // 원장 생성
         WalletTransaction walletTransaction
-                = WalletTransaction.create(wallet, TransactionType.PAYMENT, balanceBefore, amount, balanceAfter, ReferenceType.ORDER, referenceId);
+                = WalletTransaction.create(wallet, TransactionType.PAYMENT, balanceBefore, changeAmount, balanceAfter, ReferenceType.ORDER, referenceId);
         // 원장 저장
         walletTransactionRepository.save(walletTransaction);
     }
