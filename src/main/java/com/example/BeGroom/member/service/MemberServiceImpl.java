@@ -2,9 +2,11 @@ package com.example.BeGroom.member.service;
 
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.dto.MemberCreateReqDto;
+import com.example.BeGroom.member.dto.MemberGetProfileResDto;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.wallet.service.WalletService;
 import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,5 +39,13 @@ public class MemberServiceImpl implements MemberService {
         walletService.create(member);
 
         return member;
+    }
+
+    @Override
+    public MemberGetProfileResDto getMyProfile(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        return MemberGetProfileResDto.from(member);
     }
 }
