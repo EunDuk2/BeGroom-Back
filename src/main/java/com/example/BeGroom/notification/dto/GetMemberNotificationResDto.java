@@ -69,7 +69,7 @@ public class GetMemberNotificationResDto {
                     .message(finalMessage)
                     .link(entity.getNotification().getLink())
                     .isRead(entity.isRead())
-                    .createdTime(entity.getCreatedTime())
+                    .createdTime(entity.getCreatedAt())
                     .build();
         }
     }

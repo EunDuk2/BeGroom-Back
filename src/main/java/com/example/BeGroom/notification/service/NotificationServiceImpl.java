@@ -31,7 +31,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public GetMemberNotificationResDto getMyNotifications(Long memberId) {
-        List<MemberNotification> notiList = memberNotificationRepository.findAllByMemberIdOrderByCreatedTimeDesc(memberId);
+        List<MemberNotification> notiList = memberNotificationRepository.findAllByMemberIdOrderByCreatedAtDesc(memberId);
         long unreadCount = memberNotificationRepository.countByMemberIdAndIsReadFalse(memberId);
         return GetMemberNotificationResDto.of(notiList, unreadCount);
     }
