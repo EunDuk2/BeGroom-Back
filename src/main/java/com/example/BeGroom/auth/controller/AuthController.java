@@ -1,5 +1,6 @@
 package com.example.BeGroom.auth.controller;
 
+import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.auth.dto.MemberLoginReqDto;
 import com.example.BeGroom.auth.dto.MemberLoginResDto;
 import com.example.BeGroom.common.security.JwtTokenProvider;
@@ -12,10 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -33,6 +32,7 @@ public class AuthController {
     ) {
         Member member = authService.login(reqDto);
         String jwtToken = jwtTokenProvider.createToken(
+                member.getId(),
                 member.getEmail(),
                 member.getRole().toString()
         );
