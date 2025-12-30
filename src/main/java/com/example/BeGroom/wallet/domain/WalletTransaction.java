@@ -18,6 +18,7 @@ public class WalletTransaction extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Wallet wallet;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "VARCHAR(20)")
     private TransactionType transactionType;
 
@@ -30,6 +31,7 @@ public class WalletTransaction extends BaseEntity {
     @Column(nullable = false)
     private Long balanceAfter;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "VARCHAR(20)")
     private ReferenceType referenceType;
 
