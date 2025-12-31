@@ -40,18 +40,18 @@ public class Seller extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    private Seller(String email, String name, String password, String phoneNumber, Role role) {
+    private Seller(String email, String name, String password, String phoneNumber) {
         this.email = email;
         this.name = name;
         this.password = password;
         this.phoneNumber = phoneNumber;
         this.feeRate = BigDecimal.valueOf(10.00);
         this.payoutDay = 10;
-        this.role = role;
+        this.role = Role.SELLER;
     }
 
-    public static Seller createSeller(String email, String name, String password, String phoneNumber, Role role) {
-        return new Seller(email, name, password, phoneNumber, role);
+    public static Seller createSeller(String email, String name, String password, String phoneNumber) {
+        return new Seller(email, name, password, phoneNumber);
     }
 
 
