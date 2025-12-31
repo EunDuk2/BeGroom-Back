@@ -19,4 +19,7 @@ public class MemberLoginReqDto {
     @Schema(example = "1234")
     private String password;
 
+    // 구분: 사용자(1), 판매자(2)
+    private int no;
+
 }
