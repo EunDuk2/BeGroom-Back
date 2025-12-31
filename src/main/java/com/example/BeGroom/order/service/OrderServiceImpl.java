@@ -52,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 주문 영속
         orderRepository.save(order);
-        
+
         return order;
     }
 }
