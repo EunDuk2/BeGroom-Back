@@ -54,4 +54,8 @@ public class Order extends BaseEntity {
         this.totalAmount += orderProduct.getTotalAmount();
     }
 
+    public void changeStatus(OrderStatus status) {
+        this.orderStatus = status;
+    }
+
 }

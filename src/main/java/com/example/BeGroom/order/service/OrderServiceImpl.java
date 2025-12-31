@@ -52,10 +52,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 주문 영속
         orderRepository.save(order);
-
-        // 추가 필요 작업: 결제 요청 또는 생성, 재고 감소(재고 확보)
-
-
-        return null;
+        
+        return order;
     }
 }
