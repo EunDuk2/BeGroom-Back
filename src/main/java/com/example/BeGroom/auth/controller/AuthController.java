@@ -7,6 +7,8 @@ import com.example.BeGroom.common.security.JwtTokenProvider;
 import com.example.BeGroom.auth.service.AuthService;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.member.domain.Member;
+import com.example.BeGroom.member.domain.Role;
+import com.example.BeGroom.seller.domain.Seller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,12 +32,22 @@ public class AuthController {
     public ResponseEntity<CommonSuccessDto<MemberLoginResDto>> login(
             @Valid @RequestBody MemberLoginReqDto reqDto
     ) {
-        Member member = authService.login(reqDto);
-        String jwtToken = jwtTokenProvider.createToken(
-                member.getId(),
-                member.getEmail(),
-                member.getRole().toString()
-        );
+        String jwtToken = "";
+        if(reqDto.getRole() == Role.SELLER){
+            Seller seller = authService.sellerLogin(reqDto);
+            jwtToken = jwtTokenProvider.createToken(
+                    seller.getId(),
+                    seller.getEmail(),
+                    seller.getRole().toString()
+            );
+        }else{
+            Member member = authService.memberLogin(reqDto);
+            jwtToken = jwtTokenProvider.createToken(
+                    member.getId(),
+                    member.getEmail(),
+                    member.getRole().toString()
+            );
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(
