@@ -4,6 +4,7 @@ import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.DashboardResDto;
+import com.example.BeGroom.seller.dto.OrderManageResDto;
 import com.example.BeGroom.seller.dto.SellerCreateReqDto;
 import com.example.BeGroom.seller.dto.SellerCreateResDto;
 import com.example.BeGroom.seller.service.SellerService;
@@ -42,14 +43,14 @@ public class SellerController {
                 );
     }
 
-    // API 2. 판매자 대시보드
+    // API 2. 판매자 대시보드 조회
     @GetMapping("/dashboard")
     @Operation(summary = "대시보드", description = "판매자 대시보드를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<DashboardResDto>> getDashboard(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
         DashboardResDto dashboardResDto = sellerService.getDashboard(userPrincipal.getMemberId());
-        return ResponseEntity.status(HttpStatus.CREATED)
+        return ResponseEntity.status(HttpStatus.OK)
                 .body(
                         CommonSuccessDto.of(
                                 dashboardResDto,
@@ -58,4 +59,22 @@ public class SellerController {
                         )
                 );
     }
+
+    // API 3. 주문 관리 조회
+    @GetMapping("/order")
+    @Operation(summary = "주문관리", description = "주문 관리를 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<OrderManageResDto>> getOrderManage(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        OrderManageResDto orderManageResDto = sellerService.getOrderManage(userPrincipal.getMemberId());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                orderManageResDto,
+                                HttpStatus.OK,
+                                "판매자 주문간리 조회 성공"
+                        )
+                );
+    }
+
 }

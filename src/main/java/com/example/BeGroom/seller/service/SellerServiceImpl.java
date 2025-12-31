@@ -3,12 +3,15 @@ package com.example.BeGroom.seller.service;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.DashboardResDto;
+import com.example.BeGroom.seller.dto.OrderManageResDto;
 import com.example.BeGroom.seller.dto.SellerCreateReqDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -40,11 +43,11 @@ public class SellerServiceImpl implements SellerService{
     // 대시보드 조회
     @Override
     public DashboardResDto getDashboard(Long sellerId){
-        // 판매자 주문 수
+        // 총 주문 수
         int orderCnt = 0;
-        // 판매자 상품 수
+        // 총 상품 수
         int productCnt = 0;
-        // 판매자 매출(환불 제외)
+        // 총 매출(환불 제외)
         long salesAmount = 0L;
         // 주문 없는 경우
 
@@ -55,4 +58,15 @@ public class SellerServiceImpl implements SellerService{
         );
     }
 
+    // 주문관리 조회
+    @Override
+    public OrderManageResDto getOrderManage(Long sellerId){
+        // 총 환불 수
+        OrderManageResDto.Summary summary =
+                new OrderManageResDto.Summary(0, 0);
+        // Order 목록
+        List<OrderManageResDto.OrderItem> orders = List.of();
+
+        return new OrderManageResDto(summary, orders);
+    }
 }
