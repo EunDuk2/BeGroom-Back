@@ -29,5 +29,19 @@ public class OrderProduct extends BaseEntity {
     @Column(nullable = false)
     private Integer price;
 
+    private OrderProduct(Order order, Product product, Integer quantity, Integer price) {
+        this.order = order;
+        this.product = product;
+        this.quantity = quantity;
+        this.price = price;
+    }
+
+    public static OrderProduct create(Order order, Product product, Integer quantity, Integer price) {
+        return new OrderProduct(order, product, quantity, price);
+    }
+
+    public Long getTotalAmount() {
+        return (long) getPrice() * getQuantity();
+    }
 
 }
