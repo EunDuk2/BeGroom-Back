@@ -1,6 +1,7 @@
 package com.example.BeGroom.seller.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.member.domain.Role;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -35,17 +36,22 @@ public class Seller extends BaseEntity{
     @Column(nullable = false)
     private Integer payoutDay;
 
-    private Seller(String email, String name, String password, String phoneNumber) {
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    private Seller(String email, String name, String password, String phoneNumber, Role role) {
         this.email = email;
         this.name = name;
         this.password = password;
         this.phoneNumber = phoneNumber;
         this.feeRate = BigDecimal.valueOf(10.00);
         this.payoutDay = 10;
+        this.role = role;
     }
 
-    public static Seller createSeller(String email, String name, String password, String phoneNumber) {
-        return new Seller(email, name, password, phoneNumber);
+    public static Seller createSeller(String email, String name, String password, String phoneNumber, Role role) {
+        return new Seller(email, name, password, phoneNumber, role);
     }
 
 
