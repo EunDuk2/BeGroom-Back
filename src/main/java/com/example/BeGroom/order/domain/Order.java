@@ -59,4 +59,13 @@ public class Order extends BaseEntity {
         this.orderStatus = status;
     }
 
+    public void validatePaymentCreatable() {
+        if (this.orderStatus != OrderStatus.CREATED) {
+            throw new IllegalStateException(
+                    "결제를 생성할 수 없는 주문 상태입니다. status=" + this.orderStatus
+            );
+        }
+    }
+
+
 }
