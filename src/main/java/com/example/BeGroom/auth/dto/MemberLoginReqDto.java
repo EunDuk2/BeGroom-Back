@@ -1,5 +1,6 @@
 package com.example.BeGroom.auth.dto;
 
+import com.example.BeGroom.member.domain.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -19,7 +20,9 @@ public class MemberLoginReqDto {
     @Schema(example = "1234")
     private String password;
 
-    // 구분: 사용자(1), 판매자(2)
-    private int no;
+    // 사용자 판매자 구분
+    @NotEmpty
+    @Schema(example = "SELLER")
+    private Role role;
 
 }
