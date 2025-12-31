@@ -1,15 +1,13 @@
-package com.example.BeGroom.seller.dto;
+package com.example.BeGroom.seller.dto.res;
 
 import com.example.BeGroom.seller.domain.PaymentStatus;
 import com.example.BeGroom.seller.domain.SettlementStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,6 +23,7 @@ public class OrderManageResDto {
     @Schema(description = "주문 목록")
     private List<OrderItem> orders;
 
+    @Data
     public static class Summary{
         @Schema(example = "2")
         private int refundCnt;
@@ -37,6 +36,7 @@ public class OrderManageResDto {
         }
     }
 
+    @Data
     public static class OrderItem {
         @Schema(example = "1")
         private Long id;

@@ -3,10 +3,10 @@ package com.example.BeGroom.seller.controller;
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.DashboardResDto;
-import com.example.BeGroom.seller.dto.OrderManageResDto;
-import com.example.BeGroom.seller.dto.SellerCreateReqDto;
-import com.example.BeGroom.seller.dto.SellerCreateResDto;
+import com.example.BeGroom.seller.dto.res.DashboardResDto;
+import com.example.BeGroom.seller.dto.res.OrderManageResDto;
+import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
+import com.example.BeGroom.seller.dto.res.SellerCreateResDto;
 import com.example.BeGroom.seller.service.SellerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -62,7 +62,7 @@ public class SellerController {
 
     // API 3. 주문 관리 조회
     @GetMapping("/order")
-    @Operation(summary = "주문관리", description = "주문 관리를 조회합니다.")
+    @Operation(summary = "주문 관리", description = "주문 관리를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<OrderManageResDto>> getOrderManage(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){

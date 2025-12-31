@@ -2,9 +2,9 @@ package com.example.BeGroom.seller.service;
 
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.DashboardResDto;
-import com.example.BeGroom.seller.dto.OrderManageResDto;
-import com.example.BeGroom.seller.dto.SellerCreateReqDto;
+import com.example.BeGroom.seller.dto.res.DashboardResDto;
+import com.example.BeGroom.seller.dto.res.OrderManageResDto;
+import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
@@ -61,10 +61,10 @@ public class SellerServiceImpl implements SellerService{
     // 주문관리 조회
     @Override
     public OrderManageResDto getOrderManage(Long sellerId){
-        // 총 환불 수
+        // 총 환불 및 미정산 수
         OrderManageResDto.Summary summary =
-                new OrderManageResDto.Summary(0, 0);
-        // Order 목록
+                new OrderManageResDto.Summary(1, 2);
+        // 주문 상품 목록
         List<OrderManageResDto.OrderItem> orders = List.of();
 
         return new OrderManageResDto(summary, orders);

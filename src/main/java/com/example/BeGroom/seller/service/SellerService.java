@@ -1,9 +1,9 @@
 package com.example.BeGroom.seller.service;
 
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.DashboardResDto;
-import com.example.BeGroom.seller.dto.OrderManageResDto;
-import com.example.BeGroom.seller.dto.SellerCreateReqDto;
+import com.example.BeGroom.seller.dto.res.DashboardResDto;
+import com.example.BeGroom.seller.dto.res.OrderManageResDto;
+import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
 
 public interface SellerService {
 
