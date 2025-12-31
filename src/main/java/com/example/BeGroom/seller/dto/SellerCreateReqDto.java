@@ -16,7 +16,7 @@ public class SellerCreateReqDto {
     private String email;
 
     @NotEmpty
-    @Schema(example = "begroom")
+    @Schema(example = "BeGroom")
     private String name;
 
     @NotEmpty
