@@ -1,7 +1,9 @@
 package com.example.BeGroom.seller.controller;
 
+import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.seller.domain.Seller;
+import com.example.BeGroom.seller.dto.DashboardResDto;
 import com.example.BeGroom.seller.dto.SellerCreateReqDto;
 import com.example.BeGroom.seller.dto.SellerCreateResDto;
 import com.example.BeGroom.seller.service.SellerService;
@@ -11,10 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/seller")
@@ -42,4 +42,20 @@ public class SellerController {
                 );
     }
 
+    // API 2. 판매자 대시보드
+    @GetMapping("/dashboard")
+    @Operation(summary = "대시보드", description = "판매자 대시보드를 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<DashboardResDto>> getDashboard(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        DashboardResDto dashboardResDto = sellerService.getDashboard(userPrincipal.getMemberId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(
+                        CommonSuccessDto.of(
+                                dashboardResDto,
+                                HttpStatus.OK,
+                                "판매자 대시보드 조회 성공"
+                        )
+                );
+    }
 }
