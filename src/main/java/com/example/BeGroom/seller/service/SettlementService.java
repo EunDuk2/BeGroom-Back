@@ -15,4 +15,6 @@ public interface SettlementService {
     SettlementManageResDto getSettlementManage(Long sellerId);
     // 기간별 정산 집계
     List<PeriodSettlementResDto> getPeriodSettlement(Long sellerId, PeriodType type);
+    // 건별 정산 집계
+    List<SettlementManageResDto.SettlementByItem> getProductSettlement(Long sellerId);
 }

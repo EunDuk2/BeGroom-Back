@@ -24,16 +24,12 @@ public class OrderManageResDto {
     private List<OrderItem> orders;
 
     @Data
+    @AllArgsConstructor
     public static class Summary{
         @Schema(example = "2")
         private int refundCnt;
         @Schema(example = "1")
         private int unsettledCnt;
-
-        public Summary(int refundCnt, int unsettledCnt){
-            this.refundCnt = refundCnt;
-            this.unsettledCnt = unsettledCnt;
-        }
     }
 
     @Data

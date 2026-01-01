@@ -25,6 +25,15 @@ public class SettlementServiceImpl implements SettlementService{
         return new SettlementManageResDto(summary, settlementByItemList);
     }
 
+    // 건별 정산 집계 조회
+    @Override
+    public List<SettlementManageResDto.SettlementByItem> getProductSettlement(Long sellerId){
+        // 건별 정산 리스트
+        List<SettlementManageResDto.SettlementByItem> settlementByItemList = List.of();
+
+        return settlementByItemList;
+    }
+
     // 기간별 정산 집계
     @Override
     public List<PeriodSettlementResDto> getPeriodSettlement(Long sellerId, PeriodType type){

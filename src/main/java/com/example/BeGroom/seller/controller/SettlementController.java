@@ -47,7 +47,26 @@ public class SettlementController {
                 );
     }
 
-    // API 2. 기간별 정산 집계
+    // API 2. 건별 정산 집계
+    @GetMapping("/product")
+    @Operation(summary = "건별 정산 집계", description = "건별 정산을 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<List<SettlementManageResDto.SettlementByItem>>> getProductSettlement(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        List<SettlementManageResDto.SettlementByItem> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                settlementByItemList,
+                                HttpStatus.OK,
+                                "건별 정산 조회 성공"
+                        )
+                );
+    }
+
+
+    // API 3. 기간별 정산 집계
     @GetMapping("/period")
     @Operation(summary = "기간별 정산 집계", description = "기간별 정산을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<List<PeriodSettlementResDto>>> getDailySettlement(

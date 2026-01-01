@@ -23,6 +23,7 @@ public class SettlementManageResDto {
     private List<SettlementByItem> settlementByItemList;
 
     @Data
+    @AllArgsConstructor
     public static class Summary{
         @Schema(example = "2300000")
         private int totalPaymentAmount;
@@ -32,13 +33,6 @@ public class SettlementManageResDto {
         private int totalFeeAmount;
         @Schema(example = "2010600")
         private int totalSettlementAmount;
-
-        public Summary(int totalPaymentAmount, int totalRefundAmount, int totalFeeAmount, int totalSettlementAmount){
-            this.totalPaymentAmount = totalPaymentAmount;
-            this.totalRefundAmount = totalRefundAmount;
-            this.totalFeeAmount = totalFeeAmount;
-            this.totalSettlementAmount = totalSettlementAmount;
-        }
     }
 
     @Data
