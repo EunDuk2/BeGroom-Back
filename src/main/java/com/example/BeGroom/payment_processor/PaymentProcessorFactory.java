@@ -1,7 +1,6 @@
 package com.example.BeGroom.payment_processor;
 
 import com.example.BeGroom.payment.domain.PaymentMethod;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

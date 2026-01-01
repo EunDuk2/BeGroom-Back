@@ -22,13 +22,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public Payment create(Long orderId, PaymentMethod paymentMethod) {
+    public Payment create(Long orderId, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
         // 주문 조회
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
         // 주문 검증 및 상태 변경
         order.markPaymentPending();
         // 결제 생성
-        Payment payment = Payment.create(order, order.getTotalAmount(), paymentMethod, PaymentStatus.READY);
+        Payment payment = Payment.create(order, order.getTotalAmount(), paymentMethod, paymentStatus);
         // 결제 저장
         paymentRepository.save(payment);
 
