@@ -4,5 +4,5 @@ import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 
 public interface PaymentService {
-    Payment create(Long orderId, Long amount, PaymentMethod paymentMethod);
+    Payment create(Long orderId, PaymentMethod paymentMethod);
 }
