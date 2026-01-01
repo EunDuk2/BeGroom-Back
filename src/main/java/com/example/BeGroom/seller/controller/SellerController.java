@@ -45,7 +45,7 @@ public class SellerController {
 
     // API 2. 판매자 대시보드 조회
     @GetMapping("/dashboard")
-    @Operation(summary = "대시보드", description = "판매자 대시보드를 조회합니다.")
+    @Operation(summary = "대시보드 페이지 조회", description = "판매자 대시보드를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<DashboardResDto>> getDashboard(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
@@ -62,7 +62,7 @@ public class SellerController {
 
     // API 3. 주문 관리 조회
     @GetMapping("/order")
-    @Operation(summary = "주문 관리", description = "주문 관리를 조회합니다.")
+    @Operation(summary = "주문 관리 페이지 조회", description = "주문 관리를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<OrderManageResDto>> getOrderManage(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
