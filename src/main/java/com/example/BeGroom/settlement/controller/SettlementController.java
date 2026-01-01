@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/settlement")
 @RequiredArgsConstructor
-@Tag(name = "Seller API", description = "판매자 관련 API")
+@Tag(name = "Settlements API", description = "정산 관련 API")
 public class SettlementController {
 
     private final SettlementService settlementService;
