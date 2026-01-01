@@ -1,9 +1,8 @@
-package com.example.BeGroom.seller.service;
+package com.example.BeGroom.settlement.service;
 
-import com.example.BeGroom.seller.domain.PeriodType;
-import com.example.BeGroom.seller.domain.SettlementStatus;
-import com.example.BeGroom.seller.dto.res.PeriodSettlementResDto;
-import com.example.BeGroom.seller.dto.res.SettlementManageResDto;
+import com.example.BeGroom.settlement.domain.PeriodType;
+import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
+import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +10,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class SettlementServiceImpl implements SettlementService{
+public class SettlementServiceImpl implements SettlementService {
 
     // 정산관리 조회
     @Override

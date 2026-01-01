@@ -2,12 +2,12 @@ package com.example.BeGroom.seller.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Role;
+import com.example.BeGroom.settlement.domain.Settlement;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 

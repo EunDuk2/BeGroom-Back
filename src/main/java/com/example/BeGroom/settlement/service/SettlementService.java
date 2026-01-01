@@ -1,11 +1,8 @@
-package com.example.BeGroom.seller.service;
+package com.example.BeGroom.settlement.service;
 
-import com.example.BeGroom.seller.domain.PeriodType;
-import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
-import com.example.BeGroom.seller.dto.res.PeriodSettlementResDto;
-import com.example.BeGroom.seller.dto.res.SettlementManageResDto;
-import jakarta.validation.Valid;
+import com.example.BeGroom.settlement.domain.PeriodType;
+import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
+import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 
 import java.util.List;
 

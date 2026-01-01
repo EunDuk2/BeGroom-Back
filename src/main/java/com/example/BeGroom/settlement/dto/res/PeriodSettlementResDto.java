@@ -1,9 +1,8 @@
-package com.example.BeGroom.seller.dto.res;
+package com.example.BeGroom.settlement.dto.res;
 
-import com.example.BeGroom.seller.domain.SettlementStatus;
+import com.example.BeGroom.settlement.domain.SettlementStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

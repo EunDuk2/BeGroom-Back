@@ -1,24 +1,19 @@
-package com.example.BeGroom.seller.controller;
+package com.example.BeGroom.settlement.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
-import com.example.BeGroom.seller.domain.PeriodType;
-import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
-import com.example.BeGroom.seller.dto.res.PeriodSettlementResDto;
-import com.example.BeGroom.seller.dto.res.SellerCreateResDto;
-import com.example.BeGroom.seller.dto.res.SettlementManageResDto;
-import com.example.BeGroom.seller.service.SettlementService;
+import com.example.BeGroom.settlement.domain.PeriodType;
+import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
+import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
+import com.example.BeGroom.settlement.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Period;
 import java.util.List;
 
 @RestController

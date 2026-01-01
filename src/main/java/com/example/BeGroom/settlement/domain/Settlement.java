@@ -1,8 +1,9 @@
-package com.example.BeGroom.seller.domain;
+package com.example.BeGroom.settlement.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.seller.domain.Seller;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
