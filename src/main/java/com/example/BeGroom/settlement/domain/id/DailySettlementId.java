@@ -10,7 +10,6 @@ import java.time.LocalDate;
 @Embeddable
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @EqualsAndHashCode
 public class DailySettlementId implements Serializable {
     // 정산일
@@ -19,4 +18,10 @@ public class DailySettlementId implements Serializable {
     // 판매자ID
     @Column(nullable = false)
     private Long sellerId;
+
+    @Builder
+    public DailySettlementId(LocalDate date, Long sellerId){
+        this.date = date;
+        this.sellerId = sellerId;
+    }
 }

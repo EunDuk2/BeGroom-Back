@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -27,6 +28,15 @@ public class DailySettlement extends BaseEntity {
     // 환불금액
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal refundAmount;
+
+    // 환불 재집계 (update)
+    public void updateRefund(BigDecimal paymentAmount, BigDecimal feeRate,
+                             BigDecimal settlementAmount, BigDecimal refundAmount){
+        this.paymentAmount = paymentAmount;
+        this.feeRate = feeRate;
+        this.settlementAmount = settlementAmount;
+        this.refundAmount = refundAmount;
+    }
 
     @Builder
     public DailySettlement(LocalDate date, Long sellerId,

@@ -9,7 +9,6 @@ import java.io.Serializable;
 @Embeddable
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @EqualsAndHashCode
 public class WeeklySettlementId implements Serializable {
     // 년
@@ -24,4 +23,12 @@ public class WeeklySettlementId implements Serializable {
     // 판매자ID
     @Column(nullable = false)
     private Long sellerId;
+
+    @Builder
+    public WeeklySettlementId(int year, int month, int week, Long sellerId){
+        this.year = year;
+        this.month = month;
+        this.week = week;
+        this.sellerId = sellerId;
+    }
 }

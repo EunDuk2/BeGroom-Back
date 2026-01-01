@@ -40,6 +40,15 @@ public class WeeklySettlement extends BaseEntity {
     @Column(nullable = false)
     private LocalDate endDate;
 
+    // 환불 재집계 (update)
+    public void updateRefund(BigDecimal paymentAmount, BigDecimal feeRate,
+                             BigDecimal settlementAmount, BigDecimal refundAmount){
+        this.paymentAmount = paymentAmount;
+        this.feeRate = feeRate;
+        this.settlementAmount = settlementAmount;
+        this.refundAmount = refundAmount;
+    }
+
     @Builder
     public WeeklySettlement(int year, int month, int week, Long sellerId,
                             BigDecimal paymentAmount, BigDecimal feeRate, BigDecimal settlementAmount,

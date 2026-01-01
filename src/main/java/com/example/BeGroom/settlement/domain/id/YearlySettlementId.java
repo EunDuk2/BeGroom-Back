@@ -9,7 +9,6 @@ import java.io.Serializable;
 @Embeddable
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @EqualsAndHashCode
 public class YearlySettlementId implements Serializable {
     // 년
@@ -18,4 +17,10 @@ public class YearlySettlementId implements Serializable {
     // 판매자ID
     @Column(nullable = false)
     private Long sellerId;
+
+    @Builder
+    public YearlySettlementId(int year, Long sellerId){
+        this.year = year;
+        this.sellerId = sellerId;
+    }
 }
