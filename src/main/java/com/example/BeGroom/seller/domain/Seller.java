@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -39,6 +41,9 @@ public class Seller extends BaseEntity{
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
+    private List<Settlement> settlements = new ArrayList<>();
 
     private Seller(String email, String name, String password, String phoneNumber) {
         this.email = email;
