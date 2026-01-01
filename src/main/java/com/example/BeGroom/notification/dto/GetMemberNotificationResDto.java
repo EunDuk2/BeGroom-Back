@@ -43,29 +43,34 @@ public class GetMemberNotificationResDto {
         private boolean isRead;
         private LocalDateTime createdTime;
 
+        private static final ObjectMapper mapper = new ObjectMapper();
+
         public static NotificationInfo from(MemberNotification entity) {
+            String finalTitle = entity.getNotification().getTitle();
             String finalMessage = entity.getNotification().getMessage();
 
             try {
                 if (entity.getMetaData() != null && !entity.getMetaData().isEmpty()) {
-                    ObjectMapper mapper = new ObjectMapper();
+
                     Map<String, String> variables = mapper.readValue(entity.getMetaData(), Map.class);
 
                     for (Map.Entry<String, String> entry : variables.entrySet()) {
                         String key = "${" + entry.getKey() + "}";
                         String value = entry.getValue();
 
+                        finalTitle = finalTitle.replace(key, value);
                         finalMessage = finalMessage.replace(key, value);
                     }
                 }
             } catch (Exception e) {
+                finalTitle = entity.getNotification().getTitle();
                 finalMessage = entity.getNotification().getMessage();
             }
 
             return NotificationInfo.builder()
                     .id(entity.getId())
                     .type(entity.getNotification().getType().name())
-                    .title(entity.getNotification().getTitle())
+                    .title(finalTitle)
                     .message(finalMessage)
                     .link(entity.getNotification().getLink())
                     .isRead(entity.isRead())
