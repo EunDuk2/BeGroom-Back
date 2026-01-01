@@ -55,16 +55,15 @@ public class Order extends BaseEntity {
         this.totalAmount += orderProduct.getTotalAmount();
     }
 
-    public void changeStatus(OrderStatus status) {
-        this.orderStatus = status;
-    }
-
-    public void validatePaymentCreatable() {
+    public void markPaymentPending() {
+        // 검증
         if (this.orderStatus != OrderStatus.CREATED) {
             throw new IllegalStateException(
                     "결제를 생성할 수 없는 주문 상태입니다. status=" + this.orderStatus
             );
         }
+        // 상태 변경
+        this.orderStatus = OrderStatus.PAYMENT_PENDING;
     }
 
 
