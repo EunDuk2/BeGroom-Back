@@ -1,4 +1,4 @@
-package com.example.BeGroom.seller.dto;
+package com.example.BeGroom.seller.dto.res;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
