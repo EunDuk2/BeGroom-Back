@@ -34,4 +34,15 @@ public class PaymentServiceImpl implements PaymentService {
 
         return payment;
     }
+
+    @Transactional
+    @Override
+    public void approve(Long paymentId) {
+        // 결제 조회
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
+        // 결제 검증 및 상태 변경 (PROCESSING -> APPROVED)
+        payment.approve();
+    }
+
+
 }
