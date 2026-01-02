@@ -38,16 +38,27 @@ public class Payment extends BaseEntity {
     @Column(columnDefinition = "VARCHAR(20)")
     private RefundReason refundReason;
 
+    @Column(nullable = false)
+    private boolean isSettled;
+
     private Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
         this.order = order;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.paymentStatus = paymentStatus;
+        this.isSettled = false;
     }
 
     public static Payment create(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
         return new Payment(order, amount, paymentMethod, paymentStatus);
     }
 
+    public void approve() {
+        if(this.paymentStatus != PaymentStatus.PROCESSING) {
+            throw new IllegalStateException("결제 승인 불가능한 상태입니다. status=" + this.paymentStatus);
+        }
+        this.paymentStatus = PaymentStatus.APPROVED;
+        this.approvedAt = LocalDateTime.now();
+    }
 
 }

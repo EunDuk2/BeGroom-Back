@@ -1,6 +1,7 @@
 package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -92,5 +93,9 @@ public class Product extends BaseEntity {
 
     public enum ProductStatus {
         WAIT, SALE, SOLD_OUT, STOP
+    }
+
+    public void validateOrderable(int quantity) {
+        if(getSalesCount() < quantity) throw new InsufficientStockException(getProductId());
     }
 }
