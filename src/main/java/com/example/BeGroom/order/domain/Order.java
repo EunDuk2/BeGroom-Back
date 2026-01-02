@@ -66,5 +66,14 @@ public class Order extends BaseEntity {
         this.orderStatus = OrderStatus.PAYMENT_PENDING;
     }
 
+    public void complete() {
+        if (this.orderStatus != OrderStatus.PAYMENT_PENDING) {
+            throw new IllegalStateException(
+                    "결제 완료 처리 불가한 주문 상태입니다. status=" + orderStatus
+            );
+        }
+        this.orderStatus = OrderStatus.COMPLETED;
+    }
+
 
 }

@@ -36,6 +36,8 @@ public class PointPaymentProcessor implements PaymentProcessor {
         walletService.payPoint(order.getMember().getId(), order.getTotalAmount(), payment.getId());
         // 결제 승인
         paymentService.approve(payment.getId());
+        // 주문 완료 처리
+        order.complete();
         // 반환값 조립
         CheckoutResDto checkoutResDto =
                 CheckoutResDto.completed(order.getId(), payment.getId());
