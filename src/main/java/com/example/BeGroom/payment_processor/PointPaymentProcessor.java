@@ -2,11 +2,13 @@ package com.example.BeGroom.payment_processor;
 
 import com.example.BeGroom.checkout.dto.CheckoutResDto;
 import com.example.BeGroom.order.domain.Order;
+import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.service.PaymentService;
+import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.wallet.service.WalletService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,11 @@ public class PointPaymentProcessor implements PaymentProcessor {
         walletService.payPoint(order.getMember().getId(), order.getTotalAmount(), payment.getId());
         // 결제 승인
         paymentService.approve(payment.getId());
+        // 상품 재고 감소
+        for(OrderProduct orderProduct : order.getOrderProductList()) {
+            orderProduct.getProduct()
+                    .decreaseStock(orderProduct.getQuantity());
+        }
         // 주문 완료 처리
         order.complete();
         // 반환값 조립
