@@ -38,11 +38,15 @@ public class Payment extends BaseEntity {
     @Column(columnDefinition = "VARCHAR(20)")
     private RefundReason refundReason;
 
+    @Column(nullable = false)
+    private boolean isSettled;
+
     private Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
         this.order = order;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.paymentStatus = paymentStatus;
+        this.isSettled = false;
     }
 
     public static Payment create(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
