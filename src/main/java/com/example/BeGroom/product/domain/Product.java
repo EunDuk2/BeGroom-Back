@@ -98,4 +98,12 @@ public class Product extends BaseEntity {
     public void validateOrderable(int quantity) {
         if(getSalesCount() < quantity) throw new InsufficientStockException(getProductId());
     }
+
+    public void decreaseStock(int quantity) {
+        if (this.salesCount < quantity) {
+            throw new IllegalStateException("재고가 부족합니다. productId=" + productId);
+        }
+        this.salesCount -= quantity;
+    }
+
 }

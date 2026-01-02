@@ -22,11 +22,19 @@ public class CheckoutResDto {
     @Schema(example = "https://redirect.com")
     private String redirectUrl;
 
+    @Schema(example = "INSUFFICIENT_BALANCE")
+    private CheckoutFailCode failCode;
+
+    @Schema(example = "포인트 잔액이 부족합니다.")
+    private String failMessage;
+
     public static CheckoutResDto completed(Long orderId, Long paymentId) {
         return new CheckoutResDto(
                 CheckoutStatus.COMPLETED,
                 orderId,
                 paymentId,
+                null,
+                null,
                 null
         );
     }
@@ -36,7 +44,20 @@ public class CheckoutResDto {
                 CheckoutStatus.REDIRECT_REQUIRED,
                 orderId,
                 paymentId,
-                redirectUrl
+                redirectUrl,
+                null,
+                null
+        );
+    }
+
+    public static CheckoutResDto failed(Long orderId, Long paymentId, CheckoutFailCode checkoutFailCode) {
+        return new CheckoutResDto(
+                CheckoutStatus.FAILED,
+                orderId,
+                paymentId,
+                null,
+                checkoutFailCode,
+                checkoutFailCode.getMessage()
         );
     }
 

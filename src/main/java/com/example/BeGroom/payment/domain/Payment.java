@@ -18,7 +18,7 @@ public class Payment extends BaseEntity {
     private Long id;
 
     @JoinColumn(name = "order_id")
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     private Order order;
 
     @Column(nullable = false)
@@ -41,6 +41,10 @@ public class Payment extends BaseEntity {
     @Column(nullable = false)
     private boolean isSettled;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20)")
+    private PaymentFailReason paymentFailReason;
+
     private Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
         this.order = order;
         this.amount = amount;
@@ -60,5 +64,14 @@ public class Payment extends BaseEntity {
         this.paymentStatus = PaymentStatus.APPROVED;
         this.approvedAt = LocalDateTime.now();
     }
+
+    public void fail(PaymentFailReason paymentFailReason) {
+        if (this.paymentStatus != PaymentStatus.PROCESSING) {
+            throw new IllegalStateException("결제 실패 처리 불가 상태");
+        }
+        this.paymentStatus = PaymentStatus.FAILED;
+        this.paymentFailReason = paymentFailReason;
+    }
+
 
 }
