@@ -18,7 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/seller")
+@RequestMapping("/api/seller")
 @RequiredArgsConstructor
 @Tag(name = "Seller API", description = "판매자 관련 API")
 public class SellerController {
