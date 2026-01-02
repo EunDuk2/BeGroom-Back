@@ -1,5 +1,6 @@
 package com.example.BeGroom.checkout.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,9 +10,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CheckoutResDto {
 
+    @Schema(example = "COMPLETED")
     private CheckoutStatus checkoutStatus;
+
+    @Schema(example = "1")
     private Long orderId;
+
+    @Schema(example = "2")
     private Long paymentId;
+
+    @Schema(example = "https://redirect.com")
     private String redirectUrl;
 
     public static CheckoutResDto completed(Long orderId, Long paymentId) {
