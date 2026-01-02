@@ -58,6 +58,7 @@ public class Payment extends BaseEntity {
             throw new IllegalStateException("결제 승인 불가능한 상태입니다. status=" + this.paymentStatus);
         }
         this.paymentStatus = PaymentStatus.APPROVED;
+        this.approvedAt = LocalDateTime.now();
     }
 
 }
