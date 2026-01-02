@@ -56,15 +56,15 @@ public class Order extends BaseEntity {
     }
 
     public void markPaymentPending() {
-        // 검증
-        if (this.orderStatus != OrderStatus.CREATED) {
+        if (this.orderStatus == OrderStatus.COMPLETED ||
+                this.orderStatus == OrderStatus.CANCELED) {
             throw new IllegalStateException(
                     "결제를 생성할 수 없는 주문 상태입니다. status=" + this.orderStatus
             );
         }
-        // 상태 변경
         this.orderStatus = OrderStatus.PAYMENT_PENDING;
     }
+
 
     public void complete() {
         if (this.orderStatus != OrderStatus.PAYMENT_PENDING) {

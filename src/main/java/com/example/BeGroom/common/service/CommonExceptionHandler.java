@@ -1,7 +1,10 @@
 package com.example.BeGroom.common.service;
 
+import com.example.BeGroom.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.checkout.exception.CheckoutException;
 import com.example.BeGroom.common.response.CommonErrorDto;
 import com.example.BeGroom.product.exception.InsufficientStockException;
+import com.example.BeGroom.wallet.exception.InsufficientBalanceException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,11 +27,19 @@ public class CommonExceptionHandler {
         return new ResponseEntity<>(new CommonErrorDto(HttpStatus.BAD_REQUEST.value(), e.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(InsufficientStockException.class)
-    public ResponseEntity<?> insufficientStockException(InsufficientStockException e) {
-        log.error("[ERROR] - CommonExceptionHandler/InsufficientStockException - {}", e.getMessage());
-        return new ResponseEntity<>(new CommonErrorDto(HttpStatus.BAD_REQUEST.value(), e.getMessage()), HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(CheckoutException.class)
+    public ResponseEntity<CheckoutResDto> handleCheckoutException(CheckoutException e) {
+
+        return ResponseEntity.badRequest().body(
+                CheckoutResDto.failed(
+                        e.getOrderId(),
+                        e.getPaymentId(),
+                        e.getFailCode()
+                )
+        );
     }
+
+
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<?> illegalStateException(IllegalStateException e) {
