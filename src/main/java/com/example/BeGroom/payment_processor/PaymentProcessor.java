@@ -5,5 +5,5 @@ import com.example.BeGroom.payment.domain.PaymentMethod;
 
 public interface PaymentProcessor {
     PaymentMethod getMethod();
-    CheckoutResDto process(Long orderId);
+    CheckoutResDto process(Long paymentId);
 }

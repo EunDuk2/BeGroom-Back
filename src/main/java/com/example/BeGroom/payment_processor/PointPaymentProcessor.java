@@ -11,6 +11,7 @@ import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentFailReason;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.payment.service.PaymentService;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.exception.InsufficientStockException;
@@ -28,6 +29,7 @@ public class PointPaymentProcessor implements PaymentProcessor {
 
     private final OrderRepository orderRepository;
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
     private final WalletService walletService;
 
     @Override
@@ -35,11 +37,11 @@ public class PointPaymentProcessor implements PaymentProcessor {
 
     @Override
     @Transactional
-    public CheckoutResDto process(Long orderId) {
+    public CheckoutResDto process(Long paymentId) {
+        // 결제 조회
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
         // 주문 조회
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
-        // 결제 생성
-        Payment payment = paymentService.create(orderId, PaymentMethod.POINT, PaymentStatus.PROCESSING);
+        Order order = payment.getOrder();
         try {
             // 포인트 결제 처리
             walletService.payPoint(order.getMember().getId(), order.getTotalAmount(), payment.getId());
