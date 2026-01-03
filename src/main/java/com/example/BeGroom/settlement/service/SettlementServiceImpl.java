@@ -2,6 +2,7 @@ package com.example.BeGroom.settlement.service;
 
 import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
+import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,19 +17,17 @@ public class SettlementServiceImpl implements SettlementService {
     @Override
     public SettlementManageResDto getSettlementManage(Long sellerId){
         // 결제금액, 환불금액, 수수료, 정산금액
-        SettlementManageResDto.Summary summary =
-                new SettlementManageResDto.Summary(230000, 66000, 223400, 2010600);
-        // 건별 정산 리스트
-        List<SettlementManageResDto.SettlementByItem> settlementByItemList = List.of();
+        SettlementManageResDto settlementManageResDto =
+                new SettlementManageResDto(230000, 66000, 223400, 2010600);
 
-        return new SettlementManageResDto(summary, settlementByItemList);
+        return settlementManageResDto;
     }
 
     // 건별 정산 집계 조회
     @Override
-    public List<SettlementManageResDto.SettlementByItem> getProductSettlement(Long sellerId){
+    public List<ProductSettlementResDto> getProductSettlement(Long sellerId){
         // 건별 정산 리스트
-        List<SettlementManageResDto.SettlementByItem> settlementByItemList = List.of();
+        List<ProductSettlementResDto> settlementByItemList = List.of();
 
         return settlementByItemList;
     }

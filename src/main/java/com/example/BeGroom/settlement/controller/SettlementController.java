@@ -4,6 +4,7 @@ import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
+import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 import com.example.BeGroom.settlement.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,10 +46,10 @@ public class SettlementController {
     // API 2. 건별 정산 집계
     @GetMapping("/product")
     @Operation(summary = "건별 정산 집계", description = "건별 정산을 조회합니다.")
-    public ResponseEntity<CommonSuccessDto<List<SettlementManageResDto.SettlementByItem>>> getProductSettlement(
+    public ResponseEntity<CommonSuccessDto<List<ProductSettlementResDto>>> getProductSettlement(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
-        List<SettlementManageResDto.SettlementByItem> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId());
+        List<ProductSettlementResDto> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId());
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(
