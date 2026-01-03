@@ -1,9 +1,9 @@
-package com.example.BeGroom.checkout.controller;
+package com.example.BeGroom.usecase.checkout.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
-import com.example.BeGroom.checkout.dto.CheckoutReqDto;
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
-import com.example.BeGroom.checkout.service.CheckoutService;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutReqDto;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.service.CheckoutService;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,6 +1,6 @@
-package com.example.BeGroom.checkout.service;
+package com.example.BeGroom.usecase.checkout.service;
 
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment_processor.PaymentProcessor;
 import com.example.BeGroom.payment_processor.PaymentProcessorFactory;

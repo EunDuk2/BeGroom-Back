@@ -1,6 +1,6 @@
-package com.example.BeGroom.checkout.exception;
+package com.example.BeGroom.usecase.checkout.exception;
 
-import com.example.BeGroom.checkout.dto.CheckoutFailCode;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutFailCode;
 
 public class CheckoutInsufficientStockException extends CheckoutException {
 

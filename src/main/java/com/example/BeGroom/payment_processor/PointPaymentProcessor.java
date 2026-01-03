@@ -1,19 +1,16 @@
 package com.example.BeGroom.payment_processor;
 
-import com.example.BeGroom.checkout.dto.CheckoutFailCode;
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
-import com.example.BeGroom.checkout.exception.CheckoutInsufficientBalanceException;
-import com.example.BeGroom.checkout.exception.CheckoutInsufficientStockException;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.exception.CheckoutInsufficientBalanceException;
+import com.example.BeGroom.usecase.checkout.exception.CheckoutInsufficientStockException;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentFailReason;
 import com.example.BeGroom.payment.domain.PaymentMethod;
-import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.payment.service.PaymentService;
-import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.exception.InsufficientStockException;
 import com.example.BeGroom.wallet.exception.InsufficientBalanceException;
 import com.example.BeGroom.wallet.service.WalletService;

@@ -1,6 +1,6 @@
 package com.example.BeGroom.payment_processor;
 
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import org.springframework.stereotype.Component;
 

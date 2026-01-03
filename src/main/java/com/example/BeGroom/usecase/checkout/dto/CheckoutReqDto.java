@@ -1,4 +1,4 @@
-package com.example.BeGroom.checkout.dto;
+package com.example.BeGroom.usecase.checkout.dto;
 
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
