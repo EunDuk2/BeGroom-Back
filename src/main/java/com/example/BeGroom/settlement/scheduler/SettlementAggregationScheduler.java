@@ -11,8 +11,8 @@ public class SettlementAggregationScheduler {
 
     private final AggregationService aggregationService;
 
-    // 10초 마다 실행
-    @Scheduled(fixedDelay = 10000)
+    // 작업 종료 기준 10초 마다 실행
+    @Scheduled(fixedDelay = 50000)
     public void run(){
         aggregationService.aggregate();
     }

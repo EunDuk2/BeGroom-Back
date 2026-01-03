@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/settlement")
+@RequestMapping("/settlement")
 @RequiredArgsConstructor
 @Tag(name = "Settlements API", description = "정산 관련 API")
 public class SettlementController {

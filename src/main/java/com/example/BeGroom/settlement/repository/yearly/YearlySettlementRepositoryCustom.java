@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public interface YearlySettlementRepositoryCustom {
-    void upsert(int year, Long sellerId, Long paymentAmount,
+    void upsertAggregate(int year, Long sellerId, Long paymentAmount,
                 BigDecimal feeRate, BigDecimal settlementAmount, BigDecimal refundAmount,
                 LocalDate startDate, LocalDate endDate);
 
-    void updateRefund(BigDecimal returnAmount);
+    void updateRefund(int year, Long sellerId, BigDecimal fee, BigDecimal refundAmount);
 }

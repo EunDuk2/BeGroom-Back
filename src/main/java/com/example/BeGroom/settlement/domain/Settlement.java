@@ -58,11 +58,8 @@ public class Settlement extends BaseEntity {
     // 정산일
     @Column(nullable = false)
     private LocalDateTime date;
-    // 집계 처리 여부 플래그
-    @Column(nullable = false)
-    private Boolean aggregated = false;
 
     public void markAggregated(){
-        this.aggregated = true;
+        this.status = SettlementStatus.SETTLED;
     }
 }

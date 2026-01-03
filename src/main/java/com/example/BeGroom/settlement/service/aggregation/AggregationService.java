@@ -2,6 +2,7 @@ package com.example.BeGroom.settlement.service.aggregation;
 
 import com.example.BeGroom.settlement.domain.PaymentStatus;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,8 @@ public class AggregationService {
     @Transactional
     public void aggregate() {
         // 미집계 데이터 조회
-        List<Settlement> unaggregated = settlementRepository.findByAggregatedFalse();
+//        List<Settlement> unaggregated = settlementRepository.findByAggregatedFalse();
+        List<Settlement> unaggregated = settlementRepository.findByStatus(SettlementStatus.UNSETTLED);
 
         for(Settlement settlement : unaggregated){
             if(settlement.getPaymentStatus() == PaymentStatus.REFUND){
@@ -30,6 +32,7 @@ public class AggregationService {
             }else {
                 insertPayment(settlement);
             }
+            // 집계 확인 처리
             settlement.markAggregated();
         }
     }
