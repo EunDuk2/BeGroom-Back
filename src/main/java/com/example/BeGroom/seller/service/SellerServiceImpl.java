@@ -1,13 +1,16 @@
 package com.example.BeGroom.seller.service;
 
 import com.example.BeGroom.order.repository.OrderRepository;
+import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.res.DashboardResDto;
 import com.example.BeGroom.seller.dto.res.OrderManageResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
+import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.query.Param;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,8 @@ public class SellerServiceImpl implements SellerService{
 
     private final SellerRepository sellerRepository;
     private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
+    private final SettlementRepository settlementRepository;
     private final PasswordEncoder passwordEncoder;
 
     // 회원가입
@@ -44,11 +49,11 @@ public class SellerServiceImpl implements SellerService{
     @Override
     public DashboardResDto getDashboard(Long sellerId){
         // 총 주문 수
-        int orderCnt = 0;
+        int orderCnt = orderRepository.countCompletedOrdersBySeller(sellerId);
         // 총 상품 수
-        int productCnt = 0;
+        int productCnt = productRepository.countBySellerIdAndDeletedAtIsNull(sellerId);
         // 총 매출(환불 제외)
-        long salesAmount = 0L;
+        long salesAmount = settlementRepository.sumSalesAmountBySeller(sellerId);
         // 주문 없는 경우
 
         return new DashboardResDto(

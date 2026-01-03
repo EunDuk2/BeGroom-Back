@@ -18,6 +18,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Page<Product> findByProductStatusIn(List<Product.ProductStatus> statuses, Pageable pageable);
     Optional<Product> findByProductNo(Long productNo);
 
+    // 판매자가 가진 총 상품 수
+    int countBySellerIdAndDeletedAtIsNull(Long sellerId);
+
     // 특정 배송 타입을 가진 상품 ID 목록 조회
     @Query(value = """
     SELECT DISTINCT p.product_id

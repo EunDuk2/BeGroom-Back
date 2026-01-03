@@ -3,6 +3,8 @@ package com.example.BeGroom.settlement.repository;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,4 +13,11 @@ import java.util.List;
 public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 //    List<Settlement> findByAggregatedFalse();
     List<Settlement> findByStatus(SettlementStatus unsettled);
+
+    // 총 주문 수(환불 제외)
+    @Query("select coalesce(sum(s.paymentAmount - s.refundAmount), 0) " +
+            "from Settlement s " +
+            "where s.seller.id = :sellerId " +
+            "and s.paymentStatus = 'PAYMENT'")
+    long sumSalesAmountBySeller(@Param("sellerId") Long sellerId);
 }
