@@ -6,16 +6,24 @@ import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.domain.OrderStatus;
 import com.example.BeGroom.order.dto.OrderCreateReqDto;
+import com.example.BeGroom.order.dto.OrderProductAggregate;
 import com.example.BeGroom.order.dto.OrderProductReqDto;
+import com.example.BeGroom.order.dto.OrderSummaryDto;
+import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,6 +33,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
+    private final OrderProductRepository orderProductRepository;
 
 
     @Override
@@ -55,4 +64,35 @@ public class OrderServiceImpl implements OrderService {
 
         return order;
     }
+
+    @Override
+    public Page<OrderSummaryDto> getOrders(Pageable pageable, Long memberId) {
+        // 사용자 조회
+        memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+
+        // 주문 페이지 조회
+        Page<Order> orderPage = orderRepository.findByMemberId(pageable, memberId);
+
+        // 조회한 주문들의 id 추출
+        List<Long> orderIds = orderPage.getContent()
+                .stream()
+                .map(Order::getId)
+                .toList();
+
+        // OrderProduct 집계 조회
+        List<OrderProductAggregate> aggregates = orderProductRepository.aggregateByOrderIds(orderIds);
+
+        // Map으로 변환
+        Map<Long, OrderProductAggregate> aggregateMap = aggregates.stream()
+                .collect(Collectors.toMap(OrderProductAggregate::getOrderId, a -> a));
+
+        // dto 조합
+        List<OrderSummaryDto> content = orderPage
+                .map(order -> OrderSummaryDto.of(order, aggregateMap.get(order.getId()))).toList();
+
+        // Page로 반환
+        return new PageImpl<>(content, pageable, orderPage.getTotalElements());
+    }
+
+
 }
