@@ -2,6 +2,7 @@ package com.example.BeGroom.settlement.dto.res;
 
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,16 +16,15 @@ import java.util.List;
 @AllArgsConstructor
 public class SettlementManageResDto {
 
-    @NotNull
     @Schema(example = "2300000")
     private int totalPaymentAmount;
-    @NotNull
+
     @Schema(example = "66000")
     private int totalRefundAmount;
-    @NotNull
+
     @Schema(example = "223400")
     private int totalFeeAmount;
-    @NotNull
+
     @Schema(example = "2010600")
     private int totalSettlementAmount;
 

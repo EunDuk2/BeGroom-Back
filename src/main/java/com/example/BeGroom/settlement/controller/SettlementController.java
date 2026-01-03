@@ -3,12 +3,14 @@ package com.example.BeGroom.settlement.controller;
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.settlement.domain.PeriodType;
+import com.example.BeGroom.settlement.dto.req.ProductSettlementReqDto;
 import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 import com.example.BeGroom.settlement.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,9 +49,9 @@ public class SettlementController {
     @GetMapping("/product")
     @Operation(summary = "건별 정산 집계", description = "건별 정산을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<List<ProductSettlementResDto>>> getProductSettlement(
-            @AuthenticationPrincipal UserPrincipal userPrincipal
+            @AuthenticationPrincipal UserPrincipal userPrincipal, @Valid @RequestBody ProductSettlementReqDto productSettlementReqDto
     ){
-        List<ProductSettlementResDto> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId());
+        List<ProductSettlementResDto> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId(), productSettlementReqDto);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(

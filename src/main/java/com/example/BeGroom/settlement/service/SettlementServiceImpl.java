@@ -1,12 +1,14 @@
 package com.example.BeGroom.settlement.service;
 
 import com.example.BeGroom.settlement.domain.PeriodType;
+import com.example.BeGroom.settlement.dto.req.ProductSettlementReqDto;
 import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -25,7 +27,11 @@ public class SettlementServiceImpl implements SettlementService {
 
     // 건별 정산 집계 조회
     @Override
-    public List<ProductSettlementResDto> getProductSettlement(Long sellerId){
+    public List<ProductSettlementResDto> getProductSettlement(Long sellerId, ProductSettlementReqDto productSettlementReqDto){
+        // 조회 기간
+        LocalDate startDate = productSettlementReqDto.getStartDate();
+        LocalDate endDate = productSettlementReqDto.getEndDate();
+
         // 건별 정산 리스트
         List<ProductSettlementResDto> settlementByItemList = List.of();
 
