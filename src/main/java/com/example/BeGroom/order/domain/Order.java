@@ -2,6 +2,7 @@ package com.example.BeGroom.order.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
+import com.example.BeGroom.order.exception.InvalidOrderStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -47,8 +48,8 @@ public class Order extends BaseEntity {
         if(orderProduct == null) {
             throw new IllegalArgumentException("추가하려는 상품이 없습니다.");
         }
-        if(getOrderStatus() != OrderStatus.CREATED) {
-            throw new IllegalStateException("주문 생성 상태에서만 상품을 추가할 수 있습니다.");
+        if(this.orderStatus != OrderStatus.CREATED) {
+            throw new InvalidOrderStateException("상품 추가", this.orderStatus);
         }
         // todo - assigned 함수 고려
         this.orderProductList.add(orderProduct);
@@ -56,24 +57,26 @@ public class Order extends BaseEntity {
     }
 
     public void markPaymentPending() {
-        if (this.orderStatus == OrderStatus.COMPLETED ||
+        if(this.orderStatus == OrderStatus.COMPLETED ||
                 this.orderStatus == OrderStatus.CANCELED) {
-            throw new IllegalStateException(
-                    "결제를 생성할 수 없는 주문 상태입니다. status=" + this.orderStatus
-            );
+            throw new InvalidOrderStateException("결제 생성", this.orderStatus);
         }
         this.orderStatus = OrderStatus.PAYMENT_PENDING;
     }
 
 
     public void complete() {
-        if (this.orderStatus != OrderStatus.PAYMENT_PENDING) {
-            throw new IllegalStateException(
-                    "결제 완료 처리 불가한 주문 상태입니다. status=" + orderStatus
-            );
+        if(this.orderStatus != OrderStatus.PAYMENT_PENDING) {
+            throw new InvalidOrderStateException("결제 완료", this.orderStatus);
         }
         this.orderStatus = OrderStatus.COMPLETED;
     }
 
+    public void cancel() {
+        if(this.orderStatus != OrderStatus.COMPLETED) {
+            throw new InvalidOrderStateException("결제 취소", this.orderStatus);
+        }
+        this.orderStatus = OrderStatus.CANCELED;
+    }
 
 }

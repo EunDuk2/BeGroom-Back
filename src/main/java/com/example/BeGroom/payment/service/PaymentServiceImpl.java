@@ -23,13 +23,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public Payment create(Long orderId, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
+    public Payment create(Long orderId, PaymentMethod paymentMethod) {
         // 주문 조회
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
         // 주문 검증 및 상태 변경
         order.markPaymentPending();
         // 결제 생성
-        Payment payment = Payment.create(order, order.getTotalAmount(), paymentMethod, paymentStatus);
+        Payment payment = Payment.create(order, order.getTotalAmount(), paymentMethod, PaymentStatus.READY);
         // 결제 저장
         paymentRepository.save(payment);
 
@@ -46,7 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long paymentId, PaymentFailReason reason) {
         // 결제 조회
         Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));

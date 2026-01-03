@@ -1,18 +1,16 @@
 package com.example.BeGroom.payment_processor;
 
-import com.example.BeGroom.checkout.dto.CheckoutFailCode;
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
-import com.example.BeGroom.checkout.exception.CheckoutInsufficientBalanceException;
-import com.example.BeGroom.checkout.exception.CheckoutInsufficientStockException;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.exception.CheckoutInsufficientBalanceException;
+import com.example.BeGroom.usecase.checkout.exception.CheckoutInsufficientStockException;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentFailReason;
 import com.example.BeGroom.payment.domain.PaymentMethod;
-import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.payment.service.PaymentService;
-import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.exception.InsufficientStockException;
 import com.example.BeGroom.wallet.exception.InsufficientBalanceException;
 import com.example.BeGroom.wallet.service.WalletService;
@@ -28,6 +26,7 @@ public class PointPaymentProcessor implements PaymentProcessor {
 
     private final OrderRepository orderRepository;
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
     private final WalletService walletService;
 
     @Override
@@ -35,11 +34,13 @@ public class PointPaymentProcessor implements PaymentProcessor {
 
     @Override
     @Transactional
-    public CheckoutResDto process(Long orderId) {
+    public CheckoutResDto process(Long paymentId) {
+        // 결제 조회
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
+        // 결제 상태 변경 (PROCESSING)
+        payment.markProcessing();
         // 주문 조회
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
-        // 결제 생성
-        Payment payment = paymentService.create(orderId, PaymentMethod.POINT, PaymentStatus.PROCESSING);
+        Order order = payment.getOrder();
         try {
             // 포인트 결제 처리
             walletService.payPoint(order.getMember().getId(), order.getTotalAmount(), payment.getId());
@@ -54,9 +55,9 @@ public class PointPaymentProcessor implements PaymentProcessor {
             order.complete();
             // 성공 반환
             return CheckoutResDto.completed(order.getId(), payment.getId());
-        } catch (InsufficientBalanceException e) { // 현재 catch문 동작 못함
+        } catch (InsufficientBalanceException e) {
             // 실패 처리 (잔액 부족)
-            paymentService.fail(payment.getId(), PaymentFailReason.INSUFFICIENT_BALANCE);
+            paymentService.fail(paymentId, PaymentFailReason.INSUFFICIENT_BALANCE);
             // 예외 반환
             throw new CheckoutInsufficientBalanceException(order.getId(), payment.getId());
         } catch (InsufficientStockException e) {

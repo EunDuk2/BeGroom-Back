@@ -1,4 +1,4 @@
-package com.example.BeGroom.checkout.dto;
+package com.example.BeGroom.usecase.checkout.dto;
 
 public enum CheckoutStatus {
     COMPLETED, REDIRECT_REQUIRED, FAILED

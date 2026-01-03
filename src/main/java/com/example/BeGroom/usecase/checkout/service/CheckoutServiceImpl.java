@@ -1,6 +1,6 @@
-package com.example.BeGroom.checkout.service;
+package com.example.BeGroom.usecase.checkout.service;
 
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment_processor.PaymentProcessor;
 import com.example.BeGroom.payment_processor.PaymentProcessorFactory;
@@ -17,11 +17,11 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     @Transactional
-    public CheckoutResDto checkout(Long orderId, PaymentMethod paymentMethod) {
+    public CheckoutResDto checkout(Long paymentId, PaymentMethod paymentMethod) {
         // method로 processor가져오기
         PaymentProcessor paymentProcessor = paymentProcessorFactory.get(paymentMethod);
         // 결과값 반환
-        return paymentProcessor.process(orderId);
+        return paymentProcessor.process(paymentId);
     }
 
 }

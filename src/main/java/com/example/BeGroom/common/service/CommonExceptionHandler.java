@@ -1,10 +1,8 @@
 package com.example.BeGroom.common.service;
 
-import com.example.BeGroom.checkout.dto.CheckoutResDto;
-import com.example.BeGroom.checkout.exception.CheckoutException;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.exception.CheckoutException;
 import com.example.BeGroom.common.response.CommonErrorDto;
-import com.example.BeGroom.product.exception.InsufficientStockException;
-import com.example.BeGroom.wallet.exception.InsufficientBalanceException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.example.BeGroom.checkout.dto;
+package com.example.BeGroom.payment.dto;
 
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -8,9 +8,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class CheckoutReqDto {
+@NoArgsConstructor
+public class PaymentCreateReqDto {
+
+    @NotNull
+    @Schema(example = "1")
+    private Long orderId;
 
     @NotNull
     @Schema(example = "POINT")

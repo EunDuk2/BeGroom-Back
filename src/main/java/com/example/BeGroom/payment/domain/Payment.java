@@ -2,6 +2,7 @@ package com.example.BeGroom.payment.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.order.domain.Order;
+import com.example.BeGroom.payment.exception.InvalidPaymentStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -57,20 +58,35 @@ public class Payment extends BaseEntity {
         return new Payment(order, amount, paymentMethod, paymentStatus);
     }
 
+    public void markProcessing() {
+        if(this.paymentStatus != PaymentStatus.READY) {
+            throw new InvalidPaymentStateException("결제 진행", this.paymentStatus);
+        }
+        this.paymentStatus = PaymentStatus.PROCESSING;
+    }
+
     public void approve() {
         if(this.paymentStatus != PaymentStatus.PROCESSING) {
-            throw new IllegalStateException("결제 승인 불가능한 상태입니다. status=" + this.paymentStatus);
+            throw new InvalidPaymentStateException("결제 승인", this.paymentStatus);
         }
         this.paymentStatus = PaymentStatus.APPROVED;
         this.approvedAt = LocalDateTime.now();
     }
 
     public void fail(PaymentFailReason paymentFailReason) {
-        if (this.paymentStatus != PaymentStatus.PROCESSING) {
-            throw new IllegalStateException("결제 실패 처리 불가 상태");
+        if(this.paymentStatus != PaymentStatus.READY) {
+            throw new InvalidPaymentStateException("결제 처리", this.paymentStatus);
         }
         this.paymentStatus = PaymentStatus.FAILED;
         this.paymentFailReason = paymentFailReason;
+    }
+
+    public void refund(RefundReason refundReason) {
+        if(this.paymentStatus != PaymentStatus.APPROVED) {
+            throw new InvalidPaymentStateException("결제 환불", this.paymentStatus);
+        }
+        this.paymentStatus = PaymentStatus.REFUNDED;
+        this.refundReason = refundReason;
     }
 
 

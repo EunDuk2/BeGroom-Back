@@ -1,4 +1,4 @@
-package com.example.BeGroom.checkout.dto;
+package com.example.BeGroom.usecase.checkout.dto;
 
 public enum CheckoutFailCode {
     INSUFFICIENT_BALANCE("포인트 잔액이 부족합니다."),
