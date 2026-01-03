@@ -2,6 +2,7 @@ package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.BeGroom.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -130,6 +131,21 @@ public class Product extends BaseEntity {
                 this.productNotice = null;
             }
         }
+    }
+
+    public void validateOrderable(int quantity) {
+        if(getSalesCount() < quantity) throw new InsufficientStockException(getProductId());
+    }
+
+    public void decreaseStock(int quantity) {
+        if (this.salesCount < quantity) {
+            throw new IllegalStateException("재고가 부족합니다. productId=" + productId);
+        }
+        this.salesCount -= quantity;
+    }
+
+    public void increaseStock(int quantity) {
+        this.salesCount += quantity;
     }
 
     public void updateBrandId(Long brandId) {

@@ -1,7 +1,6 @@
-package com.example.BeGroom.seller.dto;
+package com.example.BeGroom.usecase.cancelOrder.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,10 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SellerCreateResDto {
-
-    @NotEmpty
+public class CancelOrderResDto {
     @Schema(example = "1")
-    private Long sellerId;
-
+    private Long orderId;
 }

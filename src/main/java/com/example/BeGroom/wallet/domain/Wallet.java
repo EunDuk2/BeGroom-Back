@@ -2,6 +2,7 @@ package com.example.BeGroom.wallet.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
+import com.example.BeGroom.wallet.exception.InsufficientBalanceException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,7 +41,7 @@ public class Wallet extends BaseEntity {
 
     public void decreaseBalance(long amount) {
         if(this.balance < amount) {
-            throw new IllegalStateException("잔액 부족");
+            throw new InsufficientBalanceException(this.id);
         }
         this.balance -= amount;
     }

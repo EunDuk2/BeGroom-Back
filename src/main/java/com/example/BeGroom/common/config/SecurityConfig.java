@@ -46,6 +46,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/members").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/seller/join").permitAll()
                         .requestMatchers("/noti").authenticated()
                         .requestMatchers("/noti/**").authenticated()
                         .requestMatchers("/members/profile").authenticated()

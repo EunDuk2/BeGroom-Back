@@ -1,5 +1,7 @@
 package com.example.BeGroom.common.service;
 
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.usecase.checkout.exception.CheckoutException;
 import com.example.BeGroom.common.response.CommonErrorDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,26 @@ public class CommonExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<?> entityNotFoundException(EntityNotFoundException e) {
         log.error("[ERROR] - CommonExceptionHandler/EntityNotFoundException - {}", e.getMessage());
+        return new ResponseEntity<>(new CommonErrorDto(HttpStatus.BAD_REQUEST.value(), e.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(CheckoutException.class)
+    public ResponseEntity<CheckoutResDto> handleCheckoutException(CheckoutException e) {
+
+        return ResponseEntity.badRequest().body(
+                CheckoutResDto.failed(
+                        e.getOrderId(),
+                        e.getPaymentId(),
+                        e.getFailCode()
+                )
+        );
+    }
+
+
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<?> illegalStateException(IllegalStateException e) {
+        log.error("[ERROR] - CommonExceptionHandler/IllegalStateException - {}", e.getMessage());
         return new ResponseEntity<>(new CommonErrorDto(HttpStatus.BAD_REQUEST.value(), e.getMessage()), HttpStatus.BAD_REQUEST);
     }
 

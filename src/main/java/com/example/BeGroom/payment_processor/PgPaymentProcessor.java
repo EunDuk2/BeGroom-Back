@@ -1,0 +1,19 @@
+package com.example.BeGroom.payment_processor;
+
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.payment.domain.PaymentMethod;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PgPaymentProcessor implements PaymentProcessor {
+
+    @Override
+    public PaymentMethod getMethod() {
+        return PaymentMethod.PG;
+    }
+
+    @Override
+    public CheckoutResDto process(Long orderId) {
+        return null;
+    }
+}

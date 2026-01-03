@@ -1,4 +1,4 @@
-package com.example.BeGroom.seller.dto;
+package com.example.BeGroom.seller.dto.req;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,7 +16,7 @@ public class SellerCreateReqDto {
     private String email;
 
     @NotEmpty
-    @Schema(example = "begroom")
+    @Schema(example = "BeGroom")
     private String name;
 
     @NotEmpty
