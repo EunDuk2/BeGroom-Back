@@ -1,19 +1,17 @@
 package com.example.BeGroom.product.controller;
 
-import com.example.BeGroom.common.config.CrawlingConfig;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.product.domain.Product;
+import com.example.BeGroom.product.dto.crawling.CrawlingRequest;
 import com.example.BeGroom.product.dto.crawling.CrawlingResultDto;
 import com.example.BeGroom.product.service.CrawlingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -23,67 +21,68 @@ import java.util.List;
 public class CrawlingController {
 
     private final CrawlingService crawlingService;
-    private final CrawlingConfig crawlingConfig;
 
-    @PostMapping("/category/{categoryId}")
-    @Operation(summary = "단일 카테고리 크롤링", description = "특정 카테고리의 상품 크롤링")
-    public ResponseEntity<CommonSuccessDto<CrawlingResultDto>> crawlCategory(
-            @PathVariable Long categoryId,
-            @RequestParam(defaultValue = "200") int maxProducts
+    @PostMapping
+    @Operation(
+            summary = "카테고리 크롤링",
+            description = """
+            카테고리 기반 상품 크롤링
+            
+            **사용 방법:**
+            1. 전체 중분류 크롤링
+            POST /api/admin/crawling?maxProductsPerCategory=25
+            
+            2. 특정 대분류 크롤링 (예: 채소 카테고리 전체)
+            POST /api/admin/crawling?categoryIds=1&maxProductsPerCategory=200
+            
+            3. 특정 중분류 크롤링 (예: 고구마·감자·당근)
+            POST /api/admin/crawling?categoryIds=2&maxProductsPerCategory=25
+            
+            4. 여러 카테고리 동시 크롤링
+            POST /api/admin/crawling?categoryIds=1,2,3&maxProductsPerCategory=20
+            
+            
+            **파라미터:**
+            - categoryIds: 크롤링할 카테고리 ID (null이면 전체 중분류)
+            - maxProductsPerCategory: 카테고리당 최대 크롤링 개수 (기본값: 10)
+            
+            
+            **주의:**
+            - 대분류 ID를 넣으면 자동으로 하위 중분류 모두 크롤링
+            - 크롤링 시간이 오래 걸릴 수 있음 (카테고리당 약 30초~1분)
+            """
+    )
+    public ResponseEntity<CommonSuccessDto<CrawlingResultDto>> crawl(
+            @RequestParam(required = false) List<Long> categoryIds,
+            @RequestParam(defaultValue = "25") Integer maxProductsPerCategory
     ) {
-        List<Product> products = crawlingService.crawlCategory(categoryId, maxProducts);
+        CrawlingRequest request = CrawlingRequest.builder()
+                .categoryIds(categoryIds)
+                .maxProductsPerCategory(maxProductsPerCategory)
+                .build();
 
-        CrawlingResultDto result = new CrawlingResultDto(
-                products.size(),
-                "완료"
-        );
+        List<Product> products = crawlingService.crawl(request);
 
-        return ResponseEntity.ok(CommonSuccessDto.of(
-                result,
-                HttpStatus.OK,
-                "카테고리 " + categoryId + " 크롤링 완료"
-        ));
-    }
-
-    @PostMapping("/categories")
-    @Operation(summary = "전체 카테고리 크롤링", description = "전체 카테고리의 상품 한 번에 크롤링")
-    public ResponseEntity<CommonSuccessDto<CrawlingResultDto>> crawlAllCategories(
-            @RequestParam(defaultValue = "200") int maxProductsPerCategory
-    ) {
-        List<Product> allProducts = new ArrayList<>();
-        int successCount = 0;
-        int failCount = 0;
-
-        for (CrawlingConfig.Category category : crawlingConfig.getCategories()) {
-            try {
-                List<Product> products = crawlingService.crawlCategory(category.getId(), maxProductsPerCategory);
-                allProducts.addAll(products);
-                successCount++;
-
-                // 카테고리 간 대기 (3초)
-                Thread.sleep(3000);
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                // 에러 발생해도 다음 카테고리 진행
-                failCount++;
-                continue;
-            }
-        }
-
-        CrawlingResultDto result = new CrawlingResultDto(
-                allProducts.size(),
-                String.format("전체 크롤링 완료 (성공: %d, 실패: %d)", successCount, failCount)
-        );
+        CrawlingResultDto result = new CrawlingResultDto(products.size(), buildMessage(categoryIds, products.size()));
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(
                         result,
                         HttpStatus.OK,
-                        String.format("%d개 카테고리 중 %d개 성공", crawlingConfig.getCategories().size(), successCount)
+                        "크롤링 완료"
                 )
         );
+    }
+
+    // 응답 메시지 생성
+    private String buildMessage(List<Long> categoryIds, int productCount) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return String.format("전체 중분류 카테고리 크롤링 완료 (%d개 상품)", productCount);
+        } else if (categoryIds.size() == 1) {
+            return String.format("카테고리 크롤링 완료 (%d개 상품)", productCount);
+        } else {
+            return String.format("%d개 카테고리 크롤링 완료 (%d개 상품)",
+                    categoryIds.size(), productCount);
+        }
     }
 }

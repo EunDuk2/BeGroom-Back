@@ -1,10 +1,12 @@
 package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "product")
@@ -19,14 +21,11 @@ public class Product extends BaseEntity {
     @Column(name = "product_id")
     private Long productId;
 
-    @Column(name = "product_no")
+    @Column(name = "product_no", nullable = false, unique = true)
     private Long productNo;
 
-    @Column(name = "seller_id", nullable = false)
-    private Long sellerId;
-
-    @Column(name = "brand", nullable = false, length = 100)
-    private String brand;
+    @Column(name = "brand_id", nullable = false)
+    private Long brandId;
 
     @Column(name = "name", nullable = false, length = 200)
     private String name;
@@ -87,10 +86,53 @@ public class Product extends BaseEntity {
     @Builder.Default
     private Integer salesCount = 0;
 
+    @Column(name = "expiration_date", columnDefinition = "TEXT")
+    private String expirationDate;
+
+    @Column(name = "guides", columnDefinition = "TEXT")
+    private String guides;
+
+    @Column(name = "product_detail", columnDefinition = "LONGTEXT")
+    private String productDetail;
+
+    @Column(name = "product_notice", columnDefinition = "JSON")
+    private String productNotice;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     public enum ProductStatus {
         WAIT, SALE, SOLD_OUT, STOP
+    }
+
+    public void updateProductOption(String expirationDate,
+                                    List<String> guides,
+                                    String productDetail,
+                                    List<?> productNotice) {
+        this.expirationDate = expirationDate;
+
+        // guides JSON 문자열로 변환
+        if (guides != null && !guides.isEmpty()) {
+            try {
+                this.guides = new ObjectMapper().writeValueAsString(guides);
+            } catch (Exception e) {
+                this.guides = null;
+            }
+        }
+
+        this.productDetail = productDetail;
+
+        // productNotice JSON 문자열로 변환
+        if (productNotice != null && !productNotice.isEmpty()) {
+            try {
+                this.productNotice = new ObjectMapper().writeValueAsString(productNotice);
+            } catch (Exception e) {
+                this.productNotice = null;
+            }
+        }
+    }
+
+    public void updateBrandId(Long brandId) {
+        this.brandId = brandId;
     }
 }

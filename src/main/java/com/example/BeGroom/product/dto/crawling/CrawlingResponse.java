@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * API 응답 DTO
+ * 상품 기본 정보 API 응답 DTO
  */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -94,10 +94,6 @@ public class CrawlingResponse {
             return canRestockNotify != null ? canRestockNotify : false;
         }
 
-        public Boolean getIsMultiplePrice() {
-            return isMultiplePrice != null ? isMultiplePrice : false;
-        }
-
         public Integer getDiscountRate() {
             return discountRate != null ? discountRate : 0;
         }
@@ -110,10 +106,6 @@ public class CrawlingResponse {
                 return 50;
             }
             return 999;
-        }
-
-        public String getBrand() {
-            return "비구름";
         }
     }
 }

@@ -7,25 +7,31 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "product_option_mapping")
+@Table(name = "product_category")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class ProductOptionMapping {
+
+public class ProductCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "mapping_id")
-    private Long mappingId;
+    @Column(name = "product_category_id")
+    private Long productCategoryId;
 
-    @Column(name = "product_detail_id", nullable = false)
-    private Long productDetailId;
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
 
-    @Column(name = "option_id", nullable = false)
-    private Long optionId;
+    @Column(name = "category_id", nullable = false)
+    private Long categoryId;
+
+    @Column(name = "is_primary", nullable = false)
+    @Builder.Default
+    private Boolean isPrimary = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
 }
