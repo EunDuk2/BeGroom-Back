@@ -53,6 +53,8 @@ public class SecurityConfig {
                         .requestMatchers("/members/profile").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth").permitAll()
                         .requestMatchers("/api/admin/crawling/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/admin/products").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .anyRequest().authenticated())
                 .build();
