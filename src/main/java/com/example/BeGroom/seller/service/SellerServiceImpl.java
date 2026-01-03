@@ -40,7 +40,7 @@ public class SellerServiceImpl implements SellerService{
         return seller;
     }
 
-    // 대시보드 조회
+    // 대시보드 요약 정보 조회
     @Override
     public DashboardResDto getDashboard(Long sellerId){
         // 총 주문 수

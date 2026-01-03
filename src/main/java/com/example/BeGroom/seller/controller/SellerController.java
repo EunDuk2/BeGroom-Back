@@ -43,9 +43,9 @@ public class SellerController {
                 );
     }
 
-    // API 2. 판매자 대시보드 조회
+    // API 2. 판매자 대시보드 요약 정보 조회
     @GetMapping("/dashboard")
-    @Operation(summary = "대시보드 페이지 조회", description = "판매자 대시보드를 조회합니다.")
+    @Operation(summary = "대시보드 페이지 조회", description = "판매자 대시보드의 요약 정보를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<DashboardResDto>> getDashboard(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
