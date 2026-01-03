@@ -17,11 +17,11 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     @Transactional
-    public CheckoutResDto checkout(Long orderId, PaymentMethod paymentMethod) {
+    public CheckoutResDto checkout(Long paymentId, PaymentMethod paymentMethod) {
         // method로 processor가져오기
         PaymentProcessor paymentProcessor = paymentProcessorFactory.get(paymentMethod);
         // 결과값 반환
-        return paymentProcessor.process(orderId);
+        return paymentProcessor.process(paymentId);
     }
 
 }

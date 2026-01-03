@@ -40,6 +40,8 @@ public class PointPaymentProcessor implements PaymentProcessor {
     public CheckoutResDto process(Long paymentId) {
         // 결제 조회
         Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
+        // 결제 상태 변경 (PROCESSING)
+        payment.markProcessing();
         // 주문 조회
         Order order = payment.getOrder();
         try {

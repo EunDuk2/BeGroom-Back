@@ -57,6 +57,13 @@ public class Payment extends BaseEntity {
         return new Payment(order, amount, paymentMethod, paymentStatus);
     }
 
+    public void markProcessing() {
+        if(this.paymentStatus != PaymentStatus.READY) {
+            throw new IllegalStateException("결제 진행 불가능한 상태입니다. status=" + this.paymentStatus);
+        }
+        this.paymentStatus = PaymentStatus.PROCESSING;
+    }
+
     public void approve() {
         if(this.paymentStatus != PaymentStatus.PROCESSING) {
             throw new IllegalStateException("결제 승인 불가능한 상태입니다. status=" + this.paymentStatus);
