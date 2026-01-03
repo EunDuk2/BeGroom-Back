@@ -137,8 +137,6 @@ public class NotificationServiceImpl implements NotificationService {
         emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
         emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
 
-        sendToClient(emitter, emitterId, "EventStream Created. [userId=" + memberId + "]");
-
         return emitter;
     }
 
