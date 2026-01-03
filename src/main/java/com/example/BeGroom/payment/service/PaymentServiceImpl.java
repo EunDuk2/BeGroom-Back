@@ -47,15 +47,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void fail(Long orderId, PaymentFailReason reason) {
-        // 주문 조회
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
-        // Failed 결제 생성
-        Payment payment = Payment.create(order, order.getTotalAmount(), PaymentMethod.POINT, PaymentStatus.FAILED);
+    public void fail(Long paymentId, PaymentFailReason reason) {
+        // 결제 조회
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
         // 실패 처리
-        paymentRepository.save(payment);
-
-//        payment.fail(reason);
+        payment.fail(reason);
     }
 
 

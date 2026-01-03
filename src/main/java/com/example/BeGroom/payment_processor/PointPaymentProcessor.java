@@ -58,9 +58,9 @@ public class PointPaymentProcessor implements PaymentProcessor {
             order.complete();
             // 성공 반환
             return CheckoutResDto.completed(order.getId(), payment.getId());
-        } catch (InsufficientBalanceException e) { // 현재 catch문 동작 못함
+        } catch (InsufficientBalanceException e) {
             // 실패 처리 (잔액 부족)
-            paymentService.fail(payment.getId(), PaymentFailReason.INSUFFICIENT_BALANCE);
+            paymentService.fail(paymentId, PaymentFailReason.INSUFFICIENT_BALANCE);
             // 예외 반환
             throw new CheckoutInsufficientBalanceException(order.getId(), payment.getId());
         } catch (InsufficientStockException e) {

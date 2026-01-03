@@ -73,8 +73,8 @@ public class Payment extends BaseEntity {
     }
 
     public void fail(PaymentFailReason paymentFailReason) {
-        if (this.paymentStatus != PaymentStatus.PROCESSING) {
-            throw new IllegalStateException("결제 실패 처리 불가 상태");
+        if (this.paymentStatus != PaymentStatus.READY) {
+            throw new IllegalStateException("결제 실패 처리 불가 상태 status=" + this.paymentStatus);
         }
         this.paymentStatus = PaymentStatus.FAILED;
         this.paymentFailReason = paymentFailReason;
