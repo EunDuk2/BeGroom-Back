@@ -26,7 +26,6 @@ public class CartController {
 
     private final CartService cartService;
 
-    // 장바구니 조회
     @GetMapping
     @Operation(summary = "장바구니 조회", description = "회원의 장바구니 전체 조회")
     public ResponseEntity<CommonSuccessDto<CartResDto>> getCart(
@@ -43,7 +42,6 @@ public class CartController {
         );
     }
 
-    // 장바구니에 상품 추가
     @PostMapping("/items")
     @Operation(summary = "장바구니 상품 추가", description = "장바구니에 상품 추가")
     public ResponseEntity<CommonSuccessDto<Void>> addItem(
@@ -61,7 +59,6 @@ public class CartController {
         );
     }
 
-    // 장바구니 상품 수량 변경
     @PutMapping("/items/{cartItemId}/quantity")
     @Operation(summary = "상품 수량 변경", description = "장바구니 상품 수량 변경(숫자)")
     public ResponseEntity<CommonSuccessDto<Void>> updateQuantity(
@@ -80,7 +77,6 @@ public class CartController {
         );
     }
 
-    // 장바구니 상품 수량 증가
     @PatchMapping("/items/{cartItemId}/increase")
     @Operation(summary = "상품 수량 증가", description = "+ 버튼 클릭 시 사용")
     public ResponseEntity<CommonSuccessDto<Void>> increaseQuantity(
@@ -98,7 +94,6 @@ public class CartController {
         );
     }
 
-    // 장바구니 상품 수량 감소
     @PatchMapping("/items/{cartItemId}/decrease")
     @Operation(summary = "상품 수량 감소", description = "- 버튼 클릭 시 사용")
     public ResponseEntity<CommonSuccessDto<Void>> decreaseQuantity(
@@ -116,7 +111,6 @@ public class CartController {
         );
     }
 
-    // 장바구니 상품 선택 상태 변경
     @PutMapping("/items/{cartItemId}/select")
     @Operation(summary = "상품 선택 상태 변경", description = "개별 상품 선택/선택 해제")
     public ResponseEntity<CommonSuccessDto<Void>> updateSelected(
@@ -135,7 +129,6 @@ public class CartController {
         );
     }
 
-    // 전체 선택
     @PutMapping("/select-all")
     @Operation(summary = "상품 전체 선택", description = "장바구니의 모든 상품 선택")
     public ResponseEntity<CommonSuccessDto<Void>> selectAll(
@@ -152,7 +145,6 @@ public class CartController {
         );
     }
 
-    // 전체 선택 해제
     @PutMapping("/deselect-all")
     @Operation(summary = "상품 전체 선택 해제", description = "장바구니의 모든 상품 선택 해제")
     public ResponseEntity<CommonSuccessDto<Void>> deselectAll(
@@ -169,7 +161,6 @@ public class CartController {
         );
     }
 
-    // 장바구니 상품 삭제
     @DeleteMapping("/items/{cartItemId}")
     @Operation(summary = "장바구니 상품 삭제", description = "개별 상품 삭제")
     public ResponseEntity<CommonSuccessDto<Void>> deleteItem(
@@ -187,7 +178,6 @@ public class CartController {
         );
     }
 
-    // 선택된 상품 삭제
     @DeleteMapping("/selected")
     @Operation(summary = "선택된 상품 삭제", description = "선택된 상품만 삭제")
     public ResponseEntity<CommonSuccessDto<Void>> deleteSelectedItems(
@@ -204,9 +194,8 @@ public class CartController {
         );
     }
 
-    // 장바구니 비우기 (전체 상품 삭제)
     @DeleteMapping
-    @Operation(summary = "장바구니 비우기", description = "장바구니의 모든 상품 삭제")
+    @Operation(summary = "장바구니 비우기(전체 상품 삭제)", description = "장바구니의 모든 상품 삭제")
     public ResponseEntity<CommonSuccessDto<Void>> clearCart(
             @AuthenticationPrincipal UserPrincipal user
     ) {
@@ -221,9 +210,8 @@ public class CartController {
         );
     }
 
-    // 장바구니 상품 개수 조회
     @GetMapping("/count")
-    @Operation(summary = "장바구니 상품 개수", description = "장바구니에 담긴 상품 개수 조회")
+    @Operation(summary = "장바구니 상품 개수 조회", description = "장바구니에 담긴 상품 개수 조회")
     public ResponseEntity<CommonSuccessDto<Long>> getItemCount(
             @AuthenticationPrincipal UserPrincipal user
     ) {
