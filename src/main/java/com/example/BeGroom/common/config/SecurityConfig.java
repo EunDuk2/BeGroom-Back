@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/admin/products").permitAll()
                         .requestMatchers("/api/cart/**").authenticated()
+                        .requestMatchers("/api/wishlist/**").authenticated()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .anyRequest().authenticated())
                 .build();
