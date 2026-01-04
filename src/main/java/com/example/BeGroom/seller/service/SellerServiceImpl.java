@@ -6,6 +6,8 @@ import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.res.DashboardResDto;
+import com.example.BeGroom.seller.dto.res.OrderInfoResDto;
+import com.example.BeGroom.seller.dto.res.OrderListResDto;
 import com.example.BeGroom.seller.dto.res.OrderManageResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
 import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
@@ -63,7 +65,6 @@ public class SellerServiceImpl implements SellerService{
         int productCnt = productRepository.countBySellerIdAndDeletedAtIsNull(sellerId);
         // 총 매출(환불 제외)
         long salesAmount = settlementRepository.sumSalesAmountBySeller(sellerId);
-        // 주문 없는 경우
 
         return new DashboardResDto(
                 orderCnt,
@@ -72,16 +73,21 @@ public class SellerServiceImpl implements SellerService{
         );
     }
 
-    // 주문관리 조회
+    // 주문 관리 요약 정보 조회
     @Override
-    public OrderManageResDto getOrderManage(Long sellerId){
-        // 총 환불 및 미정산 수
-        OrderManageResDto.Summary summary =
-                new OrderManageResDto.Summary(1, 2);
-        // 주문 상품 목록
-        List<OrderManageResDto.OrderItem> orders = List.of();
+    public OrderInfoResDto getOrderInfo(Long sellerId){
+        // 총 환불 건수
+        int refundCnt = settlementRepository.countRefundBySeller(sellerId);
+        // 총 정산대기 건수(UNSETTLED)
+        int unsettledCnt = settlementRepository.countUnsettledBySeller(sellerId);
 
-        return new OrderManageResDto(summary, orders);
+        return new OrderInfoResDto(refundCnt, unsettledCnt);
+    }
+
+    // 주문 관리 주문 목록 조회
+    @Override
+    public OrderListResDto getOrderList(Long sellerId){
+        // 
     }
 
     // 최근 활동 조회

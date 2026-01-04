@@ -37,4 +37,22 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
         order by s.createdAt desc
     """)
     List<RecentActivityResDto.RecentSettlementDto> findLatestSettledBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    // 판매자의 총 환불 건수
+    @Query("""
+        select count(s)
+        from Settlement s
+        where s.seller.id = :sellerId
+            and s.refundAmount > 0
+    """)
+    int countRefundBySeller(@Param("sellerId") Long sellerId);
+
+    // 판매자의 정산 대기 건수
+    @Query("""
+        select count(s)
+        from Settlement s
+        where s.seller.id = :sellerId
+            and s.status = 'UNSETTLED'
+    """)
+    int countUnsettledBySeller(@Param("sellerId") Long sellerId);
 }

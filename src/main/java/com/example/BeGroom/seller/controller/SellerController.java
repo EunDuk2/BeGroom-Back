@@ -3,11 +3,9 @@ package com.example.BeGroom.seller.controller;
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.res.DashboardResDto;
+import com.example.BeGroom.seller.dto.res.*;
 import com.example.BeGroom.seller.dto.res.OrderManageResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
-import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
-import com.example.BeGroom.seller.dto.res.SellerCreateResDto;
 import com.example.BeGroom.seller.service.SellerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,24 +59,41 @@ public class SellerController {
                 );
     }
 
-    // API 3. 주문 관리 조회
-    @GetMapping("/order")
-    @Operation(summary = "대시보드 주문 관리 페이지 조회", description = "대시보드의 주문 관리 페이지를 조회합니다.")
-    public ResponseEntity<CommonSuccessDto<OrderManageResDto>> getOrderManage(
+    // API 3. 주문 관리 요약 정보 조회
+    @GetMapping("/order/info")
+    @Operation(summary = "주문 관리 페이지 조회", description = "주문 관리 페이지 요약 정보를 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<OrderInfoResDto>> getOrderManage(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
-        OrderManageResDto orderManageResDto = sellerService.getOrderManage(userPrincipal.getMemberId());
+        OrderInfoResDto orderInfoResDto = sellerService.getOrderInfo(userPrincipal.getMemberId());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(
                         CommonSuccessDto.of(
-                                orderManageResDto,
+                                orderInfoResDto,
                                 HttpStatus.OK,
                                 "주문 관리 페이지 조회 성공"
                         )
                 );
     }
 
-    // API 4. 최근 활동
+    // API 4. 주문 관리 주문 목록 조회
+    @GetMapping("/order/list")
+    @Operation(summary = "주문 목록 조회", description = "주문 관리 페이지 주문 목록 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<OrderListResDto>> getOrderManage(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        OrderListResDto orderListResDto = sellerService.getOrderList(userPrincipal.getMemberId());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                orderListResDto,
+                                HttpStatus.OK,
+                                "주문 목록 조회 성공"
+                        )
+                );
+    }
+
+    // API 5. 최근 활동
     @GetMapping("/recent")
     @Operation(summary = "대시보드 최근 활동 조회", description = "대시보드의 최근 활동 내역을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<RecentActivityResDto>> getRecentActivities(
