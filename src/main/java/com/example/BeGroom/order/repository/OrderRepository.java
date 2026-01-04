@@ -1,6 +1,7 @@
 package com.example.BeGroom.order.repository;
 
 import com.example.BeGroom.order.domain.Order;
+import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +20,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "and pay.paymentStatus = 'APPROVED'")
     int countCompletedOrdersBySeller(@Param("sellerId") Long sellerId);
 
+    // 판매자의 최근 주문
+    RecentActivityResDto.RecentOrderDto findLatestOrderBySeller(Long sellerId);
 }

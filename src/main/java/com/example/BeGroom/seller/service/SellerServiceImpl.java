@@ -1,32 +1,40 @@
 package com.example.BeGroom.seller.service;
 
 import com.example.BeGroom.order.repository.OrderRepository;
+import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.res.DashboardResDto;
 import com.example.BeGroom.seller.dto.res.OrderManageResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
+import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SellerServiceImpl implements SellerService{
 
     private final SellerRepository sellerRepository;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final SettlementRepository settlementRepository;
+    private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
 
     // 회원가입
+    @Transactional
     @Override
     public Seller create(SellerCreateReqDto sellerCreateReqDto) {
         if(sellerRepository.findByEmail(sellerCreateReqDto.getEmail()).isPresent()) {
@@ -73,5 +81,19 @@ public class SellerServiceImpl implements SellerService{
         List<OrderManageResDto.OrderItem> orders = List.of();
 
         return new OrderManageResDto(summary, orders);
+    }
+
+    // 최근 활동 조회
+    @Override
+    RecentActivityResDto getRecentActivities(Long sellerId){
+        RecentActivityResDto.RecentOrderDto recentOrderDto = orderRepository.findLatestOrderBySeller(sellerId);
+        RecentActivityResDto.RecentRefundDto recentRefundDto = paymentRepository.findLatestRefundBySeller(sellerId);
+        RecentActivityResDto.RecentSettlementDto recentSettlementDto = settlementRepository.findLatestSettledBySeller(sellerId);
+
+        return new RecentActivityResDto(
+                recentOrderDto,
+                recentRefundDto,
+                recentSettlementDto
+        );
     }
 }

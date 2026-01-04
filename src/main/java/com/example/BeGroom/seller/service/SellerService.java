@@ -4,6 +4,7 @@ import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.res.DashboardResDto;
 import com.example.BeGroom.seller.dto.res.OrderManageResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
+import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 
 public interface SellerService {
 
@@ -14,5 +15,8 @@ public interface SellerService {
     DashboardResDto getDashboard(Long sellerId);
 
     // 주문관리 조회
-    OrderManageResDto getOrderManage(Long memberId);
+    OrderManageResDto getOrderManage(Long sellerId);
+
+    // 최근 활동 조회
+    RecentActivityResDto getRecentActivities(Long sellerId);
 }

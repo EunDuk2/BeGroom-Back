@@ -6,6 +6,7 @@ import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.dto.res.DashboardResDto;
 import com.example.BeGroom.seller.dto.res.OrderManageResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
+import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import com.example.BeGroom.seller.dto.res.SellerCreateResDto;
 import com.example.BeGroom.seller.service.SellerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,7 +46,7 @@ public class SellerController {
 
     // API 2. 판매자 대시보드 요약 정보 조회
     @GetMapping("/dashboard")
-    @Operation(summary = "대시보드 페이지 조회", description = "판매자 대시보드의 요약 정보를 조회합니다.")
+    @Operation(summary = "대시보드 페이지 조회", description = "대시보드의 요약 정보를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<DashboardResDto>> getDashboard(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
@@ -55,14 +56,14 @@ public class SellerController {
                         CommonSuccessDto.of(
                                 dashboardResDto,
                                 HttpStatus.OK,
-                                "판매자 대시보드 조회 성공"
+                                "판매자 대시보드 요약 정보 조회 성공"
                         )
                 );
     }
 
     // API 3. 주문 관리 조회
     @GetMapping("/order")
-    @Operation(summary = "주문 관리 페이지 조회", description = "주문 관리를 조회합니다.")
+    @Operation(summary = "대시보드 주문 관리 페이지 조회", description = "대시보드의 주문 관리 페이지를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<OrderManageResDto>> getOrderManage(
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
@@ -72,7 +73,24 @@ public class SellerController {
                         CommonSuccessDto.of(
                                 orderManageResDto,
                                 HttpStatus.OK,
-                                "판매자 주문간리 조회 성공"
+                                "주문 관리 페이지 조회 성공"
+                        )
+                );
+    }
+
+    // API 4. 최근 활동
+    @GetMapping("/recent")
+    @Operation(summary = "대시보드 최근 활동 조회", description = "대시보드의 최근 활동 내역을 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<RecentActivityResDto>> getRecentActivities(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        RecentActivityResDto recentActivityResDto = sellerService.getRecentActivities(userPrincipal.getMemberId());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                recentActivityResDto,
+                                HttpStatus.OK,
+                                "대시보드 최근 활동 조회 성공"
                         )
                 );
     }
