@@ -19,7 +19,20 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Optional<Product> findByProductNo(Long productNo);
 
     // 판매자가 가진 총 상품 수
-    int countBySellerIdAndDeletedAtIsNull(Long sellerId);
+//    int countBySellerIdAndDeletedAtIsNull(Long sellerId);
+//    int countByBrandSellerIdAndDeletedAtIsNull(Long sellerId);
+
+    @Query(value = """
+        select count(product_id)
+        from product p
+        join brand b on p.brand_id = b.brand_id
+        where b.seller_id = :sellerId
+          and p.deleted_at is null
+    """, nativeQuery = true
+    )
+    int countBySellerId(@Param("sellerId") Long sellerId);
+
+
 
     // 특정 배송 타입을 가진 상품 ID 목록 조회
     @Query(value = """

@@ -1,9 +1,9 @@
 package com.example.BeGroom.settlement.repository;
 
 import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
+import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,18 +25,32 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     long sumSalesAmountBySeller(@Param("sellerId") Long sellerId);
 
     // 판매자의 최근 환불
-    @Query("""
-        select new com.example.BeGroom.seller.dto.res.RecentActivityResDto.RecentSettlementDto(
-            s.id,
-            s.settlementAmount,
-            s.createdAt
-        )
-        from Settlement s
-        where s.seller.id = :sellerId
-            and s.status = 'SETTLED'
-        order by s.createdAt desc
-    """)
-    List<RecentActivityResDto.RecentSettlementDto> findLatestSettledBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
+//    @Query("""
+//        select new com.example.BeGroom.seller.dto.res.RecentActivityResDto.RecentSettlementDto(
+//            s.id,
+//            s.settlementAmount,
+//            s.createdAt
+//        )
+//        from Settlement s
+//        where s.seller.id = :sellerId
+//            and s.status = 'SETTLED'
+//        order by s.createdAt desc
+//    """)
+//    List<RecentActivityResDto.RecentSettlementDto> findLatestSettledBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
+    @Query(value = """
+    select
+        s.id as settlementId,
+        s.settlement_amount as settlementAmount,
+        s.created_at as createdAt
+    from settlement s
+    where s.seller_id = :sellerId
+      and s.status = 'SETTLED'
+    order by s.created_at desc
+    limit 1
+""", nativeQuery = true)
+    List<RecentSettlementProjection> findLatestSettledBySeller(@Param("sellerId") Long sellerId);
+
+
 
     // 판매자의 총 환불 건수
     @Query("""
@@ -55,4 +69,8 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
             and s.status = 'UNSETTLED'
     """)
     int countUnsettledBySeller(@Param("sellerId") Long sellerId);
+
+    // 주문 목록
+
+//    List<OrderListResDto> getOrderList(@Param("sellerId") Long sellerId);
 }
