@@ -11,6 +11,7 @@ import java.util.List;
 
 @Repository
 public interface OrderProductRepository extends JpaRepository<OrderProduct, Long> {
+
     @Query("""
         select new com.example.BeGroom.order.dto.OrderProductAggregate(
             op.order.id,
@@ -26,4 +27,7 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     List<OrderProductAggregate> aggregateByOrderIds(
             @Param("orderIds") List<Long> orderIds
     );
+
+    List<OrderProduct> findByOrderId(Long orderId);
+
 }

@@ -5,6 +5,7 @@ import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.dto.OrderCreateReqDto;
 import com.example.BeGroom.order.dto.OrderCreateResDto;
+import com.example.BeGroom.order.dto.OrderDetailResDto;
 import com.example.BeGroom.order.dto.OrderSummaryDto;
 import com.example.BeGroom.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -62,6 +63,24 @@ public class OrderController {
                                 page,
                                 HttpStatus.OK,
                                 "주문 내역 조회 성공"
+                        )
+                );
+    }
+
+    @GetMapping("/detail/{orderId}")
+    @Operation(summary = "주문 상세 내역 조회", description = "주문 상세 내역을 조회한다.")
+    public ResponseEntity<CommonSuccessDto<OrderDetailResDto>> getOrderDetail(
+            @PathVariable Long orderId
+    ) {
+
+        OrderDetailResDto orderDetailResDto = orderService.getOrderDetail(orderId);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                orderDetailResDto,
+                                HttpStatus.OK,
+                                "주문 상세 내역 조회 성공"
                         )
                 );
     }

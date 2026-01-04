@@ -5,12 +5,12 @@ import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.domain.OrderStatus;
-import com.example.BeGroom.order.dto.OrderCreateReqDto;
-import com.example.BeGroom.order.dto.OrderProductAggregate;
-import com.example.BeGroom.order.dto.OrderProductReqDto;
-import com.example.BeGroom.order.dto.OrderSummaryDto;
+import com.example.BeGroom.order.dto.*;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
+import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -34,6 +34,7 @@ public class OrderServiceImpl implements OrderService {
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
     private final OrderProductRepository orderProductRepository;
+    private final PaymentRepository paymentRepository;
 
 
     @Override
@@ -92,6 +93,32 @@ public class OrderServiceImpl implements OrderService {
 
         // Page로 반환
         return new PageImpl<>(content, pageable, orderPage.getTotalElements());
+    }
+
+    @Override
+    public OrderDetailResDto getOrderDetail(Long orderId) {
+
+        // 주문 조회
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
+
+        // 상품 목록 조회
+        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(orderId);
+
+        // 결제 조회 (주문 완료일 때만)
+        Payment payment = null;
+        if(order.getOrderStatus() == OrderStatus.COMPLETED) {
+            payment = paymentRepository.findByOrderIdAndPaymentStatus(orderId, PaymentStatus.APPROVED)
+                    .orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
+        } else if(order.getOrderStatus() == OrderStatus.CANCELED) {
+            payment = paymentRepository.findByOrderIdAndPaymentStatus(orderId, PaymentStatus.REFUNDED)
+                    .orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
+        }
+
+        return OrderDetailResDto.of(
+                order,
+                payment,
+                orderProducts
+        );
     }
 
 
