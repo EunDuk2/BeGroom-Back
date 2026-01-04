@@ -2,7 +2,6 @@ package com.example.BeGroom.settlement.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.payment.domain.Payment;
-import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.seller.domain.Seller;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -11,10 +10,18 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(
+        name = "settlement",
+        indexes = {
+                @Index(name = "idx_settlement_seller", columnList = "seller_id"),
+                @Index(name = "idx_settlement_payment", columnList = "payment_id")
+        }
+)
 public class Settlement extends BaseEntity {
 
     // 정산ID
@@ -52,14 +59,14 @@ public class Settlement extends BaseEntity {
     // 환불금액
     @Column(precision = 12, scale = 2)
     private BigDecimal refundAmount = BigDecimal.ZERO;
-    // 정산일
+    // 지급일
     @Column(nullable = false)
     private LocalDate payoutDate;
-    // 집계 처리 여부 플래그
+    // 정산일
     @Column(nullable = false)
-    private Boolean aggregated = false;
+    private LocalDateTime date;
 
     public void markAggregated(){
-        this.aggregated = true;
+        this.status = SettlementStatus.SETTLED;
     }
 }

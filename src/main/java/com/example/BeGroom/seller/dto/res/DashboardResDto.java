@@ -11,15 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DashboardResDto {
 
-    @NotEmpty
     @Schema(example = "1234")
     private int orderCnt;
 
-    @NotEmpty
     @Schema(example = "156")
     private int productCnt;
 
-    @NotEmpty
     @Schema(example = "12345678")
     private long salesAmount;
 
