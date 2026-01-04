@@ -15,6 +15,13 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(
+        name = "settlement",
+        indexes = {
+                @Index(name = "idx_settlement_seller", columnList = "seller_id"),
+                @Index(name = "idx_settlement_payment", columnList = "payment_id")
+        }
+)
 public class Settlement extends BaseEntity {
 
     // 정산ID

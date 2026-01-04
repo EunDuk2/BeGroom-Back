@@ -13,6 +13,7 @@ import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -85,10 +86,27 @@ public class SellerServiceImpl implements SellerService{
 
     // 최근 활동 조회
     @Override
-    RecentActivityResDto getRecentActivities(Long sellerId){
-        RecentActivityResDto.RecentOrderDto recentOrderDto = orderRepository.findLatestOrderBySeller(sellerId);
-        RecentActivityResDto.RecentRefundDto recentRefundDto = paymentRepository.findLatestRefundBySeller(sellerId);
-        RecentActivityResDto.RecentSettlementDto recentSettlementDto = settlementRepository.findLatestSettledBySeller(sellerId);
+    public RecentActivityResDto getRecentActivities(Long sellerId){
+        // 판매자의 최근 주문
+        RecentActivityResDto.RecentOrderDto recentOrderDto =
+                orderRepository.findLatestOrderBySeller(sellerId, PageRequest.of(0, 1))
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+
+        // 판매자의 최근 환불
+        RecentActivityResDto.RecentRefundDto recentRefundDto =
+                paymentRepository.findLatestRefundBySeller(sellerId, PageRequest.of(0, 1))
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+
+        // 판매자의 최근 정산
+        RecentActivityResDto.RecentSettlementDto recentSettlementDto =
+                settlementRepository.findLatestSettledBySeller(sellerId, PageRequest.of(0, 1))
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
 
         return new RecentActivityResDto(
                 recentOrderDto,
