@@ -20,7 +20,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT DISTINCT o FROM Order o " +
             "JOIN FETCH o.orderProductList op " +
-            "JOIN FETCH op.product p " +
+            "JOIN FETCH op.productDetail pd " +
             "WHERE o.member.id = :memberId " +
             "ORDER BY o.createdAt DESC")
     List<Order> findAllWithDetailsByMemberId(@Param("memberId") Long memberId);

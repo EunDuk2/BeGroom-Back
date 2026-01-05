@@ -18,7 +18,7 @@ public class WalletTransactionPageResDto {
 
 
     @Schema(example = "ORDER")
-    private String transactionType;
+    private WalletTransaction transactionType;
 
     @Schema(example = "20000")
     private Long balanceBefore;
@@ -34,7 +34,7 @@ public class WalletTransactionPageResDto {
 
     public static WalletTransactionPageResDto fromEntity(WalletTransaction walletTransaction) {
         return WalletTransactionPageResDto.builder()
-                .transactionType(walletTransaction.getTransactionType())
+                .transactionType(walletTransaction)
                 .balanceBefore(walletTransaction.getBalanceBefore())
                 .amount(walletTransaction.getAmount())
                 .balanceAfter(walletTransaction.getBalanceAfter())
