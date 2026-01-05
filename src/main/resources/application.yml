@@ -2,57 +2,6 @@ spring:
   profiles:
     active: local
 
-crawling:
-  categories:
-    - id: 907
-      name: "채소"
-    - id: 908
-      name: "과일, 견과, 쌀"
-    - id: 909
-      name: "수산, 해산, 건어물"
-    - id: 910
-      name: "정육, 가공육, 달걀"
-    - id: 911
-      name: "국, 반찬, 메인요리"
-    - id: 912
-      name: "간편식, 밀키트, 샐러드"
-    - id: 913
-      name: "면, 양념, 오일"
-    - id: 914
-      name: "생수, 음료"
-    - id: 383
-      name: "커피, 차"
-    - id: 249
-      name: "간식, 과자, 떡"
-    - id: 915
-      name: "베이커리"
-    - id: 18
-      name: "유제품"
-    - id: 32
-      name: "건강식품"
-    - id: 722
-      name: "와인, 위스키, 데킬라"
-    - id: 251
-      name: "전통주"
-    - id: 188
-      name: "패션"
-    - id: 916
-      name: "주방용품"
-    - id: 918
-      name: "생활용품, 리빙"
-    - id: 85
-      name: "가전제품"
-    - id: 19
-      name: "가구, 인테리어"
-    - id: 919
-      name: "유아동"
-    - id: 991
-      name: "반려동물"
-    - id: 20
-      name: "스포츠, 레져, 캠핑"
-    - id: 233
-      name: "스킨케어, 메이크업"
-    - id: 12
-      name: "헤어, 바디, 구강"
-    - id: 365
-      name: "럭셔리뷰티"
+server:
+  servlet:
+    context-path: /api

@@ -42,9 +42,6 @@ public class Seller extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private Role role = Role.SELLER;
 
-    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
-    private List<Settlement> settlements = new ArrayList<>();
-
     private Seller(String email, String name, String password, String phoneNumber) {
         this.email = email;
         this.name = name;

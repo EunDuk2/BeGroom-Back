@@ -24,9 +24,9 @@ public class WeeklySettlement extends BaseEntity {
     // 결제금액
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal paymentAmount;
-    // 수수료율
-    @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal feeRate = BigDecimal.ZERO;
+    // 수수료
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal fee = BigDecimal.ZERO;
     // 정산금액
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal settlementAmount;
@@ -40,22 +40,22 @@ public class WeeklySettlement extends BaseEntity {
     @Column(nullable = false)
     private LocalDate endDate;
 
-    // 환불 재집계 (update)
-    public void updateRefund(BigDecimal paymentAmount, BigDecimal feeRate,
-                             BigDecimal settlementAmount, BigDecimal refundAmount){
-        this.paymentAmount = paymentAmount;
-        this.feeRate = feeRate;
-        this.settlementAmount = settlementAmount;
-        this.refundAmount = refundAmount;
-    }
+//    // 환불 재집계 (update)
+//    public void updateRefund(BigDecimal paymentAmount, BigDecimal fee,
+//                             BigDecimal settlementAmount, BigDecimal refundAmount){
+//        this.paymentAmount = paymentAmount;
+//        this.fee = fee;
+//        this.settlementAmount = settlementAmount;
+//        this.refundAmount = refundAmount;
+//    }
 
     @Builder
     public WeeklySettlement(int year, int month, int week, Long sellerId,
-                            BigDecimal paymentAmount, BigDecimal feeRate, BigDecimal settlementAmount,
+                            BigDecimal paymentAmount, BigDecimal fee, BigDecimal settlementAmount,
                             BigDecimal refundAmount, LocalDate startDate, LocalDate endDate){
         this.id = new WeeklySettlementId(year, month, week, sellerId);
         this.paymentAmount = paymentAmount;
-        this.feeRate = feeRate;
+        this.fee = fee;
         this.settlementAmount = settlementAmount;
         this.refundAmount = refundAmount;
         this.startDate = startDate;

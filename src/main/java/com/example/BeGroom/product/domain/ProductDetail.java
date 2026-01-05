@@ -36,4 +36,5 @@ public class ProductDetail extends BaseEntity {
     @Column(name = "is_available", nullable = false)
     @Builder.Default
     private Boolean isAvailable = true;
+
 }

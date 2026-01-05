@@ -3,6 +3,7 @@ package com.example.BeGroom.order.domain;
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.order.exception.InvalidOrderStateException;
+import com.example.BeGroom.payment.domain.Payment;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -33,6 +34,9 @@ public class Order extends BaseEntity {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderProduct> orderProductList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<Payment> payments;
 
     private Order(Member member, Long totalAmount, OrderStatus orderStatus) {
         this.member = member;
