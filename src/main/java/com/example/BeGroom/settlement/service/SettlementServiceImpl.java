@@ -1,11 +1,14 @@
 package com.example.BeGroom.settlement.service;
 
+import com.example.BeGroom.settlement.domain.DailySettlement;
 import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.domain.Settlement;
-import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
-import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
-import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
+import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
+import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository;
+import com.example.BeGroom.settlement.repository.monthly.MonthlySettlementRepository;
+import com.example.BeGroom.settlement.repository.weekly.WeeklySettlementRepository;
+import com.example.BeGroom.settlement.repository.yearly.YearlySettlementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,10 @@ import java.util.List;
 public class SettlementServiceImpl implements SettlementService {
 
     private final SettlementRepository settlementRepository;
+    private final DailySettlementRepository dailySettlementRepository;
+    private final WeeklySettlementRepository weeklySettlementRepository;
+    private final MonthlySettlementRepository monthlySettlementRepository;
+    private final YearlySettlementRepository yearlySettlementRepository;
 
     // 정산 요약 정보 조회
     @Override
@@ -62,35 +68,30 @@ public class SettlementServiceImpl implements SettlementService {
         ));
     }
 
-    // 기간별 정산 집계
-    @Override
-    public List<PeriodSettlementResDto> getPeriodSettlement(Long sellerId, PeriodType type){
-        return switch (type){
-            case DAILY -> getDailySettlements(sellerId);
-            case WEEKLY -> getWeeklySettlements(sellerId);
-            case MONTHLY -> getMonthlySettlements(sellerId);
-            case YEARLY -> getYearlySettlements(sellerId);
-        };
+
+    // 일별 정산 집계 조회
+    public Page<DailySettlementResDto> getDailySettlement(Long sellerId, int page){
+        Pageable pageable = PageRequest.of(page, 15);
+        return dailySettlementRepository.findDailySettlement(sellerId, pageable);
     }
 
-    // 일 정산 집계
-    private List<PeriodSettlementResDto> getDailySettlements(Long sellerId){
-        List<PeriodSettlementResDto> dailySettlements = List.of();
-        return dailySettlements;
+
+    // 주차별 정산 집계 조회
+    public Page<WeeklySettlementResDto> getWeeklySettlement(Long sellerId, int page){
+        Pageable pageable = PageRequest.of(page, 15);
+        return weeklySettlementRepository.findWeeklySettlement(sellerId, pageable);
     }
-    // 주 정산 집계
-    private List<PeriodSettlementResDto> getWeeklySettlements(Long sellerId){
-        List<PeriodSettlementResDto> weeklySettlements = List.of();
-        return weeklySettlements;
+
+    // 월별 정산 집계 조회
+    public Page<MonthlySettlementResDto> getMonthlySettlement(Long sellerId, int page){
+        Pageable pageable = PageRequest.of(page, 15);
+        return monthlySettlementRepository.findMonthlySettlement(sellerId, pageable);
     }
-    // 월 정산 집계
-    private List<PeriodSettlementResDto> getMonthlySettlements(Long sellerId){
-        List<PeriodSettlementResDto> monthlySettlements = List.of();
-        return monthlySettlements;
+
+    // 연도별 정산 집계 조회
+    public Page<YearlySettlementResDto> getYearlySettlement(Long sellerId, int page){
+        Pageable pageable = PageRequest.of(page, 15);
+        return yearlySettlementRepository.findYearlySettlement(sellerId, pageable);
     }
-    // 년 정산 집계
-    private List<PeriodSettlementResDto> getYearlySettlements(Long sellerId){
-        List<PeriodSettlementResDto> yearlySettlements = List.of();
-        return yearlySettlements;
-    }
+
 }

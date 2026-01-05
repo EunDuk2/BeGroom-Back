@@ -3,14 +3,10 @@ package com.example.BeGroom.settlement.controller;
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.settlement.domain.PeriodType;
-import com.example.BeGroom.settlement.dto.req.ProductSettlementReqDto;
-import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
-import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
-import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
+import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -19,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/settlement")
@@ -70,21 +65,82 @@ public class SettlementController {
     }
 
 
-    // API 3. 기간별 정산 집계
-    @GetMapping("/period")
-    @Operation(summary = "기간별 정산 집계", description = "기간별 정산을 조회합니다.")
-    public ResponseEntity<CommonSuccessDto<List<PeriodSettlementResDto>>> getDailySettlement(
+    // API 3. 일별 정산 집계
+    @GetMapping("/period/daily")
+    @Operation(summary = "일별 정산 집계", description = "일별 정산을 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<Page<DailySettlementResDto>>> getDailySettlement(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam PeriodType type
+            @RequestParam(defaultValue = "0") int page
             ){
-        List<PeriodSettlementResDto> periodSettlementResDtoList = settlementService.getPeriodSettlement(userPrincipal.getMemberId(), type);
+        Page<DailySettlementResDto> dailySettlementResDtos =
+                settlementService.getDailySettlement(userPrincipal.getMemberId(), page);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(
                         CommonSuccessDto.of(
-                                periodSettlementResDtoList,
+                                dailySettlementResDtos,
                                 HttpStatus.OK,
-                                "일 정산 조회 성공"
+                                "일별 정산 조회 성공"
+                        )
+                );
+    }
+
+    // API 4. 주차별 정산 집계
+    @GetMapping("/period/weekly")
+    @Operation(summary = "주차별 정산 집계", description = "주차별 정산을 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<Page<WeeklySettlementResDto>>> getWeeklySettlement(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page
+    ){
+        Page<WeeklySettlementResDto> weeklySettlementResDtos =
+                settlementService.getWeeklySettlement(userPrincipal.getMemberId(), page);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                weeklySettlementResDtos,
+                                HttpStatus.OK,
+                                "주차별 정산 조회 성공"
+                        )
+                );
+    }
+
+    // API 5. 월별 정산 집계
+    @GetMapping("/period/monthly")
+    @Operation(summary = "월별 정산 집계", description = "월별 정산을 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<Page<MonthlySettlementResDto>>> getMonthlySettlement(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page
+    ){
+        Page<MonthlySettlementResDto> monthlySettlementResDtos =
+                settlementService.getMonthlySettlement(userPrincipal.getMemberId(), page);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                monthlySettlementResDtos,
+                                HttpStatus.OK,
+                                "월별 정산 조회 성공"
+                        )
+                );
+    }
+
+    // API 6. 연도별 정산 집계
+    @GetMapping("/period/yearly")
+    @Operation(summary = "연도별 정산 집계", description = "연도별 정산을 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<Page<YearlySettlementResDto>>> getYearlySettlement(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page
+    ){
+        Page<YearlySettlementResDto> yearlySettlementResDtos =
+                settlementService.getYearlySettlement(userPrincipal.getMemberId(), page);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                yearlySettlementResDtos,
+                                HttpStatus.OK,
+                                "연도별 정산 조회 성공"
                         )
                 );
     }
