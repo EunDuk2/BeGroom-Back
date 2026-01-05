@@ -1,5 +1,6 @@
 package com.example.BeGroom.wallet.dto;
 
+import com.example.BeGroom.wallet.domain.TransactionType;
 import com.example.BeGroom.wallet.domain.WalletTransaction;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 public class WalletTransactionPageResDto {
 
     @Schema(example = "결제")
-    private String transactionType;
+    private TransactionType transactionType;
 
     @Schema(example = "20000")
     private Long balanceBefore;
@@ -32,9 +33,7 @@ public class WalletTransactionPageResDto {
 
     public static WalletTransactionPageResDto fromEntity(WalletTransaction walletTransaction) {
         return WalletTransactionPageResDto.builder()
-                .transactionType(walletTransaction
-                .getTransactionType()
-                .getDisplayName())
+                .transactionType(walletTransaction.getTransactionType())
                 .balanceBefore(walletTransaction.getBalanceBefore())
                 .amount(walletTransaction.getAmount())
                 .balanceAfter(walletTransaction.getBalanceAfter())
