@@ -56,7 +56,8 @@ public class SettlementController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(defaultValue = "0") int page
     ){
-        Page<ProductSettlementResDto> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId(), productSettlementReqDto);
+        Page<ProductSettlementResDto> settlementByItemList =
+                settlementService.getProductSettlement(userPrincipal.getMemberId(), startDate, endDate, page);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(

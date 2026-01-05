@@ -1,12 +1,11 @@
 package com.example.BeGroom.settlement.service;
 
 import com.example.BeGroom.settlement.domain.PeriodType;
-import com.example.BeGroom.settlement.dto.req.ProductSettlementReqDto;
+import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
-import com.example.BeGroom.settlement.repository.projection.ProductSettlementListProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -49,11 +48,17 @@ public class SettlementServiceImpl implements SettlementService {
     public Page<ProductSettlementResDto> getProductSettlement(Long sellerId, LocalDate startDate, LocalDate endDate, int page){
         Pageable pageable = PageRequest.of(page, 15);
         // 건별 정산 리스트
-        Page<ProductSettlementListProjection> projectionPage =
+        Page<Settlement> settlements =
                 settlementRepository.findProductSettlementListBySeller(sellerId, startDate, endDate, pageable);
 
-        return projectionPage.map(p -> new ProductSettlementResDto(
-
+        return settlements.map(s -> new ProductSettlementResDto(
+                s.getId(),
+                s.getDate(),
+                s.getPaymentAmount(),
+                s.getRefundAmount(),
+                s.getFee(),
+                s.getSettlementAmount(),
+                s.getStatus()
         ));
     }
 
