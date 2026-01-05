@@ -32,12 +32,12 @@ public class PointChargeController {
             @AuthenticationPrincipal UserPrincipal user,
             @Valid @RequestBody PointChargeReqDto reqDto
             ) {
-        PointCharge pointCharge = pointChargeService.pointCharge(user.getMemberId(), reqDto);
+        PointChargeResDto pointChargeResDto = pointChargeService.pointCharge(user.getMemberId(), reqDto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(
                         CommonSuccessDto.of(
-                                new PointChargeResDto(pointCharge.getId()),
+                                pointChargeResDto,
                                 HttpStatus.CREATED,
                                 "포인트 충전 성공 및 충전 기록 저장 성공"
                         )

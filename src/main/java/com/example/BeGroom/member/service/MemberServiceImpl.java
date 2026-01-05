@@ -8,7 +8,10 @@ import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.product.domain.Product;
+import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.domain.ProductImage;
+import com.example.BeGroom.product.repository.ProductDetailRepository;
+import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.domain.WalletTransaction;
 import com.example.BeGroom.wallet.repository.WalletRepository;
@@ -37,6 +40,7 @@ public class MemberServiceImpl implements MemberService {
     private final WalletRepository walletRepository;
     private final OrderRepository orderRepository;
     private final WalletTransactionRepository transactionRepository;
+    private final ProductRepository productRepository;
 
     @Override
     public Member create(MemberCreateReqDto reqDto) {
@@ -79,7 +83,9 @@ public class MemberServiceImpl implements MemberService {
                 .map(order -> {
                     List<GetMemberOrdersResDto.OrderedItem> items = order.getOrderProductList().stream()
                             .map(op -> {
-                                Product product = op.getProduct();
+                                //
+                                ProductDetail productDetail = op.getProductDetail();
+                                Product product = productRepository.findById(productDetail.getProductId()).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
                                 String imageUrl = product.getImages().stream()
                                         .filter(image -> ProductImage.ImageType.MAIN.equals(image.getImageType()))
                                         .findFirst()

@@ -1,6 +1,7 @@
 package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,5 +37,24 @@ public class ProductDetail extends BaseEntity {
     @Column(name = "is_available", nullable = false)
     @Builder.Default
     private Boolean isAvailable = true;
+
+    public int getSellingPrice() {
+        return discountedPrice != null ? discountedPrice : basePrice;
+    }
+
+    public void validateOrderable(int quantity) {
+        if(this.quantity < quantity) throw new InsufficientStockException(this.productDetailId);
+    }
+
+    public void decreaseStock(int quantity) {
+        if (this.quantity < quantity) {
+            throw new IllegalStateException("재고가 부족합니다. productDetailId=" + this.productDetailId);
+        }
+        this.quantity -= quantity;
+    }
+
+    public void increaseStock(int quantity) {
+        this.quantity += quantity;
+    }
 
 }

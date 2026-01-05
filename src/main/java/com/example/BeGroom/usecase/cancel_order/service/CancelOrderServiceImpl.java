@@ -1,4 +1,4 @@
-package com.example.BeGroom.usecase.cancelOrder.service;
+package com.example.BeGroom.usecase.cancel_order.service;
 
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
@@ -34,7 +34,7 @@ public class CancelOrderServiceImpl implements CancelOrderService {
         walletService.refundPoint(memberId, order.getTotalAmount(), orderId);
         // 상품 재고 복구
         for(OrderProduct orderProduct : order.getOrderProductList()) {
-            orderProduct.getProduct().increaseStock(orderProduct.getQuantity());
+            orderProduct.getProductDetail().increaseStock(orderProduct.getQuantity());
         }
         // 주문 취소 처리
         order.cancel();
