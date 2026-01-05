@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class WalletTransactionPageResDto {
 
-    @Schema(example = "결제")
+    @Schema(example = "ORDER")
     private String transactionType;
 
     @Schema(example = "20000")

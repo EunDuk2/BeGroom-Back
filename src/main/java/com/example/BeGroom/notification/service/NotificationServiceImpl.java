@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
@@ -101,6 +100,7 @@ public class NotificationServiceImpl implements NotificationService {
         });
     }
 
+    @Transactional(readOnly = true)
     @Override
     public void readNotification(Long mappingId) {
         MemberNotification memberNoti = memberNotificationRepository.findById(mappingId)
@@ -110,7 +110,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Transactional(readOnly = false)
+    @Transactional
     public Notification createNotification(CreateNotificationReqDto reqDto) {
 
         Notification notification = Notification.createNotification(
@@ -137,6 +137,11 @@ public class NotificationServiceImpl implements NotificationService {
         emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
         emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
 
+        Map<String, String> eventData = new HashMap<>();
+        eventData.put("message", "SSE connected");
+
+        sendToClient(emitter, emitterId, eventData);
+
         return emitter;
     }
 
@@ -148,7 +153,9 @@ public class NotificationServiceImpl implements NotificationService {
                     .data(data));
         } catch (IOException e) {
             emitterRepository.deleteById(id);
-            emitter.completeWithError(e);
+            System.out.print("SSE 연결이 끊겨서 전송 실패. Emitter 삭제함: userId={}");
+            System.out.println(id);
+
         }
     }
 
