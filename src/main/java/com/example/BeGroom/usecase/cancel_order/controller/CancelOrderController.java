@@ -1,9 +1,9 @@
-package com.example.BeGroom.usecase.cancelOrder.controller;
+package com.example.BeGroom.usecase.cancel_order.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
-import com.example.BeGroom.usecase.cancelOrder.dto.CancelOrderResDto;
-import com.example.BeGroom.usecase.cancelOrder.service.CancelOrderService;
+import com.example.BeGroom.usecase.cancel_order.dto.CancelOrderResDto;
+import com.example.BeGroom.usecase.cancel_order.service.CancelOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
