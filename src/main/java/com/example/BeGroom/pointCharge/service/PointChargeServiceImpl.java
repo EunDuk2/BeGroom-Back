@@ -5,6 +5,7 @@ import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.pointCharge.domain.ChargeStatus;
 import com.example.BeGroom.pointCharge.domain.PointCharge;
 import com.example.BeGroom.pointCharge.dto.PointChargeReqDto;
+import com.example.BeGroom.pointCharge.dto.PointChargeResDto;
 import com.example.BeGroom.pointCharge.repository.PointChargeRepository;
 import com.example.BeGroom.wallet.service.WalletService;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,7 +24,7 @@ public class PointChargeServiceImpl implements PointChargeService {
 
     @Override
     @Transactional
-    public PointCharge pointCharge(Long memberId, PointChargeReqDto reqDto) {
+    public PointChargeResDto pointCharge(Long memberId, PointChargeReqDto reqDto) {
         // 사용자 조회 및 검증
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
 
@@ -42,6 +43,9 @@ public class PointChargeServiceImpl implements PointChargeService {
         // pointCharge Completed
         pointCharge.completeCharge();
 
-        return pointCharge;
+        return PointChargeResDto.builder()
+                .pointChargeId(pointCharge.getId())
+                .balance(walletService.getBalance(memberId))
+                .build();
     }
 }
