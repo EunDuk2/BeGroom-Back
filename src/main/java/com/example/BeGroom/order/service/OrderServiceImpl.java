@@ -13,6 +13,8 @@ import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.repository.ProductRepository;
+import com.example.BeGroom.wallet.domain.Wallet;
+import com.example.BeGroom.wallet.repository.WalletRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,6 +37,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final OrderProductRepository orderProductRepository;
     private final PaymentRepository paymentRepository;
+    private final WalletRepository walletRepository;
 
 
     @Override
@@ -119,6 +122,20 @@ public class OrderServiceImpl implements OrderService {
                 payment,
                 orderProducts
         );
+    }
+
+    @Override
+    public OrderInfoResDto getOrderInfo(Long memberId, Long orderId) {
+        // 사용자 조회
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+
+        // 주문 조회
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
+
+        // 지갑 조회
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+
+        return OrderInfoResDto.of(member, order, wallet);
     }
 
 

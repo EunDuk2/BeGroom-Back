@@ -3,10 +3,7 @@ package com.example.BeGroom.order.controller;
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.order.domain.Order;
-import com.example.BeGroom.order.dto.OrderCreateReqDto;
-import com.example.BeGroom.order.dto.OrderCreateResDto;
-import com.example.BeGroom.order.dto.OrderDetailResDto;
-import com.example.BeGroom.order.dto.OrderSummaryDto;
+import com.example.BeGroom.order.dto.*;
 import com.example.BeGroom.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -81,6 +78,24 @@ public class OrderController {
                                 orderDetailResDto,
                                 HttpStatus.OK,
                                 "주문 상세 내역 조회 성공"
+                        )
+                );
+    }
+
+    @GetMapping("/{orderId}/info")
+    @Operation(summary = "주문 정보 조회", description = "주문 정보를 조회한다.")
+    public ResponseEntity<CommonSuccessDto<OrderInfoResDto>> getOrderInfo(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long orderId
+    ) {
+        OrderInfoResDto orderInfoResDto = orderService.getOrderInfo(user.getMemberId(), orderId);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                orderInfoResDto,
+                                HttpStatus.OK,
+                                "주문 정보 조회 성공"
                         )
                 );
     }
