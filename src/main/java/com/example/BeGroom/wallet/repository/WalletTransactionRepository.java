@@ -11,4 +11,6 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
             Wallet wallet,
             Pageable pageable
     );
+
+
 }
