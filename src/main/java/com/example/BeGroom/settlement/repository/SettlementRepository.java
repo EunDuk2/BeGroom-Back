@@ -4,16 +4,20 @@ import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
+import com.example.BeGroom.settlement.repository.projection.ProductSettlementListProjection;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface SettlementRepository extends JpaRepository<Settlement, Long> {
+public interface SettlementRepository extends JpaRepository<Settlement, Long>, SettlementRepositoryCustom {
 //    List<Settlement> findByAggregatedFalse();
     List<Settlement> findByStatus(SettlementStatus unsettled);
 
@@ -73,4 +77,36 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     // 주문 목록
 
 //    List<OrderListResDto> getOrderList(@Param("sellerId") Long sellerId);
+
+    // 결제금액
+    @Query("""
+        select coalesce(sum(s.paymentAmount), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    Long getTotalPaymentAmountBySeller(@Param("sellerId") Long sellerId);
+
+    // 환불금액
+    @Query("""
+        select coalesce(sum(s.refundAmount), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    BigDecimal getTotalRefundtAmountBySeller(Long sellerId);
+
+    // 수수료
+    @Query("""
+        select coalesce(sum(s.fee), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    BigDecimal getTotalFeeAmountBySeller(Long sellerId);
+
+    // 정산금액
+    @Query("""
+        select coalesce(sum(s.settlementAmount), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    BigDecimal getTotalSettlementAmountBySeller(Long sellerId);
 }

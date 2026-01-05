@@ -5,37 +5,56 @@ import com.example.BeGroom.settlement.dto.req.ProductSettlementReqDto;
 import com.example.BeGroom.settlement.dto.res.PeriodSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.ProductSettlementResDto;
 import com.example.BeGroom.settlement.dto.res.SettlementManageResDto;
+import com.example.BeGroom.settlement.repository.SettlementRepository;
+import com.example.BeGroom.settlement.repository.projection.ProductSettlementListProjection;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SettlementServiceImpl implements SettlementService {
 
-    // 정산관리 조회
+    private final SettlementRepository settlementRepository;
+
+    // 정산 요약 정보 조회
     @Override
     public SettlementManageResDto getSettlementManage(Long sellerId){
-        // 결제금액, 환불금액, 수수료, 정산금액
-        SettlementManageResDto settlementManageResDto =
-                new SettlementManageResDto(230000, 66000, 223400, 2010600);
+        // 결제금액
+        Long totalPaymentAmount = settlementRepository.getTotalPaymentAmountBySeller(sellerId);
+        // 환불금액
+        BigDecimal totalRefundAmount = settlementRepository.getTotalRefundtAmountBySeller(sellerId);
+        // 수수료
+        BigDecimal totalFeeAmount = settlementRepository.getTotalFeeAmountBySeller(sellerId);
+        // 정산금액
+        BigDecimal totalSettlementAmount = settlementRepository.getTotalSettlementAmountBySeller(sellerId);
 
-        return settlementManageResDto;
+        return new SettlementManageResDto(
+                totalPaymentAmount,
+                totalRefundAmount,
+                totalFeeAmount,
+                totalSettlementAmount);
     }
 
     // 건별 정산 집계 조회
     @Override
-    public List<ProductSettlementResDto> getProductSettlement(Long sellerId, ProductSettlementReqDto productSettlementReqDto){
-        // 조회 기간
-        LocalDate startDate = productSettlementReqDto.getStartDate();
-        LocalDate endDate = productSettlementReqDto.getEndDate();
-
+    public Page<ProductSettlementResDto> getProductSettlement(Long sellerId, LocalDate startDate, LocalDate endDate, int page){
+        Pageable pageable = PageRequest.of(page, 15);
         // 건별 정산 리스트
-        List<ProductSettlementResDto> settlementByItemList = List.of();
+        Page<ProductSettlementListProjection> projectionPage =
+                settlementRepository.findProductSettlementListBySeller(sellerId, startDate, endDate, pageable);
 
-        return settlementByItemList;
+        return projectionPage.map(p -> new ProductSettlementResDto(
+
+        ));
     }
 
     // 기간별 정산 집계

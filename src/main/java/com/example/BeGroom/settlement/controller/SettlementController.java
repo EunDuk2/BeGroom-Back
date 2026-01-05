@@ -12,11 +12,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -27,9 +29,9 @@ public class SettlementController {
 
     private final SettlementService settlementService;
 
-    // API 1. 메인 정산 관리
+    // API 1. 정산 요약 정보 조회
     @GetMapping
-    @Operation(summary = "정산 관리 페이지 조회", description = "정산 관리를 조회합니다.")
+    @Operation(summary = "정산 요약 정보 조회", description = "정산 요약 정보를 조회합니다.")
     public ResponseEntity<CommonSuccessDto<SettlementManageResDto>> getSettlementManage(
             @AuthenticationPrincipal UserPrincipal userPrincipal
             ){
@@ -40,7 +42,7 @@ public class SettlementController {
                         CommonSuccessDto.of(
                                 settlementManageResDto,
                                 HttpStatus.OK,
-                                "정산 관리 조회 성공"
+                                "정산 요약 정보 조회 성공"
                         )
                 );
     }
@@ -48,10 +50,13 @@ public class SettlementController {
     // API 2. 건별 정산 집계
     @GetMapping("/product")
     @Operation(summary = "건별 정산 집계", description = "건별 정산을 조회합니다.")
-    public ResponseEntity<CommonSuccessDto<List<ProductSettlementResDto>>> getProductSettlement(
-            @AuthenticationPrincipal UserPrincipal userPrincipal, @Valid @RequestBody ProductSettlementReqDto productSettlementReqDto
+    public ResponseEntity<CommonSuccessDto<Page<ProductSettlementResDto>>> getProductSettlement(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page
     ){
-        List<ProductSettlementResDto> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId(), productSettlementReqDto);
+        Page<ProductSettlementResDto> settlementByItemList = settlementService.getProductSettlement(userPrincipal.getMemberId(), productSettlementReqDto);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(

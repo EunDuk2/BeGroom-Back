@@ -38,6 +38,23 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	//QueryDsl
+	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+	implementation "com.querydsl:querydsl-core"
+	implementation "com.querydsl:querydsl-collections"
+	annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
+	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+	annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+	annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jpa"
+}
+
+// Querydsl 설정부
+def generated = 'build/generated/sources/annotationProcessor/java/main/QClass'
+
+// querydsl QClass 파일 생성 위치 지정
+tasks.withType(JavaCompile){
+	options.getGeneratedSourceOutputDirectory().set(file(generated))
 }
 
 tasks.named('test') {
