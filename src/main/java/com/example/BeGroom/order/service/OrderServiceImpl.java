@@ -11,8 +11,8 @@ import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
-import com.example.BeGroom.product.domain.Product;
-import com.example.BeGroom.product.repository.ProductRepository;
+import com.example.BeGroom.product.domain.ProductDetail;
+import com.example.BeGroom.product.repository.ProductDetailRepository;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -34,7 +34,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
-    private final ProductRepository productRepository;
+    private final ProductDetailRepository productDetailRepository;
     private final OrderProductRepository orderProductRepository;
     private final PaymentRepository paymentRepository;
     private final WalletRepository walletRepository;
@@ -52,12 +52,14 @@ public class OrderServiceImpl implements OrderService {
         // 상품 리스트 조회
         List<OrderProductReqDto> orderProductReqDtoList = reqDto.getOrderProductList();
         for(OrderProductReqDto orderProductReqDto : orderProductReqDtoList) {
-            Product product = productRepository.findById(orderProductReqDto.getProductId()).orElseThrow(() -> new EntityNotFoundException("없는 상품입니다."));
+            ProductDetail productDetail = productDetailRepository
+                    .findById(orderProductReqDto.getProductDetailId()).orElseThrow(() -> new EntityNotFoundException("없는 상품 옵션입니다."));
+
             // 재고 검증
-            product.validateOrderable(orderProductReqDto.getOrderQuantity());
+            productDetail.validateOrderable(orderProductReqDto.getOrderQuantity());
 
             // OrderProduct 생성
-            OrderProduct orderProduct = OrderProduct.create(order, product, orderProductReqDto.getOrderQuantity(), product.getSalesPrice());
+            OrderProduct orderProduct = OrderProduct.create(order, productDetail, orderProductReqDto.getOrderQuantity(), productDetail.getSellingPrice());
 
             // orderProduct를 order에 추가
             order.addOrderProduct(orderProduct);

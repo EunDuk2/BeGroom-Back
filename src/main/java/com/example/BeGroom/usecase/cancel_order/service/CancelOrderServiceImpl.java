@@ -34,7 +34,7 @@ public class CancelOrderServiceImpl implements CancelOrderService {
         walletService.refundPoint(memberId, order.getTotalAmount(), orderId);
         // 상품 재고 복구
         for(OrderProduct orderProduct : order.getOrderProductList()) {
-            orderProduct.getProduct().increaseStock(orderProduct.getQuantity());
+            orderProduct.getProductDetail().increaseStock(orderProduct.getQuantity());
         }
         // 주문 취소 처리
         order.cancel();

@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class OrderProductResDto {
 
     @Schema(example = "1")
-    private Long productId;
+    private Long productDetailId;
 
     @Schema(example = "국산콩 두부")
     private String productName;
@@ -28,8 +28,8 @@ public class OrderProductResDto {
 
     public static OrderProductResDto of(OrderProduct orderProduct) {
         return OrderProductResDto.builder()
-                .productId(orderProduct.getProduct().getProductId())
-                .productName(orderProduct.getProduct().getName())
+                .productDetailId(orderProduct.getProductDetail().getProductDetailId())
+                .productName(orderProduct.getProductDetail().getName())
                 .orderPrice(orderProduct.getPrice())
                 .orderQuantity(orderProduct.getQuantity())
                 .build();

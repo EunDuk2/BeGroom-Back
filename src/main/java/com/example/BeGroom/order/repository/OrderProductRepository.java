@@ -15,12 +15,12 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     @Query("""
         select new com.example.BeGroom.order.dto.OrderProductAggregate(
             op.order.id,
-            min(p.name),
+            min(pd.name),
             sum(op.quantity),
             count(op.id)
         )
         from OrderProduct op
-        join op.product p
+        join op.productDetail pd
         where op.order.id in :orderIds
         group by op.order.id
     """)
