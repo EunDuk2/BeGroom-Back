@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/crawling")
+@RequestMapping("/admin/crawling")
 @RequiredArgsConstructor
 @Tag(name = "Crawling API", description = "상품 데이터 크롤링 API")
 public class CrawlingController {

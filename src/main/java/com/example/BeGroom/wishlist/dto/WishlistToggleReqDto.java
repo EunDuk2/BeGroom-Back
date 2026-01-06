@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class WishlistToggleReqDto {
 
-    @Schema(description = "상품 ID", example = "486", required = true)
+    @Schema(description = "상품 ID", example = "486")
     @NotNull(message = "상품 ID는 필수입니다.")
     private Long productId;
 }

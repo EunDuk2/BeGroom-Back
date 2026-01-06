@@ -34,9 +34,7 @@ public class CrawlingService {
     private static final String API_BASE_URL = "https://api.kurly.com/collection/v2/home/sites/market";
     private static final String DETAIL_API_URL = "https://api.kurly.com/showroom/v2/products";
 
-    /**
-     * 카테고리 크롤링
-     */
+    // 카테고리 크롤링
     public List<Product> crawl(CrawlingRequest request) {
 
         List<Category> targetCategories = determineTargetCategories(request.getCategoryIds());
@@ -74,10 +72,11 @@ public class CrawlingService {
 
         List<Category> targetCategories = new ArrayList<>();
         for (Long categoryId : categoryIds) {
-            Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다: " + categoryId));
+            Category category = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다: " + categoryId));
 
             if (category.getLevel() == 1) {
-                List<Category> subCategories = categoryRepository.findByParentIdAndIsActiveOrderBySortOrderAsc(category.getCategoryId(), true);
+                List<Category> subCategories = categoryRepository.findByParent_CategoryIdAndIsActiveOrderBySortOrderAsc(category.getCategoryId(), true);
                 targetCategories.addAll(subCategories);
             } else if (category.getLevel() == 2) {
                 targetCategories.add(category);
@@ -89,9 +88,7 @@ public class CrawlingService {
         return targetCategories;
     }
 
-    /**
-     * 단일 카테고리 크롤링 (내부 메서드)
-     */
+    // 단일 카테고리 크롤링 (내부 메서드)
     public List<Product> crawlCategory(String categoryId, int maxProducts) {
 
         List<Product> savedProducts = new ArrayList<>();
@@ -145,24 +142,23 @@ public class CrawlingService {
         return savedProducts;
     }
 
-    /**
-     * 새 트랜잭션으로 상품 저장
-     */
+    // 새 트랜잭션으로 상품 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Product saveProductInNewTransaction(CrawlingResponse.ProductData productData) {
         return saveProduct(productData);
     }
 
-    /**
-     * 상품-카테고리 매핑 일괄 저장
-     * 중복 상품의 경우 카테고리만 추가
-     */
+    // 상품-카테고리 매핑 일괄 저장 (중복 상품의 경우 카테고리만 추가)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveProductCategoryMappings(List<Product> products, Long categoryId) {
+
+        Category category = categoryRepository.findById(categoryId).orElse(null);
+        if (category == null) return;
+
         for (Product product : products) {
             try {
                 // 중복 체크: 이미 매핑된 카테고리인지 확인
-                boolean exists = productCategoryRepository.existsByProductIdAndCategoryId(
+                boolean exists = productCategoryRepository.existsByProduct_ProductIdAndCategory_CategoryId(
                         product.getProductId(),
                         categoryId
                 );
@@ -174,13 +170,13 @@ public class CrawlingService {
                 }
 
                 // 첫 번째 카테고리인지 확인 (대표 카테고리 결정)
-                long existingCount = productCategoryRepository.countByProductId(product.getProductId());
+                long existingCount = productCategoryRepository.countByProduct_ProductId(product.getProductId());
                 boolean isPrimary = (existingCount == 0);  // 첫 번째 매핑이면 대표 카테고리
 
                 // 새 카테고리 매핑 추가
                 ProductCategory productCategory = ProductCategory.builder()
-                        .productId(product.getProductId())
-                        .categoryId(categoryId)
+                        .product(product)
+                        .category(category)
                         .isPrimary(isPrimary)
                         .build();
 
@@ -196,9 +192,7 @@ public class CrawlingService {
         }
     }
 
-    /**
-     * 상품 데이터 DB에 저장
-     */
+    // 상품 데이터 DB에 저장
     private Product saveProduct(CrawlingResponse.ProductData productData) {
 
         Optional<Product> existing = productRepository.findByProductNo(productData.getNo());
@@ -209,18 +203,18 @@ public class CrawlingService {
 
         Product.ProductStatus status = determineProductStatus(productData);
 
-        Long brandId = getBrandIdFromApi(productData.getNo());
-        if (brandId == null) {
-            brandId = 1L;
+        Brand brand = getBrandFromApi(productData.getNo());
+        if (brand == null) {
+            brand = brandRepository.findById(1L).orElse(null);
         }
 
-        // 1. Product 저장
+        // Product 저장
         Product product = Product.builder()
                 .productNo(productData.getNo())
-                .brandId(brandId)
+                .brand(brand)
                 .name(productData.getName())
                 .shortDescription(productData.getShortDescription())
-                .salesPrice(productData.getSalesPrice())
+                .salesPrice(productData.getSafeSalesPrice())
                 .discountedPrice(productData.getDiscountedPrice())
                 .discountRate(productData.getDiscountRate())
                 .isBuyNow(productData.getIsBuyNow())
@@ -236,140 +230,122 @@ public class CrawlingService {
 
         product = productRepository.save(product);
 
-        // 2. ProductImage 저장
+        // ProductImage 저장
         if (productData.getListImageUrl() != null) {
-            ProductImage productImage = ProductImage.builder()
-                    .productId(product.getProductId())
+            productImageRepository.save(ProductImage.builder()
+                    .product(product)
                     .imageUrl(productData.getListImageUrl())
                     .imageType(ProductImage.ImageType.MAIN)
                     .sortOrder(1)
-                    .build();
-
-            productImageRepository.save(productImage);
+                    .build());
         }
 
-        // 3. 상세 상품 및 옵션 매핑 저장
-        saveProductOptions(product.getProductId(), productData.getNo(), productData);
+        saveProductOptions(product, productData.getNo(), productData);
 
         return product;
     }
 
-    /**
-     * 단일 상품 ProductDetail 저장
-     */
-    private void saveBasicProductDetail(Long productId, CrawlingResponse.ProductData productData) {
-        ProductDetail productDetail = ProductDetail.builder()
-                .productId(productId)
+    // 단일 상품 ProductDetail 저장
+    private void saveBasicProductDetail(Product product, CrawlingResponse.ProductData productData) {
+        productDetailRepository.save(ProductDetail.builder()
+                .product(product)
                 .name(productData.getName())
                 .basePrice(productData.getSalesPrice())
                 .discountedPrice(productData.getDiscountedPrice())
                 .quantity(productData.getStock())
-                .isAvailable(!productData.getIsSoldOut())
-                .build();
-
-        productDetailRepository.save(productDetail);
+                .isAvailable(!Boolean.TRUE.equals(productData.getIsSoldOut()))
+                .build());
     }
 
-    /**
-     * 상품 옵션 매핑 저장
-     */
-    private void saveProductOptions(Long productId, Long productNo, CrawlingResponse.ProductData productData) {
+    // 상품 옵션 매핑 저장
+    private void saveProductOptions(Product product, Long productNo, CrawlingResponse.ProductData productData) {
 
         try {
             String url = String.format("%s/%d", DETAIL_API_URL, productNo);
             ProductOptionResponse response = restTemplate.getForObject(url, ProductOptionResponse.class);
 
             if (response == null || response.getData() == null) {
-                saveBasicProductDetail(productId, productData);
+                saveBasicProductDetail(product, productData);
                 return;
             }
 
             ProductOptionResponse.OptionData data = response.getData();
 
-            Product product = productRepository.findById(productId).orElse(null);
-            if (product != null) {
+            Brand detailBrand = getOrCreateBrand(data.getBrandInfo());
+            product.setBrand(detailBrand);
 
-                Long brandId = getOrCreateBrand(data.getBrandInfo());
-                product.updateBrandId(brandId);
+            String productDetailHtml = data.getProductDetail() != null ? data.getProductDetail().getLegacyContent() : null;
 
-                String productDetailHtml = data.getProductDetail() != null ? data.getProductDetail().getLegacyContent() : null;
-
-                product.updateProductOption(
-                        data.getExpirationDate(),
-                        data.getGuides(),
-                        productDetailHtml,
-                        data.getProductNotice()
-                );
-                productRepository.save(product);
-            }
+            product.updateProductOption(
+                    data.getExpirationDate(),
+                    data.getGuides(),
+                    productDetailHtml,
+                    data.getProductNotice()
+            );
+            productRepository.save(product);
 
             if (data.getDealProducts() != null && !data.getDealProducts().isEmpty()) {
                 for (ProductOptionResponse.DealProduct dealProduct : data.getDealProducts()) {
-                    ProductDetail productDetail = ProductDetail.builder()
-                            .productId(productId)
+                    productDetailRepository.save(ProductDetail.builder()
+                            .product(product)
                             .name(dealProduct.getName())
                             .basePrice(dealProduct.getBasePrice())
                             .discountedPrice(dealProduct.getDiscountedPrice())
                             .quantity(999)
-                            .isAvailable(!dealProduct.getIsSoldOut())
-                            .build();
-
-                    productDetailRepository.save(productDetail);
+                            .isAvailable(!Boolean.TRUE.equals(dealProduct.getIsSoldOut()))
+                            .build());
                 }
             } else {
-                saveBasicProductDetail(productId, productData);
+                saveBasicProductDetail(product, productData);
             }
 
-            // ProductDetail 목록 조회
-            List<ProductDetail> details = productDetailRepository.findByProductId(productId);
-
-            if (!details.isEmpty()) {
-                // 포장 옵션 매핑
-                if (data.getStorageType() != null && !data.getStorageType().isEmpty()) {
-                    String storageType = data.getStorageType().get(0);
-                    mapOption(details, "packaging", storageType);
-                }
-
-                // 배송 옵션 매핑
-                if (data.getDeliveryTypeInfos() != null && !data.getDeliveryTypeInfos().isEmpty()) {
-                    String deliveryType = data.getDeliveryTypeInfos().get(0).getType();
-                    mapOption(details, "delivery", deliveryType);
-                }
-            }
-
-            Thread.sleep(500);
+            // 배송/포장 옵션 매핑
+            syncOptionMappings(product, data);
 
         } catch (Exception e) {
-            saveBasicProductDetail(productId, productData);
+            saveBasicProductDetail(product, productData);
         }
     }
 
-    private Long getBrandIdFromApi(Long productNo) {
+    private void syncOptionMappings(Product product, ProductOptionResponse.OptionData data) {
+        List<ProductDetail> details = productDetailRepository.findByProduct_ProductId(product.getProductId());
+        if (details.isEmpty()) return;
+
+        if (data.getStorageType() != null && !data.getStorageType().isEmpty()) {
+            mapOption(details, "packaging", data.getStorageType().get(0));
+        }
+
+        if (data.getDeliveryTypeInfos() != null && !data.getDeliveryTypeInfos().isEmpty()) {
+            mapOption(details, "delivery", data.getDeliveryTypeInfos().get(0).getType());
+        }
+    }
+
+    private Brand getBrandFromApi(Long productNo) {
         try {
             String url = String.format("%s/%d", DETAIL_API_URL, productNo);
             ProductOptionResponse response = restTemplate.getForObject(url, ProductOptionResponse.class);
 
             if (response == null || response.getData() == null) {
-                return 1L;
+                return brandRepository.findById(1L).orElse(null);
             }
 
             return getOrCreateBrand(response.getData().getBrandInfo());
         } catch (Exception e) {
             log.error("브랜드 조회 실패 - productNo: {}", productNo);
-            return 1L;
+            return brandRepository.findById(1L).orElse(null);
         }
     }
 
-    private Long getOrCreateBrand(ProductOptionResponse.BrandInfo brandInfo) {
+    private Brand getOrCreateBrand(ProductOptionResponse.BrandInfo brandInfo) {
         if (brandInfo == null || brandInfo.getNameGate() == null) {
-            return 1L; // 비구름 브랜드 ID
+            return brandRepository.findById(1L).orElse(null); // 비구름 브랜드 ID
         }
 
         Long brandCode = brandInfo.getNameGate().getBrandCode();
         String brandName = brandInfo.getNameGate().getName();
 
         if (brandCode == null || brandName == null) {
-            return 1L;
+            return brandRepository.findById(1L).orElse(null);
         }
 
         String logoUrl = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getImage() : null;
@@ -385,7 +361,7 @@ public class CrawlingService {
                 brandRepository.save(brand);
             }
 
-            return brand.getBrandId();
+            return brand;
         }
 
         Brand newBrand = Brand.builder()
@@ -396,8 +372,7 @@ public class CrawlingService {
                 .description(description)
                 .build();
 
-        newBrand = brandRepository.save(newBrand);
-        return newBrand.getBrandId();
+        return brandRepository.save(newBrand);
     }
 
     private void mapOption(List<ProductDetail> details, String optionType, String optionValue) {
@@ -419,20 +394,18 @@ public class CrawlingService {
 
         for (ProductDetail detail : details) {
             boolean exists = productOptionMappingRepository
-                    .findByProductDetailId(detail.getProductDetailId())
+                    .findByProductDetail_ProductDetailId(detail.getProductDetailId())
                     .stream()
-                    .anyMatch(m -> m.getOptionId().equals(option.getOptionId()));
+                    .anyMatch(m -> m.getProductOption().getOptionId().equals(option.getOptionId()));
 
             if (exists) {
                 continue;
             }
 
-            ProductOptionMapping mapping = ProductOptionMapping.builder()
-                    .productDetailId(detail.getProductDetailId())
-                    .optionId(option.getOptionId())
-                    .build();
-
-            productOptionMappingRepository.save(mapping);
+            productOptionMappingRepository.save(ProductOptionMapping.builder()
+                    .productDetail(detail)
+                    .productOption(option)
+                    .build());
         }
     }
 

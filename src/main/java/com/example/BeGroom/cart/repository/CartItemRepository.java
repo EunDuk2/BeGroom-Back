@@ -13,30 +13,30 @@ import java.util.Optional;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
-    // 장바구니 ID로 모든 상품 조회
-    List<CartItem> findByCartId(Long cartId);
+    // 장바구니 ID로 모든 상품 조회 (최근 담긴순)
+    List<CartItem> findByCart_CartIdOrderByCreatedAtDesc(Long cartId);
 
     // 장바구니 ID와 선택 상태로 상품 조회
-    List<CartItem> findByCartIdAndIsSelected(Long cartId, Boolean isSelected);
+    List<CartItem> findByCart_CartIdAndIsSelected(Long cartId, Boolean isSelected);
 
     // 장바구니 ID와 상품 상세 ID로 조회 - 상품이 이미 담겨있는지 확인하는 용도
-    Optional<CartItem> findByCartIdAndProductDetailId(Long cartId, Long productDetailId);
+    Optional<CartItem> findByCart_CartIdAndProductDetail_ProductDetailId(Long cartId, Long productDetailId);
 
     // 장바구니 ID로 모든 상품 삭제
-    void deleteByCartId(Long cartId);
+    void deleteByCart_CartId(Long cartId);
 
     // 장바구니의 상품 개수 조회
-    long countByCartId(Long cartId);
+    long countByCart_CartId(Long cartId);
 
     // 선택된 상품 개수 조회
-    long countByCartIdAndIsSelected(Long cartId, boolean isSelected);
+    long countByCart_CartIdAndIsSelected(Long cartId, boolean isSelected);
 
     // 장바구니의 모든 상품 선택 상태 변경 (전체 선택/선택 해제)
     @Modifying
     @Query("""
         UPDATE CartItem ci
         SET ci.isSelected = :isSelected
-        WHERE ci.cartId = :cartId
+        WHERE ci.cart.cartId = :cartId
     """)
     int updateAllSelectedByCartId(
             @Param("cartId") Long cartId,
@@ -44,5 +44,5 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     );
 
     // 선택된 상품 모두 삭제
-    void deleteByCartIdAndIsSelected(Long cartId, Boolean isSelected);
+    void deleteByCart_CartIdAndIsSelected(Long cartId, Boolean isSelected);
 }

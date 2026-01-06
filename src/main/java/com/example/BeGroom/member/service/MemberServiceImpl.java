@@ -85,13 +85,13 @@ public class MemberServiceImpl implements MemberService {
                             .map(op -> {
                                 //
                                 ProductDetail productDetail = op.getProductDetail();
-                                Product product = productRepository.findById(productDetail.getProductId()).orElseThrow(() -> new EntityNotFoundException("없는 결제입니다."));
-                                String imageUrl = product.getImages().stream()
+                                Product product = productDetail.getProduct();
+                                String imageUrl = product.getProductImages().stream()
                                         .filter(image -> ProductImage.ImageType.MAIN.equals(image.getImageType()))
                                         .findFirst()
                                         .map(ProductImage::getImageUrl)
-                                        .orElseGet(() -> !product.getImages().isEmpty()
-                                                ? product.getImages().getFirst().getImageUrl()
+                                        .orElseGet(() -> !product.getProductImages().isEmpty()
+                                                ? product.getProductImages().getFirst().getImageUrl()
                                                 : "");
 
                                 return GetMemberOrdersResDto.OrderedItem.builder()

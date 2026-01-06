@@ -18,7 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/cart")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "BearerAuth")
 @Tag(name = "Cart API", description = "장바구니 API")
@@ -134,7 +134,7 @@ public class CartController {
     public ResponseEntity<CommonSuccessDto<Void>> selectAll(
             @AuthenticationPrincipal UserPrincipal user
     ) {
-        cartService.selectAll(user.getMemberId());
+        cartService.updateAllSelection(user.getMemberId(), true);
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(
@@ -150,7 +150,7 @@ public class CartController {
     public ResponseEntity<CommonSuccessDto<Void>> deselectAll(
             @AuthenticationPrincipal UserPrincipal user
     ) {
-        cartService.deselectAll(user.getMemberId());
+        cartService.updateAllSelection(user.getMemberId(), false);
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(

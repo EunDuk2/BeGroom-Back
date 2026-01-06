@@ -6,9 +6,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * 상품 옵션 정보(포장방법, 배송 등) API 응답 DTO
- */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductOptionResponse {

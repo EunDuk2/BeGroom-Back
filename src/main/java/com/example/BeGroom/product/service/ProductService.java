@@ -44,7 +44,7 @@ public class ProductService {
 
         return products.map(product -> {
             String mainImageUrl = getMainImageUrl(product.getProductId());
-            String brandName = getBrandName(product.getBrandId());
+            String brandName = product.getBrand() != null ? product.getBrand().getName() : null;
             return ProductListResDto.from(product, mainImageUrl, brandName);
         });
     }
@@ -58,7 +58,7 @@ public class ProductService {
         String mainImageUrl = getMainImageUrl(productId);
         List<String> detailImageUrls = getDetailImageUrls(productId);
         List<ProductDetailDto> details = getProductDetails(productId);
-        String brandName = getBrandName(product.getBrandId());
+        String brandName = product.getBrand() != null ? product.getBrand().getName() : null;
 
         return ProductDetailResDto.from(product, mainImageUrl, detailImageUrls, details, brandName);
     }
@@ -106,7 +106,7 @@ public class ProductService {
 
         return products.map(product -> {
             String mainImageUrl = getMainImageUrl(product.getProductId());
-            String brandName = getBrandName(product.getBrandId());
+            String brandName = product.getBrand() != null ? product.getBrand().getName() : null;
 
             return ProductListResDto.from(product, mainImageUrl, brandName);
         });
@@ -121,7 +121,7 @@ public class ProductService {
             if (category == null) continue;
 
             if (category.getLevel() == 1) {
-                List<Category> subCategories = categoryRepository.findByParentIdAndIsActiveOrderBySortOrderAsc(categoryId, true);
+                List<Category> subCategories = categoryRepository.findByParent_CategoryIdAndIsActiveOrderBySortOrderAsc(categoryId, true);
 
                 for (Category subCategory : subCategories) {
                     expandedIds.add(subCategory.getCategoryId());
@@ -137,7 +137,7 @@ public class ProductService {
     // 메인 이미지 URL 조회
     private String getMainImageUrl(Long productId) {
 
-        List<ProductImage> mainImage = productImageRepository.findByProductIdAndImageTypeOrderBySortOrderAsc(
+        List<ProductImage> mainImage = productImageRepository.findByProduct_ProductIdAndImageTypeOrderBySortOrderAsc(
                 productId,
                 ProductImage.ImageType.MAIN
         );
@@ -146,7 +146,7 @@ public class ProductService {
     }
 
     private List<String> getDetailImageUrls(Long productId) {
-        List<ProductImage> detailImages = productImageRepository.findByProductIdAndImageTypeOrderBySortOrderAsc(
+        List<ProductImage> detailImages = productImageRepository.findByProduct_ProductIdAndImageTypeOrderBySortOrderAsc(
                 productId,
                 ProductImage.ImageType.DETAIL
         );
@@ -157,7 +157,7 @@ public class ProductService {
     }
 
     private List<ProductDetailDto> getProductDetails(Long productId) {
-        List<ProductDetail> productDetails = productDetailRepository.findByProductId(productId);
+        List<ProductDetail> productDetails = productDetailRepository.findByProduct_ProductId(productId);
 
         return productDetails.stream()
                 .map(ProductDetailDto::from)
