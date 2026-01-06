@@ -10,22 +10,26 @@ import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.domain.ProductImage;
-import com.example.BeGroom.product.repository.ProductDetailRepository;
 import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.domain.WalletTransaction;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import com.example.BeGroom.wallet.repository.WalletTransactionRepository;
 import com.example.BeGroom.wallet.service.WalletService;
+import com.example.BeGroom.wishlist.domain.Wishlist;
+import com.example.BeGroom.wishlist.repository.WishlistRepository;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.stream.LangCollectors.collect;
@@ -40,6 +44,7 @@ public class MemberServiceImpl implements MemberService {
     private final WalletRepository walletRepository;
     private final OrderRepository orderRepository;
     private final WalletTransactionRepository transactionRepository;
+    private final WishlistRepository wishlistRepository;
     private final ProductRepository productRepository;
 
     @Override
@@ -115,13 +120,15 @@ public class MemberServiceImpl implements MemberService {
         return GetMemberOrdersResDto.of(orderSummaries);
     }
 
-//    @Override
-//    public GetMemberWishesResDto getMyWishes(Long memberId) {
-//        Member member = memberRepository.findById(memberId)
-//                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
-//
-//        return GetMemberWishesResDto.of(member);
-//    }
+    @Override
+    public GetMemberWishesResDto getMyWishes(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        List<Wishlist> wishlists = wishlistRepository.findAllByMemberId(memberId);
+
+        return GetMemberWishesResDto.from(wishlists);
+    }
 
     @Override
     public GetMemberWalletResDto getWalletTransactions(Long memberId, Pageable pageable) {
@@ -130,11 +137,9 @@ public class MemberServiceImpl implements MemberService {
         Wallet wallet = walletRepository.findByMember(memberProxy)
                 .orElseThrow(() -> new EntityNotFoundException("지갑을 찾을 수 없습니다."));
 
-        // 2. 지갑 ID로 거래 내역 페이징 조회 (쿼리 자동 실행)
         Page<WalletTransaction> transactionPage =
                 transactionRepository.findByWalletOrderByCreatedAtDesc(wallet, pageable);
 
-        // 3. Entity -> DTO 변환 (Page의 map 메서드 활용)
         Page<GetMemberWalletResDto.TransactionSummary> transactionDtoPage = transactionPage.map(tx ->
                 GetMemberWalletResDto.TransactionSummary.builder()
                         .id(tx.getId())
@@ -150,7 +155,6 @@ public class MemberServiceImpl implements MemberService {
                 .balance(wallet.getBalance())
                 .build();
 
-        // 5. 합쳐서 리턴 (이제 타입이 맞습니다!)
         return GetMemberWalletResDto.of(walletSummary, transactionDtoPage);
     }
 }

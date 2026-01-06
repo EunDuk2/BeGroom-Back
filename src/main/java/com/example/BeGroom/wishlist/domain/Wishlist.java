@@ -2,6 +2,7 @@ package com.example.BeGroom.wishlist.domain;
 
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.product.domain.Product;
+import com.example.BeGroom.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,5 +40,9 @@ public class Wishlist {
                 .member(member)
                 .product(product)
                 .build();
+    }
+    // 회원 소유 여부 확인
+    public boolean isOwnedBy(Long memberId) {
+        return this.member.getId().equals(memberId);
     }
 }

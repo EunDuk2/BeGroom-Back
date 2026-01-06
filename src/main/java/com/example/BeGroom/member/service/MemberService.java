@@ -9,6 +9,6 @@ public interface MemberService {
     Member create(MemberCreateReqDto reqDto);
     MemberGetProfileResDto getMyProfile(String email);
     GetMemberOrdersResDto getMyOrders(Long memberId);
-//  GetMemberWishesResDto getMyWishes(Long memberId);
+    GetMemberWishesResDto getMyWishes(Long memberId);
     public GetMemberWalletResDto getWalletTransactions(Long memberId, Pageable pageable);
 }
