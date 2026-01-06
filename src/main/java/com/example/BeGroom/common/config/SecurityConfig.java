@@ -54,7 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/noti").authenticated()
                         .requestMatchers("/api/noti/**").authenticated()
                         .requestMatchers("/members/profile").authenticated()
-                        .requestMatchers("/api/seller/**").authenticated()
+                        .requestMatchers("/seller/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth").permitAll()
                         .requestMatchers("/admin/crawling/**").permitAll()
                         .requestMatchers("/products/**").permitAll()

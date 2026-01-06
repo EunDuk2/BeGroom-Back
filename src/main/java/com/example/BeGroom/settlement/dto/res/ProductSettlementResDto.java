@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -15,28 +16,24 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ProductSettlementResDto {
 
-    @NotNull
     @Schema(example = "1")
     private Long id;
 
-    @NotNull
     @Schema(example = "2025-01-01T14:30:00")
-    private LocalDateTime paidAt;
+    private LocalDateTime createdAt;
 
     @Schema(example = "128000")
-    private long paymentAmount;
+    private Long paymentAmount;
 
-    @NotNull
     @Schema(example = "9000")
-    private Long refundAmount;
+    private BigDecimal refundAmount;
 
     @Schema(example = "12800")
-    private long feeAmount;
+    private BigDecimal feeAmount;
 
     @Schema(example = "107100")
-    private long settlementAmount;
+    private BigDecimal settlementAmount;
 
-    @NotNull
     @Schema(example = "SETTLED")
     private SettlementStatus settlementStatus;
 

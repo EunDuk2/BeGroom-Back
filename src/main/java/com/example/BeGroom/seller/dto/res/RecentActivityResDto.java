@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ public class RecentActivityResDto {
     @Schema(description = "최근 정산")
     private RecentSettlementDto recentSettlement;
 
+    @Getter
     @AllArgsConstructor
     public static class RecentOrderDto{
         @Schema(example = "1", description = "주문번호")
@@ -34,6 +36,7 @@ public class RecentActivityResDto {
         private LocalDateTime orderedAt;
     }
 
+    @Getter
     @AllArgsConstructor
     public static class RecentRefundDto{
         @Schema(example = "1", description = "결제번호")
@@ -44,6 +47,7 @@ public class RecentActivityResDto {
         private LocalDateTime refundedAt;
     }
 
+    @Getter
     @AllArgsConstructor
     public static class RecentSettlementDto{
         @Schema(example = "1", description = "정산번호")
