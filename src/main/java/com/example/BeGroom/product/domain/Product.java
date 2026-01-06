@@ -2,6 +2,7 @@ package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.BeGroom.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -114,7 +115,6 @@ public class Product extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
 
     public enum ProductStatus {
         WAIT, SALE, SOLD_OUT, STOP

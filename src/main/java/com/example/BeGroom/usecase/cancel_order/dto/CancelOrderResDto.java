@@ -1,4 +1,4 @@
-package com.example.BeGroom.usecase.cancelOrder.dto;
+package com.example.BeGroom.usecase.cancel_order.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

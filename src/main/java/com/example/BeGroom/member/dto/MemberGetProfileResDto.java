@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -35,7 +36,7 @@ public class MemberGetProfileResDto {
     private Role role;
 
     @NotEmpty
-    @Schema(example = "어쩌구")
+    @Schema(example = "2025.12.12")
     private LocalDateTime joinDate;
 
     public static MemberGetProfileResDto from(Member member){
@@ -44,6 +45,8 @@ public class MemberGetProfileResDto {
                 .name(member.getName())
                 .phoneNumber(member.getPhoneNumber())
                 .role(member.getRole())
+                .joinDate(member.getCreatedAt())
                 .build();
     }
+
 }

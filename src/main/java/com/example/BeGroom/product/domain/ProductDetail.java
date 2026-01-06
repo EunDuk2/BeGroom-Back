@@ -72,8 +72,8 @@ public class ProductDetail extends BaseEntity {
     }
 
     // 재고 증가 (입고)
-    public void increaseStock(Integer amount) {
-        if (amount == null || amount <= 0) {
+    public void increaseStock(int amount) {
+        if (amount <= 0) {
             throw new IllegalArgumentException("입고 수량은 1개 이상이어야 합니다.");
         }
         this.quantity += amount;
@@ -87,8 +87,8 @@ public class ProductDetail extends BaseEntity {
     }
 
     // 재고 감소 (주문)
-    public void decreaseStock(Integer amount) {
-        if (amount == null || amount <= 0) {
+    public void decreaseStock(int amount) {
+        if (amount <= 0) {
             throw new IllegalArgumentException("차감 수량은 1개 이상이어야 합니다.");
         }
         if (this.quantity < amount) {

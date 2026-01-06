@@ -48,11 +48,8 @@ public class PointPaymentProcessor implements PaymentProcessor {
             paymentService.approve(payment.getId());
             // 상품 재고 감소
             for(OrderProduct orderProduct : order.getOrderProductList()) {
-                if (orderProduct.getProductDetail() != null) {
-                    orderProduct.getProductDetail().decreaseStock(orderProduct.getQuantity());
-                } else {
-                    // 예외 케이스: 상세 정보가 없을 경우 기존처럼 Product에서 시도하거나 에러 처리
-                }
+                orderProduct.getProductDetail()
+                        .decreaseStock(orderProduct.getQuantity());
             }
             // 주문 완료 처리
             order.complete();

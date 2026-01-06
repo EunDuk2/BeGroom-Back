@@ -14,6 +14,16 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    Page<Order> findByMemberId(Pageable pageable, Long memberId);
+  
+    public List<Order> findAllByMemberIdOrderByCreatedAtDesc(Long memberId);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "JOIN FETCH o.orderProductList op " +
+            "JOIN FETCH op.productDetail pd " +
+            "WHERE o.member.id = :memberId " +
+            "ORDER BY o.createdAt DESC")
+    List<Order> findAllWithDetailsByMemberId(@Param("memberId") Long memberId);
 
     // 판매자 총 주문 수
 //    @Query("""
@@ -136,5 +146,4 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     """, nativeQuery = true
     )
     Page<OrderListProjection> findOrderListBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
-
 }

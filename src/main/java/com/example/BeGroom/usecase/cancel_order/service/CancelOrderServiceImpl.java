@@ -1,4 +1,4 @@
-package com.example.BeGroom.usecase.cancelOrder.service;
+package com.example.BeGroom.usecase.cancel_order.service;
 
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;

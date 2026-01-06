@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class OrderProductReqDto {
     @NotNull
     @Schema(example = "1")
-    private Long productId;
+    private Long productDetailId;
 
     @NotNull
     @Schema(example = "3")
