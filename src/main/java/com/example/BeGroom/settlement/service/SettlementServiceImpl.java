@@ -1,8 +1,12 @@
 package com.example.BeGroom.settlement.service;
 
+import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.settlement.domain.DailySettlement;
 import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.factory.SettlementFactory;
 import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +34,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final WeeklySettlementRepository weeklySettlementRepository;
     private final MonthlySettlementRepository monthlySettlementRepository;
     private final YearlySettlementRepository yearlySettlementRepository;
+    private final PaymentRepository paymentRepository;
 
     // 정산 요약 정보 조회
     @Override
@@ -70,6 +76,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 
     // 일별 정산 집계 조회
+    @Override
     public Page<DailySettlementResDto> getDailySettlement(Long sellerId, int page){
         Pageable pageable = PageRequest.of(page, 15);
         return dailySettlementRepository.findDailySettlement(sellerId, pageable);
@@ -77,21 +84,54 @@ public class SettlementServiceImpl implements SettlementService {
 
 
     // 주차별 정산 집계 조회
+    @Override
     public Page<WeeklySettlementResDto> getWeeklySettlement(Long sellerId, int page){
         Pageable pageable = PageRequest.of(page, 15);
         return weeklySettlementRepository.findWeeklySettlement(sellerId, pageable);
     }
 
     // 월별 정산 집계 조회
+    @Override
     public Page<MonthlySettlementResDto> getMonthlySettlement(Long sellerId, int page){
         Pageable pageable = PageRequest.of(page, 15);
         return monthlySettlementRepository.findMonthlySettlement(sellerId, pageable);
     }
 
     // 연도별 정산 집계 조회
+    @Override
     public Page<YearlySettlementResDto> getYearlySettlement(Long sellerId, int page){
         Pageable pageable = PageRequest.of(page, 15);
         return yearlySettlementRepository.findYearlySettlement(sellerId, pageable);
     }
 
+    // 결제 승인 데이터 정산 반영
+    @Transactional
+    public void aggregateApprovedPayments(){
+        List<Payment> payments =
+                paymentRepository.findApprovedPayments(PaymentStatus.APPROVED);
+
+        for(Payment payment : payments){
+            Settlement settlement = SettlementFactory.create(payment);
+            settlementRepository.save(settlement);
+
+            payment.markSettled();
+        }
+    }
+
+    // 정산 후 환불 반영
+    @Transactional
+    public void syncRefundedPayments() {
+
+        List<Settlement> targets =
+                settlementRepository.findRefundTargets(
+                        com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED,
+                        com.example.BeGroom.settlement.domain.PaymentStatus.PAYMENT
+                );
+
+        for (Settlement settlement : targets) {
+            settlement.markRefunded(
+                    BigDecimal.valueOf(settlement.getPayment().getAmount())
+            );
+        }
+    }
 }

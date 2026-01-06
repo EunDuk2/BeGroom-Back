@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,5 +47,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 """, nativeQuery = true)
     List<RecentRefundProjection> findLatestRefundBySeller(@Param("sellerId") Long sellerId);
 
+    // 정산되지 않은 결제 승인 데이터
+    @Query("""
+    select p
+    from Payment p
+    where p.paymentStatus = :status
+        and p.isSettled = false
+    """)
+    List<Payment> findApprovedPayments(@Param("status") PaymentStatus status);
 
 }

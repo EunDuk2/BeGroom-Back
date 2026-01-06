@@ -1,11 +1,13 @@
 package com.example.BeGroom.settlement.repository;
 
+import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -104,4 +106,14 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
         where s.seller.id = :sellerId
     """)
     BigDecimal getTotalSettlementAmountBySeller(Long sellerId);
+
+    // 정산 테이블에 아직 반영 안된 환불 된 정산 건
+    @Query("""
+        select s
+        from Settlement s
+        where s.payment.isSettled = true
+          and s.payment.paymentStatus = :paymentStatus
+          and s.paymentStatus = :settlementPaymentStatus
+    """)
+    List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") com.example.BeGroom.settlement.domain.PaymentStatus settlementPaymentStatus);
 }

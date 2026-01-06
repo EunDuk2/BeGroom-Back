@@ -20,4 +20,9 @@ public interface SettlementService {
     Page<MonthlySettlementResDto> getMonthlySettlement(Long memberId, int page);
     // 연도별 정산 집계 조회
     Page<YearlySettlementResDto> getYearlySettlement(Long memberId, int page);
+
+    // 결제 승인 데이터 정산
+    void aggregateApprovedPayments();
+    // 정산 후, 환불 데이터 반영
+    void syncRefundedPayments();
 }

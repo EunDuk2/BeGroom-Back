@@ -42,7 +42,6 @@ public class Brand extends BaseEntity {
     private List<Product> products = new ArrayList<>();
 
 
-    // 브랜드 기본 정보 수정
     public void updateBrandInfo(String logoUrl, String description) {
         this.logoUrl = logoUrl;
         this.description = description;

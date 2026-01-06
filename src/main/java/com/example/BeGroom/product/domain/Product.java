@@ -1,6 +1,7 @@
 package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.order.domain.OrderProduct;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.BeGroom.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
