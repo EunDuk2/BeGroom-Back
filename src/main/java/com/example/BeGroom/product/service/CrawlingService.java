@@ -5,6 +5,9 @@ import com.example.BeGroom.product.dto.crawling.CrawlingRequest;
 import com.example.BeGroom.product.dto.crawling.CrawlingResponse;
 import com.example.BeGroom.product.dto.crawling.ProductOptionResponse;
 import com.example.BeGroom.product.repository.*;
+import com.example.BeGroom.seller.domain.Seller;
+import com.example.BeGroom.seller.repository.SellerRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,7 @@ public class CrawlingService {
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
     private final ProductCategoryRepository productCategoryRepository;
+    private final SellerRepository sellerRepository;
     private final RestTemplate restTemplate;
 
     private static final String API_BASE_URL = "https://api.kurly.com/collection/v2/home/sites/market";
@@ -348,10 +352,10 @@ public class CrawlingService {
             return brandRepository.findById(1L).orElse(null);
         }
 
+        Optional<Brand> existingBrand = brandRepository.findByBrandCode(brandCode);
+
         String logoUrl = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getImage() : null;
         String description = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getDescription() : null;
-
-        Optional<Brand> existingBrand = brandRepository.findByBrandCode(brandCode);
 
         if (existingBrand.isPresent()) {
             Brand brand = existingBrand.get();
@@ -364,13 +368,18 @@ public class CrawlingService {
             return brand;
         }
 
+        Seller SystemSeller = sellerRepository.findById(1L)
+                .orElseThrow(() -> new EntityNotFoundException("기본 판매자 정보가 없습니다."));
+
         Brand newBrand = Brand.builder()
-                .sellerId(1L)
+                .seller(SystemSeller)
                 .brandCode(brandCode)
                 .name(brandName)
                 .logoUrl(logoUrl)
                 .description(description)
                 .build();
+
+        SystemSeller.addBrand(newBrand);
 
         return brandRepository.save(newBrand);
     }

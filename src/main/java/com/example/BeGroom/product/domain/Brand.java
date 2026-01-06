@@ -1,6 +1,7 @@
 package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.seller.domain.Seller;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,8 +21,9 @@ public class Brand extends BaseEntity {
     @Column(name = "brand_id")
     private Long brandId;
 
-    @Column(name = "seller_id", nullable = false)
-    private Long sellerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private Seller seller;
 
     @Column(name = "brand_code", unique = true)
     private Long brandCode;
@@ -66,5 +68,9 @@ public class Brand extends BaseEntity {
     public void addProduct(Product product) {
         this.products.add(product);
         product.setBrand(this);
+    }
+
+    public void setSeller(Seller seller) {
+        this.seller = seller;
     }
 }
