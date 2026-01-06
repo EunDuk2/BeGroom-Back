@@ -1,10 +1,7 @@
 package com.example.BeGroom.cart.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
-import com.example.BeGroom.cart.dto.CartItemAddReqDto;
-import com.example.BeGroom.cart.dto.CartItemUpdateQuantityReqDto;
-import com.example.BeGroom.cart.dto.CartItemUpdateSelectedReqDto;
-import com.example.BeGroom.cart.dto.CartResDto;
+import com.example.BeGroom.cart.dto.*;
 import com.example.BeGroom.cart.service.CartService;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,9 +43,9 @@ public class CartController {
     @Operation(summary = "장바구니 상품 추가", description = "장바구니에 상품 추가")
     public ResponseEntity<CommonSuccessDto<Void>> addItem(
             @AuthenticationPrincipal UserPrincipal user,
-            @Valid @RequestBody CartItemAddReqDto request
+            @Valid @RequestBody CartAddListReqDto request
     ) {
-        cartService.addItem(user.getMemberId(), request.getProductDetailId(), request.getQuantity());
+        cartService.addItems(user.getMemberId(), request.getItems());
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(

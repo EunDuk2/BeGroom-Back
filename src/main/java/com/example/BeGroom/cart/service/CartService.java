@@ -2,6 +2,8 @@ package com.example.BeGroom.cart.service;
 
 import com.example.BeGroom.cart.domain.Cart;
 import com.example.BeGroom.cart.domain.CartItem;
+import com.example.BeGroom.cart.dto.CartAddListReqDto;
+import com.example.BeGroom.cart.dto.CartItemAddReqDto;
 import com.example.BeGroom.cart.dto.CartItemResDto;
 import com.example.BeGroom.cart.dto.CartResDto;
 import com.example.BeGroom.cart.repository.CartItemRepository;
@@ -69,10 +71,27 @@ public class CartService {
 
     // 장바구니에 상품 담기 (중복 상품은 수량 증가)
     @Transactional
-    public void addItem(Long memberId, Long productDetailId, Integer quantity) {
+    public void addItems(Long memberId, List<CartItemAddReqDto> itemRequests) {
         Cart cart = getOrCreateCart(memberId);
+
+        for (CartItemAddReqDto req : itemRequests) {
+            executeAddItem(cart, req.getProductDetailId(), req.getQuantity());
+        }
+    }
+
+    @Transactional
+    public void addItem(Long memberId, Long productDetailId, Integer quantity) {
+        this.addItems(memberId, List.of(new CartItemAddReqDto(productDetailId, quantity)));
+    }
+
+    private void executeAddItem(Cart cart, Long productDetailId, Integer quantity) {
         ProductDetail productDetail = productDetailRepository.findById(productDetailId)
                 .orElseThrow(() -> new EntityNotFoundException("상품 옵션 정보를 찾을 수 없습니다."));
+
+        // 판매 중지된 상품 방어 로직
+        if (!productDetail.getIsAvailable()) {
+            throw new IllegalStateException("현재 구매할 수 없는 상품입니다: " + productDetail.getName());
+        }
 
         cartItemRepository.findByCart_CartIdAndProductDetail_ProductDetailId(cart.getCartId(), productDetailId)
                 .ifPresentOrElse(
@@ -94,7 +113,6 @@ public class CartService {
                             log.info("새로운 상품 추가: productDetailId={}, quantity={}", productDetailId, quantity);
                         }
                 );
-
     }
 
     // 상품 수량 변경 (+, - 조정이 아닌 숫자로 변경 시)
