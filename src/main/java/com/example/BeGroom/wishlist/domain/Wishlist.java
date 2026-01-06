@@ -1,5 +1,7 @@
 package com.example.BeGroom.wishlist.domain;
 
+import com.example.BeGroom.member.domain.Member;
+import com.example.BeGroom.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,19 +21,23 @@ public class Wishlist {
     @Column(name = "wishlist_id")
     private Long wishlistId;
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-
-    // 회원 소유 여부 확인
-    public boolean isOwnedBy(Long memberId) {
-        return this.memberId.equals(memberId);
+    // 생성 메서드
+    public static Wishlist create(Member member, Product product) {
+        return Wishlist.builder()
+                .member(member)
+                .product(product)
+                .build();
     }
 }

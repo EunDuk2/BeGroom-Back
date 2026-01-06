@@ -50,7 +50,7 @@ public class WishlistResDto {
     ) {
         return WishlistResDto.builder()
                 .wishlistId(wishlist.getWishlistId())
-                .productId(wishlist.getProductId())
+                .productId(wishlist.getProduct().getProductId())
                 .productName(productName)
                 .mainImageUrl(mainImageUrl)
                 .salesPrice(salesPrice)
@@ -64,7 +64,7 @@ public class WishlistResDto {
     public static WishlistResDto from(Wishlist wishlist) {
         return WishlistResDto.builder()
                 .wishlistId(wishlist.getWishlistId())
-                .productId(wishlist.getProductId())
+                .productId(wishlist.getProduct().getProductId())
                 .productName("삭제된 상품입니다.")
                 .createdAt(wishlist.getCreatedAt())
                 .build();

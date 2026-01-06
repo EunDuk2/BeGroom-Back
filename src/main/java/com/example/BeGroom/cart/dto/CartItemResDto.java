@@ -46,12 +46,15 @@ public class CartItemResDto {
     @Schema(description = "재고 수량", example = "123")
     private Integer stockQuantity;
 
+    @Schema(description = "배송 방식", example = "DAWN")
+    private String deliveryType;
+
 
     // Entity -> DTO (기본 정보)
     public static CartItemResDto from(CartItem cartItem) {
         return CartItemResDto.builder()
                 .cartItemId(cartItem.getCartItemId())
-                .productDetailId(cartItem.getProductDetailId())
+                .productDetailId(cartItem.getProductDetail().getProductDetailId())
                 .quantity(cartItem.getQuantity())
                 .isSelected(cartItem.getIsSelected())
                 .build();
@@ -66,11 +69,12 @@ public class CartItemResDto {
             Integer basePrice,
             Integer discountedPrice,
             Boolean isSoldOut,
-            Integer stockQuantity
+            Integer stockQuantity,
+            String deliveryType
     ) {
         return CartItemResDto.builder()
                 .cartItemId(cartItem.getCartItemId())
-                .productDetailId(cartItem.getProductDetailId())
+                .productDetailId(cartItem.getProductDetail().getProductDetailId())
                 .productName(productName)
                 .mainImageUrl(mainImageUrl)
                 .productDetailName(productDetailName)
@@ -80,6 +84,7 @@ public class CartItemResDto {
                 .isSelected(cartItem.getIsSelected())
                 .isSoldOut(isSoldOut)
                 .stockQuantity(stockQuantity)
+                .deliveryType(deliveryType)
                 .build();
     }
 }

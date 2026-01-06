@@ -40,6 +40,9 @@ public class ProductListResDto {
     @Schema(description = "메인 이미지 URL")
     private String mainImageUrl;
 
+    @Schema(description = "위시리스트 담긴 수")
+    private Integer wishlistCount;
+
     @Schema(description = "품절 여부", example = "true")
     private Boolean isSoldOut;
 
@@ -58,6 +61,7 @@ public class ProductListResDto {
                 .discountedPrice(product.getDiscountedPrice())
                 .discountRate(product.getDiscountRate())
                 .mainImageUrl(mainImageUrl)
+                .wishlistCount(product.getWishlistCount())
                 .isSoldOut(product.getIsSoldOut())
                 .productStatus(product.getProductStatus().name())
                 .build();

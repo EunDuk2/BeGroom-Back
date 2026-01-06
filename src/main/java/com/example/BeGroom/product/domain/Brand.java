@@ -4,6 +4,9 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "brand")
 @Getter
@@ -32,8 +35,36 @@ public class Brand extends BaseEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @OneToMany(mappedBy = "brand", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Product> products = new ArrayList<>();
+
+
+    // 브랜드 기본 정보 수정
     public void updateBrandInfo(String logoUrl, String description) {
         this.logoUrl = logoUrl;
         this.description = description;
+    }
+
+    // 브랜드 이름 변경
+    public void changeName(String name) {
+        validateName(name);
+        this.name = name;
+    }
+
+    // 이름 유효성 검사
+    private void validateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("브랜드 이름은 필수이며 공백일 수 없습니다.");
+        }
+        if (name.length() > 100) {
+            throw new IllegalArgumentException("브랜드 이름은 100자를 초과할 수 없습니다.");
+        }
+    }
+
+    // 연관관계 편의 메서드
+    public void addProduct(Product product) {
+        this.products.add(product);
+        product.setBrand(this);
     }
 }

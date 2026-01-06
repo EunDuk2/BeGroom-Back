@@ -1,10 +1,15 @@
 package com.example.BeGroom.member.domain;
 
+import com.example.BeGroom.cart.domain.Cart;
 import com.example.BeGroom.common.entity.BaseEntity;
+import com.example.BeGroom.wishlist.domain.Wishlist;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -29,6 +34,12 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Cart cart;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Wishlist> wishlists = new ArrayList<>();
+
     private Member(String email, String name, String password, String phoneNumber, Role role) {
         this.email = email;
         this.name = name;
@@ -39,5 +50,10 @@ public class Member extends BaseEntity {
 
     public static Member createMember(String email, String name, String password, String phoneNumber, Role role) {
         return new Member(email, name, password, phoneNumber, role);
+    }
+
+    // 연관관계 편의 메서드
+    public void assignCart(Cart cart) {
+        this.cart = cart;
     }
 }

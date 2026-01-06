@@ -9,6 +9,8 @@ import com.example.BeGroom.order.dto.OrderCreateReqDto;
 import com.example.BeGroom.order.dto.OrderProductReqDto;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.product.domain.Product;
+import com.example.BeGroom.product.domain.ProductDetail;
+import com.example.BeGroom.product.repository.ProductDetailRepository;
 import com.example.BeGroom.product.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
+    private final ProductDetailRepository productDetailRepository;
 
 
     @Override
@@ -39,12 +42,15 @@ public class OrderServiceImpl implements OrderService {
         // 상품 리스트 조회
         List<OrderProductReqDto> orderProductReqDtoList = reqDto.getOrderProductList();
         for(OrderProductReqDto orderProductReqDto : orderProductReqDtoList) {
-            Product product = productRepository.findById(orderProductReqDto.getProductId()).orElseThrow(() -> new EntityNotFoundException("없는 상품입니다."));
+            ProductDetail productDetail = productDetailRepository.findById(orderProductReqDto.getProductId()).orElseThrow(() -> new EntityNotFoundException("없는 상품입니다."));
             // 재고 검증
-            product.validateOrderable(orderProductReqDto.getOrderQuantity());
+            productDetail.validateOrderable(orderProductReqDto.getOrderQuantity());
+
+            // 재고 차감
+            productDetail.decreaseStock(orderProductReqDto.getOrderQuantity());
 
             // OrderProduct 생성
-            OrderProduct orderProduct = OrderProduct.create(order, product, orderProductReqDto.getOrderQuantity(), product.getSalesPrice());
+            OrderProduct orderProduct = OrderProduct.create(order, productDetail, orderProductReqDto.getOrderQuantity(), productDetail.getSellingPrice());
 
             // orderProduct를 order에 추가
             order.addOrderProduct(orderProduct);

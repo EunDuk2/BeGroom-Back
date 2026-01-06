@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/wishlist")
+@RequestMapping("/wishlist")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "BearerAuth")
 @Tag(name = "Wishlist API", description = "위시리스트 API")

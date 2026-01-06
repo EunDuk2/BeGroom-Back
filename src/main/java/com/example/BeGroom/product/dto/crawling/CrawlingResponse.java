@@ -6,9 +6,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * 상품 기본 정보 API 응답 DTO
- */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CrawlingResponse {
@@ -67,35 +64,9 @@ public class CrawlingResponse {
         @JsonProperty("is_multiple_price")
         private Boolean isMultiplePrice;
 
-        /**
-         * null 안전 처리
-         */
-        public Boolean getIsSoldOut() {
-            return isSoldOut != null ? isSoldOut : false;
-        }
 
-        public Boolean getIsBuyNow() {
-            return isBuyNow != null ? isBuyNow : false;
-        }
-
-        public Boolean getIsPurchaseStatus() {
-            return isPurchaseStatus != null ? isPurchaseStatus : false;
-        }
-
-        public Boolean getIsOnlyAdult() {
-            return isOnlyAdult != null ? isOnlyAdult : false;
-        }
-
-        public Boolean getIsLowStock() {
-            return isLowStock != null ? isLowStock : false;
-        }
-
-        public Boolean getCanRestockNotify() {
-            return canRestockNotify != null ? canRestockNotify : false;
-        }
-
-        public Integer getDiscountRate() {
-            return discountRate != null ? discountRate : 0;
+        public Integer getSafeSalesPrice() {
+            return salesPrice != null ? salesPrice : 0;
         }
 
         public Integer getStock() {

@@ -6,7 +6,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -14,8 +17,8 @@ import java.util.List;
 @Builder
 public class CartResDto {
 
-    @Schema(description = "장바구니 상품 목록")
-    private List<CartItemResDto> items;
+    @Schema(description = "배송 방식별 그룹화된 장바구니 상품 목록")
+    private List<CartGroupDto> groupItems;
 
     @Schema(description = "전체 상품 개수", example = "5")
     private Integer totalCount;
@@ -32,22 +35,27 @@ public class CartResDto {
     @Schema(description = "선택된 상품 최종 결제 금액", example = "40000")
     private Integer finalPrice;
 
+    @Schema(description = "배송비", example = "3000")
+    private Integer deliveryFee;
+
 
     public static CartResDto of (
-            List<CartItemResDto> items,
+            List<CartGroupDto> groupItems,
             Integer totalCount,
             Integer selectedCount,
             Integer totalPrice,
             Integer totalDiscountPrice,
-            Integer finalPrice
+            Integer finalPrice,
+            Integer deliveryFee
     ) {
         return CartResDto.builder()
-                .items(items)
+                .groupItems(groupItems)
                 .totalCount(totalCount)
                 .selectedCount(selectedCount)
                 .totalPrice(totalPrice)
                 .totalDiscountPrice(totalDiscountPrice)
                 .finalPrice(finalPrice)
+                .deliveryFee(deliveryFee)
                 .build();
     }
 
@@ -61,26 +69,54 @@ public class CartResDto {
                 .toList();
         int selectedCount = selectedItems.size();
 
+        // 정가 기준 총액
         int totalPrice = selectedItems.stream()
                 .mapToInt(item -> (item.getBasePrice() != null ? item.getBasePrice() : 0) * item.getQuantity())
                 .sum();
 
-        int finalPrice = selectedItems.stream()
+        // 할인 적용된 총액 (배송비 제외)
+        int totalProductPrice = selectedItems.stream()
                 .mapToInt(item -> {
                     int price = item.getDiscountedPrice() != null ? item.getDiscountedPrice() : item.getBasePrice();
                     return price * item.getQuantity();
                 })
                 .sum();
 
-        int totalDiscountPrice = totalPrice - finalPrice;
+        // 배송비 계산
+        int dawnProductsTotalPrice = selectedItems.stream()
+                .filter(item -> "DAWN".equals(item.getDeliveryType()))
+                .mapToInt(item -> {
+                    int price = item.getDiscountedPrice() != null ? item.getDiscountedPrice() : item.getBasePrice();
+                    return price * item.getQuantity();
+                })
+                .sum();
+        int deliveryFee = (dawnProductsTotalPrice > 0 && dawnProductsTotalPrice < 40000) ? 3000 : 0;
+        int finalPrice = totalProductPrice + deliveryFee;
+        int totalDiscountPrice = totalPrice - totalProductPrice;
+
+        // 배송방식에 따른 그룹화
+        Map<String, List<CartItemResDto>> groupedMap = items.stream()
+                .collect(Collectors.groupingBy(item -> {
+                    return item.getDeliveryType() != null ? item.getDeliveryType() : "NORMAL_PARCEL";
+                }));
+
+        List<CartGroupDto> groups = groupedMap.entrySet().stream()
+                .map(entry -> CartGroupDto.builder()
+                        .deliveryType(entry.getKey())
+                        .deliveryTypeName("DAWN".equals(entry.getKey()) ? "구름배송" : "판매자배송")
+                        .items(entry.getValue())
+                        .build())
+                .sorted(Comparator.comparing(g -> !"DAWN".equals(g.getDeliveryType())))
+                .toList();
 
         return CartResDto.builder()
-                .items(items)
+                .groupItems(groups)
                 .totalCount(totalCount)
                 .selectedCount(selectedCount)
                 .totalPrice(totalPrice)
                 .totalDiscountPrice(totalDiscountPrice)
                 .finalPrice(finalPrice)
+                .deliveryFee(deliveryFee)
                 .build();
     }
 }
