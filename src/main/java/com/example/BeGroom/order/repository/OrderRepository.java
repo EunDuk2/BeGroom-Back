@@ -40,7 +40,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         select count(distinct o.id)
         from orders o
         join order_product op on o.id = op.order_id
-        join product p on op.product_id = p.product_id
+        join product_detail pd on op.product_detail_id = pd.product_detail_id
+        join product p on pd.product_id = p.product_id
         join brand b on p.brand_id = b.brand_id
         join payment pay on pay.order_id = o.id
         where b.seller_id = :sellerId
@@ -72,7 +73,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             pay.approved_at as approvedAt
         from orders o
         join order_product op on o.id = op.order_id
-        join product p on op.product_id = p.product_id
+        join product_detail pd on op.product_detail_id = pd.product_detail_id
+        join product p on pd.product_id = p.product_id
         join brand b on p.brand_id = b.brand_id
         join payment pay on pay.order_id = o.id
         where b.seller_id = :sellerId
@@ -122,8 +124,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         FROM orders o
         JOIN order_product op
             ON o.id = op.order_id
+        JOIN product_detail pd
+                ON op.product_detail_id = pd.product_detail_id
         JOIN product p
-            ON op.product_id = p.product_id
+                ON pd.product_id = p.product_id
         JOIN brand b
             ON p.brand_id = b.brand_id
         JOIN payment pay
@@ -138,8 +142,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         FROM orders o
         JOIN order_product op
             ON o.id = op.order_id
+        JOIN product_detail pd
+                ON op.product_detail_id = pd.product_detail_id
         JOIN product p
-            ON op.product_id = p.product_id
+                ON pd.product_id = p.product_id
         JOIN brand b
             ON p.brand_id = b.brand_id
         WHERE b.seller_id = :sellerId
