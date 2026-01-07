@@ -43,6 +43,9 @@ public class ProductListResDto {
     @Schema(description = "위시리스트 담긴 수")
     private Integer wishlistCount;
 
+    @Schema(description = "사용자가 찜했는지 여부")
+    private Boolean isWishlisted;
+
     @Schema(description = "품절 여부", example = "true")
     private Boolean isSoldOut;
 
@@ -50,7 +53,7 @@ public class ProductListResDto {
     private String productStatus;
 
     // Entity -> DTO 변환
-    public static ProductListResDto from(Product product, String mainImageUrl, String brandName) {
+    public static ProductListResDto from(Product product, String mainImageUrl, String brandName, Boolean isWishlisted) {
         return ProductListResDto.builder()
                 .productId(product.getProductId())
                 .productNo(product.getProductNo())
@@ -64,6 +67,7 @@ public class ProductListResDto {
                 .wishlistCount(product.getWishlistCount())
                 .isSoldOut(product.getIsSoldOut())
                 .productStatus(product.getProductStatus().name())
+                .isWishlisted(isWishlisted)
                 .build();
     }
 }

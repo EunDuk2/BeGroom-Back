@@ -7,7 +7,9 @@ import com.example.BeGroom.product.dto.ProductListResDto;
 import com.example.BeGroom.product.dto.ProductSearchCondition;
 import com.example.BeGroom.product.repository.*;
 import com.example.BeGroom.product.specification.ProductSpecification;
+import com.example.BeGroom.wishlist.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,6 +32,7 @@ public class ProductService {
     private final ProductDetailRepository productDetailRepository;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
+    private final WishlistRepository wishlistRepository;
 
     // 관리자용 상품 목록 조회 (페이징)
     public Page<ProductListResDto> getAllProductsForAdmin(List<String> statuses, Pageable pageable) {
@@ -45,12 +51,12 @@ public class ProductService {
         return products.map(product -> {
             String mainImageUrl = getMainImageUrl(product.getProductId());
             String brandName = product.getBrand() != null ? product.getBrand().getName() : null;
-            return ProductListResDto.from(product, mainImageUrl, brandName);
+            return ProductListResDto.from(product, mainImageUrl, brandName, false);
         });
     }
 
     // 상품 상세 조회
-    public ProductDetailResDto getProductDetail(Long productId) {
+    public ProductDetailResDto getProductDetail(Long productId, Long memberId) {
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
@@ -59,12 +65,18 @@ public class ProductService {
         List<String> detailImageUrls = getDetailImageUrls(productId);
         List<ProductDetailDto> details = getProductDetails(productId);
         String brandName = product.getBrand() != null ? product.getBrand().getName() : null;
+        Integer wishlistCount = product.getWishlistCount();
 
-        return ProductDetailResDto.from(product, mainImageUrl, detailImageUrls, details, brandName);
+        Boolean isWishlisted = false;
+        if (memberId != null) {
+            isWishlisted = wishlistRepository.existsByMember_IdAndProduct_ProductId(memberId, productId);
+        }
+
+        return ProductDetailResDto.from(product, mainImageUrl, detailImageUrls, details, brandName, wishlistCount, isWishlisted);
     }
 
     // 상품 검색 (키워드, 필터, 정렬, 페이징)
-    public Page<ProductListResDto> searchProducts(ProductSearchCondition condition, Pageable pageable) {
+    public Page<ProductListResDto> searchProducts(ProductSearchCondition condition, Pageable pageable, Long memberId) {
 
         List<Long> productIdsWithCategory = null;
         if (condition.getCategoryIds() != null && !condition.getCategoryIds().isEmpty()) {
@@ -104,11 +116,21 @@ public class ProductService {
 
         Page<Product> products = productRepository.findAll(spec, pageable);
 
+        Set<Long> wishlistedProductIds = Set.of();
+        if (memberId != null) {
+            wishlistedProductIds = wishlistRepository.findAllByMember_Id(memberId)
+                    .stream()
+                    .map(wishlist -> wishlist.getProduct().getProductId())
+                    .collect(Collectors.toSet());
+        }
+
+        Set<Long> finalWishlistedProductIds = wishlistedProductIds;
         return products.map(product -> {
             String mainImageUrl = getMainImageUrl(product.getProductId());
             String brandName = product.getBrand() != null ? product.getBrand().getName() : null;
+            Boolean isWishlisted = finalWishlistedProductIds.contains(product.getProductId());
 
-            return ProductListResDto.from(product, mainImageUrl, brandName);
+            return ProductListResDto.from(product, mainImageUrl, brandName, isWishlisted);
         });
     }
 

@@ -125,7 +125,7 @@ public class MemberServiceImpl implements MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
-        List<Wishlist> wishlists = wishlistRepository.findAllByMemberId(memberId);
+        List<Wishlist> wishlists = wishlistRepository.findAllByMember_Id(memberId);
 
         return GetMemberWishesResDto.from(wishlists);
     }
