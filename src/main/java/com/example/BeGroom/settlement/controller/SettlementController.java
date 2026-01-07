@@ -7,6 +7,7 @@ import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.LocalDate;
 
 @RestController
@@ -143,5 +145,24 @@ public class SettlementController {
                                 "연도별 정산 조회 성공"
                         )
                 );
+    }
+
+    // API 7. CSV 내보내기
+    @GetMapping("/csv")
+    @Operation(summary = "CSV 내보내기", description = "일별 정산내역을 조회합니다.")
+    public void downloadDailySettlementCsv(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            HttpServletResponse response
+    )throws IOException {
+        String fileName = "daily_settlement_all.csv";
+        // 응답 타입 설정: csv
+        response.setContentType("text/csv; charset=UTF-8");
+        // 헤더 설정: 다운로드 파일명
+        // 해당 응답 화면에 보여주지 않고 다운로드
+        response.setHeader(
+                "Content-Disposition",
+                "attachment; filename=\"" + fileName +"\""
+        );
+        settlementService.writeDailySettlementCsv(userPrincipal.getMemberId(), response.getWriter());
     }
 }
