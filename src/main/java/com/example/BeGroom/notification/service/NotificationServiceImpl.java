@@ -57,13 +57,14 @@ public class NotificationServiceImpl implements NotificationService {
 
         memberNotificationRepository.saveAll(notifications);
 
-        String notificationContent = "새로운 알림이 도착했습니다!"; // 실제론 템플릿 치환된 메시지 사용
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("message", "새로운 알림이 도착했습니다!");
 
         for (Long receiverId : receiverIds) {
             Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(String.valueOf(receiverId));
 
             emitters.forEach((id, emitter) -> {
-                sendToClient(emitter, id, "notification", notificationContent);
+                sendToClient(emitter, id, "notification", eventData);
             });
         }
     }
