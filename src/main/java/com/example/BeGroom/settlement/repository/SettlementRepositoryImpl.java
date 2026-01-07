@@ -1,7 +1,10 @@
 package com.example.BeGroom.settlement.repository;
 
+import com.example.BeGroom.settlement.domain.QDailySettlement;
 import com.example.BeGroom.settlement.domain.QSettlement;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.dto.res.DailySettlementCsvDto;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,12 +20,12 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
 
     private final JPAQueryFactory queryFactory;
 
-    QSettlement s = QSettlement.settlement;
-
+    // 건별 정산 조회
     @Override
     public Page<Settlement> findProductSettlementListBySeller(
             Long sellerId, LocalDate startDate, LocalDate endDate, Pageable pageable
     ){
+        QSettlement s = QSettlement.settlement;
 
         // 동적 날짜 조건
         LocalDateTime start = startDate != null ? startDate.atStartOfDay() : null;
@@ -48,5 +51,31 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+
+    // 일별 정산 csv 다운로드
+    @Override
+    public List<DailySettlementCsvDto> findAllDailySettlementBySeller(Long sellerId){
+
+        QDailySettlement d = QDailySettlement.dailySettlement;
+
+        return queryFactory
+                .select(Projections.constructor(
+                        DailySettlementCsvDto.class,
+                        d.id.date,
+                        d.paymentAmount,
+                        d.fee,
+                        d.settlementAmount,
+                        d.refundAmount
+                ))
+                .from(d)
+                .where(d.id.sellerId.eq(sellerId))
+                .orderBy(d.id.date.asc())
+                .fetch();
+
+        // 한번에 가져오는 fetch() 대신 stream(),
+        // chunk 단위 조회(limit/offset),
+        // 비동기 csv 생성 후 다운로드 링크 제공
     }
 }

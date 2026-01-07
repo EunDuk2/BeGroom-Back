@@ -27,6 +27,12 @@ public class ProductDetailResDto {
     @Schema(description = "상품명", example = "[바름팜] 친환경 감자 600g")
     private String name;
 
+    @Schema(description = "위시리스트 담긴 수")
+    private Integer wishlistCount;
+
+    @Schema(description = "사용자가 찜했는지 여부")
+    private Boolean isWishlisted;
+
     @Schema(description = "간단 설명", example = "안심하고 즐기는 파근파근함")
     private String shortDescription;
 
@@ -72,13 +78,17 @@ public class ProductDetailResDto {
             String mainImageUrl,
             List<String> detailImageUrls,
             List<ProductDetailDto> details,
-            String brandName
+            String brandName,
+            Integer wishlistCount,
+            Boolean isWishlisted
     ) {
         return ProductDetailResDto.builder()
                 .productId(product.getProductId())
                 .productNo(product.getProductNo())
                 .brand(brandName)
                 .name(product.getName())
+                .wishlistCount(wishlistCount)
+                .isWishlisted(isWishlisted)
                 .shortDescription(product.getShortDescription())
                 .salesPrice(product.getSalesPrice())
                 .discountedPrice(product.getDiscountedPrice())

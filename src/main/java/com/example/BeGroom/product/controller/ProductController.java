@@ -1,5 +1,6 @@
 package com.example.BeGroom.product.controller;
 
+import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.product.dto.ProductDetailResDto;
 import com.example.BeGroom.product.dto.ProductListResDto;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +31,13 @@ public class ProductController {
     @GetMapping("/{productId}")
     @Operation(summary = "상품 상세 조회", description = "상품 ID로 상세 정보 조회")
     public ResponseEntity<CommonSuccessDto<ProductDetailResDto>> getProductDetail(
-            @PathVariable Long productId
-    ) {
-        ProductDetailResDto product = productService.getProductDetail(productId);
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserPrincipal user
+            ) {
+
+        Long memberId = user != null ? user.getMemberId() : null;
+
+        ProductDetailResDto product = productService.getProductDetail(productId, memberId);
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(
@@ -54,8 +60,11 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "productId") String sort,
-            @RequestParam(defaultValue = "DESC") String direction
+            @RequestParam(defaultValue = "DESC") String direction,
+            @AuthenticationPrincipal UserPrincipal user
     ) {
+
+        Long memberId = user != null ? user.getMemberId() : null;
         ProductSearchCondition condition = ProductSearchCondition.builder()
                 .keyword(keyword)
                 .categoryIds(categoryIds)
@@ -68,7 +77,7 @@ public class ProductController {
         Sort.Direction sortDirection = direction.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-        Page<ProductListResDto> products = productService.searchProducts(condition, pageable);
+        Page<ProductListResDto> products = productService.searchProducts(condition, pageable, memberId);
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(

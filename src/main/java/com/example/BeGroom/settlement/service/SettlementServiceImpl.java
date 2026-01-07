@@ -20,6 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -106,6 +108,7 @@ public class SettlementServiceImpl implements SettlementService {
 
     // 결제 승인 데이터 정산 반영
     @Transactional
+    @Override
     public void aggregateApprovedPayments(){
         List<Payment> payments =
                 paymentRepository.findApprovedPayments(PaymentStatus.APPROVED);
@@ -120,6 +123,7 @@ public class SettlementServiceImpl implements SettlementService {
 
     // 정산 후 환불 반영
     @Transactional
+    @Override
     public void syncRefundedPayments() {
 
         List<Settlement> targets =
@@ -133,5 +137,30 @@ public class SettlementServiceImpl implements SettlementService {
                     BigDecimal.valueOf(settlement.getPayment().getAmount())
             );
         }
+    }
+
+    // csv 내보내기
+    @Override
+    public void writeDailySettlementCsv(Long sellerId, PrintWriter writer)throws IOException {
+        List<DailySettlementCsvDto> settlementCsvDtos =
+                settlementRepository.findAllDailySettlementBySeller(sellerId);
+
+        // BOM(엑셀 한글 깨짐 방지)
+        writer.write("\uFEFF");
+
+        // Header
+        writer.write("정산일자,결제금액,수수료,정산금액,환불금액\n");
+
+        for (DailySettlementCsvDto s : settlementCsvDtos){
+            writer.write(
+                    s.getSettlementDate() + "," +
+                            s.getPaymentAmount() + "," +
+                            s.getFee() + "," +
+                            s.getSettlementAmount() + "," +
+                            s.getRefundAmount() + "\n"
+            );
+        }
+        // 버퍼 -> HTTP Response -> 브라우저
+        writer.flush();
     }
 }

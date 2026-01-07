@@ -1,5 +1,6 @@
 package com.example.BeGroom.common.config;
 
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -17,6 +18,8 @@ public class SwaggerConfig {
         // 보안 스키마 이름 설정 (컨트롤러에서 참조하는 이름)
         String securitySchemeName = "BearerAuth";
 
+        SecurityRequirement securityRequirement = new SecurityRequirement().addList(securitySchemeName);
+
         // 보안 컴포넌트 정의
         Components components = new Components()
                 .addSecuritySchemes(securitySchemeName, new SecurityScheme()
@@ -28,6 +31,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .addServersItem(new Server().url("/api"))
                 .info(apiInfo())
+                .addSecurityItem(securityRequirement)
                 .components(components);
     }
 

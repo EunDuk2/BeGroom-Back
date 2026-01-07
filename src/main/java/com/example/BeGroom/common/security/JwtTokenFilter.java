@@ -29,7 +29,11 @@ public class JwtTokenFilter extends GenericFilter {
         try {
             HttpServletRequest req = (HttpServletRequest) request;
             String bearerToken = req.getHeader("Authorization");
-            if(bearerToken == null) {
+
+            log.info("[DEBUG] Raw Authorization Header: '{}'", bearerToken);
+
+            if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+                log.info("[JWT] No Token found in header");
                 chain.doFilter(request, response);
                 return;
             }
@@ -41,19 +45,27 @@ public class JwtTokenFilter extends GenericFilter {
                     .parseClaimsJws(token)
                     .getBody();
 
-            Long memberId = claims.get("memberId", Long.class);
+            Object memberIdObj = claims.get("memberId");
+            if (memberIdObj == null) memberIdObj = claims.get("id"); // "id"로 들어있을 경우 대비
+
+            Long memberId = (memberIdObj instanceof Number) ? ((Number) memberIdObj).longValue() : null;
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
 
-            UserPrincipal principal = new UserPrincipal(memberId, email);
+            if (memberId != null) {
+                UserPrincipal principal = new UserPrincipal(memberId, email);
+                List<GrantedAuthority> authorityList = new ArrayList<>();
+                if (role != null) {
+                    authorityList.add(new SimpleGrantedAuthority("ROLE_" + role));
+                }
 
-            List<GrantedAuthority> authorityList = new ArrayList<>();
-            authorityList.add(new SimpleGrantedAuthority("ROLE_"+role));
-            Authentication authentication = new UsernamePasswordAuthenticationToken(principal, "", authorityList);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(principal, "", authorityList);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.info("[JWT] Authentication success: memberId {}", memberId);
+            }
 
         } catch (Exception e) {
-            log.error("[ERROR] - JwtTokenFilter/doFilter/Exception - {}", e.getMessage());
+            log.error("[JWT ERROR] Token validation failed: {}", e.getMessage());
         }
         chain.doFilter(request, response);
     }
