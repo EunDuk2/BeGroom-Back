@@ -41,7 +41,6 @@ out/
 
 #Docker
 docker-compose.yml
-Dockerfile
 
 #yml
 src/main/resources/application-prod.yml
