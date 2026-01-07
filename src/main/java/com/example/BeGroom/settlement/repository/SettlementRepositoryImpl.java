@@ -32,7 +32,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
                 .selectFrom(s)
                 .where(
                         s.seller.id.eq(sellerId),
-                        start != null && end != null ? s.date.between(start, end) : null
+                        start != null && end != null ? s.createdAt.between(start, end) : null
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -43,7 +43,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
                 .from(s)
                 .where(
                         s.seller.id.eq(sellerId),
-                        start != null && end != null ? s.date.between(start, end) : null
+                        start != null && end != null ? s.createdAt.between(start, end) : null
                 )
                 .fetchOne();
 

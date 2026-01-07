@@ -7,6 +7,7 @@ import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -39,6 +40,7 @@ public class SettlementFactory {
                 .status(SettlementStatus.UNSETTLED)
                 .paymentStatus(PaymentStatus.PAYMENT)
                 .refundAmount(BigDecimal.ZERO)
+                .date(LocalDate.now())
                 .build();
     }
 }
