@@ -1,5 +1,7 @@
 package com.example.BeGroom.usecase.cancel_order.service;
 
+import com.example.BeGroom.notification.domain.NotificationTemplate;
+import com.example.BeGroom.notification.service.NotificationService;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderRepository;
@@ -7,11 +9,17 @@ import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.domain.RefundReason;
 import com.example.BeGroom.payment.repository.PaymentRepository;
+import com.example.BeGroom.payment.service.PaymentService;
 import com.example.BeGroom.wallet.service.WalletService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +28,7 @@ public class CancelOrderServiceImpl implements CancelOrderService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final WalletService walletService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -42,7 +51,21 @@ public class CancelOrderServiceImpl implements CancelOrderService {
         order.cancel();
         // 결제 환불 처리
         payment.refund(RefundReason.CUSTOMER_REQUEST);
-
+        // 알림 발송
+        try {
+            Long receiverId = order.getMember().getId();
+            List<Long> receivers = List.of(receiverId);
+            Map<String, String> variables = getRefundCompleteNoticeMap(order);
+            notificationService.send(receivers, NotificationTemplate.ORDER_SINGLE_PRODUCT.getId(), variables);
+        } catch (Exception e) {
+            // 전송 실패
+        }
     }
 
+    private static @NonNull Map<String, String> getRefundCompleteNoticeMap(Order order) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("orderId", String.valueOf(order.getId()));
+        variables.put("refundAmount", String.valueOf(order.getTotalAmount()));
+        return variables;
+    }
 }
