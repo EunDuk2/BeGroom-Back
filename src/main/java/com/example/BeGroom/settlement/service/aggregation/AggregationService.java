@@ -23,7 +23,6 @@ public class AggregationService {
     @Transactional
     public void aggregate() {
         // 미집계 데이터 조회
-//        List<Settlement> unaggregated = settlementRepository.findByAggregatedFalse();
         List<Settlement> unaggregated = settlementRepository.findByStatus(SettlementStatus.UNSETTLED);
 
         for(Settlement settlement : unaggregated){

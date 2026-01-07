@@ -65,7 +65,7 @@ public class Settlement extends BaseEntity {
     private LocalDate payoutDate;
     // 정산일
     @Column()
-    private LocalDateTime date;
+    private LocalDate date = LocalDate.now();
 
     public void markAggregated(){
         this.status = SettlementStatus.SETTLED;
@@ -75,7 +75,6 @@ public class Settlement extends BaseEntity {
         this.paymentStatus = PaymentStatus.REFUND;
         this.refundAmount = refundAmount;
     }
-
 
     @Builder
     private Settlement(
@@ -89,7 +88,7 @@ public class Settlement extends BaseEntity {
             PaymentStatus paymentStatus,
             BigDecimal refundAmount,
             LocalDate payoutDate,
-            LocalDateTime date
+            LocalDate date
     ) {
         this.seller = seller;
         this.payment = payment;

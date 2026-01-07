@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,7 +21,7 @@ public class ProductSettlementResDto {
     private Long id;
 
     @Schema(example = "2025-01-01T14:30:00")
-    private LocalDateTime createdAt;
+    private LocalDate date;
 
     @Schema(example = "128000")
     private Long paymentAmount;
