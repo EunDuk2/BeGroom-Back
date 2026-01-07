@@ -5,6 +5,7 @@ import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.seller.domain.Seller;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -41,7 +42,7 @@ public class Settlement extends BaseEntity {
     private Long paymentAmount;
     // 수수료율
     @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal feeRate;
+    private BigDecimal feeRate = BigDecimal.valueOf(10.00);
     // 수수료
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal fee;
@@ -51,22 +52,55 @@ public class Settlement extends BaseEntity {
     // 정산상태
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private SettlementStatus status;
+    private SettlementStatus status = SettlementStatus.UNSETTLED;
     // 결제상태
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus;
+    private PaymentStatus paymentStatus = PaymentStatus.PAYMENT;
     // 환불금액
     @Column(precision = 12, scale = 2)
     private BigDecimal refundAmount = BigDecimal.ZERO;
     // 지급일
-    @Column(nullable = false)
+    @Column()
     private LocalDate payoutDate;
     // 정산일
-    @Column(nullable = false)
+    @Column()
     private LocalDateTime date;
 
     public void markAggregated(){
         this.status = SettlementStatus.SETTLED;
+    }
+
+    public void markRefunded(BigDecimal refundAmount) {
+        this.paymentStatus = PaymentStatus.REFUND;
+        this.refundAmount = refundAmount;
+    }
+
+
+    @Builder
+    private Settlement(
+            Seller seller,
+            Payment payment,
+            Long paymentAmount,
+            BigDecimal feeRate,
+            BigDecimal fee,
+            BigDecimal settlementAmount,
+            SettlementStatus status,
+            PaymentStatus paymentStatus,
+            BigDecimal refundAmount,
+            LocalDate payoutDate,
+            LocalDateTime date
+    ) {
+        this.seller = seller;
+        this.payment = payment;
+        this.paymentAmount = paymentAmount;
+        this.feeRate = feeRate;
+        this.fee = fee;
+        this.settlementAmount = settlementAmount;
+        this.status = status;
+        this.paymentStatus = paymentStatus;
+        this.refundAmount = refundAmount != null ? refundAmount : BigDecimal.ZERO;
+        this.payoutDate = payoutDate;
+        this.date = date;
     }
 }

@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,16 +17,16 @@ import java.util.List;
 @AllArgsConstructor
 public class SettlementManageResDto {
 
-    @Schema(example = "2300000")
-    private int totalPaymentAmount;
+    @Schema(example = "50000")
+    private Long totalPaymentAmount;
 
-    @Schema(example = "66000")
-    private int totalRefundAmount;
+    @Schema(example = "66000.00")
+    private BigDecimal totalRefundAmount;
 
-    @Schema(example = "223400")
-    private int totalFeeAmount;
+    @Schema(example = "223400.00")
+    private BigDecimal totalFeeAmount;
 
-    @Schema(example = "2010600")
-    private int totalSettlementAmount;
+    @Schema(example = "2010600.00")
+    private BigDecimal totalSettlementAmount;
 
 }

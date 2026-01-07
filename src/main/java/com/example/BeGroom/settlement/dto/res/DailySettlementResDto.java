@@ -1,35 +1,35 @@
 package com.example.BeGroom.settlement.dto.res;
 
-import com.example.BeGroom.settlement.domain.SettlementStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PeriodSettlementResDto {
+public class DailySettlementResDto {
 
-    @NotEmpty
     @Schema(example = "2025-12-01", description = "정산 기간")
-    private String period;
+    private LocalDate period;
 
-    @Schema(example = "10", description = "주문 건수")
-    private int orderCnt;
+//    @Schema(example = "10", description = "주문 건수")
+//    private int orderCnt;
 
     @Schema(example = "500000", description = "총 매출 금액")
-    private long totalSalesAmount;
+    private BigDecimal totalSalesAmount;
 
     @Schema(example = "50000", description = "총 수수료 금액")
-    private long totalFeeAmount;
+    private BigDecimal totalFeeAmount;
 
     @Schema(example = "450000", description = "정산 금액")
-    private long settlementAmount;
+    private BigDecimal settlementAmount;
 
-    @NotNull
-    @Schema(example = "SETTLED", description = "정산 상태")
-    private SettlementStatus status;
+//    @NotNull
+//    @Schema(example = "SETTLED", description = "정산 상태")
+//    private SettlementStatus status;
 }

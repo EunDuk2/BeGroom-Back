@@ -32,10 +32,6 @@ public class NotificationController {
     @GetMapping
     @Operation(summary = "사용자 알림 조회", description = "특정 사용자의 알림 리스트를 불러온다.")
     public ResponseEntity<CommonSuccessDto<GetMemberNotificationResDto>> getAllMemberNotifications(@AuthenticationPrincipal UserPrincipal userPrincipal){
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        System.out.println("현재 로그인된 객체 타입: " + principal.getClass().getName());
-        System.out.println("현재 로그인된 객체 값: " + principal);
-
         if(userPrincipal == null){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -78,11 +74,27 @@ public class NotificationController {
                 .body(
                         CommonSuccessDto.of(
                                 true,
-                                HttpStatus.CREATED,
+                                HttpStatus.OK,
                                 "알림 읽음 성공"
                         )
                 );
     }
+
+    @PatchMapping("/all")
+    @Operation(summary = "알림 전체 읽음 처리", description = "사용자의 알림을 전체 읽음 처리한다.")
+    public ResponseEntity<CommonSuccessDto<Boolean>> updateAllNotificationRead(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        notificationService.readAllNotifications(userPrincipal.getMemberId());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(
+                        CommonSuccessDto.of(
+                                true,
+                                HttpStatus.OK,
+                                "알림 전체 읽음 성공"
+                        )
+                );
+    }
+
 
     @PostMapping("/send/inspect")
     @Operation(summary = "관리자 서비스 점검 알림 송신", description = "관리자가 사용자들에게 점검 알림을 보낸다.")
@@ -95,7 +107,7 @@ public class NotificationController {
                 .body(
                         CommonSuccessDto.of(
                                 true,
-                                HttpStatus.CREATED,
+                                HttpStatus.OK,
                                 "서비스 점검 알림 전송 성공"
                         )
                 );

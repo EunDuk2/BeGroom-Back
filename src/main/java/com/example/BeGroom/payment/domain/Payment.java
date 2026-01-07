@@ -89,5 +89,8 @@ public class Payment extends BaseEntity {
         this.refundReason = refundReason;
     }
 
+    public void markSettled(){
+        this.isSettled = true;
+    }
 
 }

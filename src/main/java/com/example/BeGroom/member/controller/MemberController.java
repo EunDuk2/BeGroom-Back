@@ -91,16 +91,16 @@ public class MemberController {
         return ResponseEntity.ok(commonResponse);
     }
 
-//    @GetMapping("/wish")
-//    @Operation(summary = "프로필 불러오기", description = "회원의 프로필 정보를 불러온다.")
-//    public ResponseEntity<CommonSuccessDto<GetMemberWishesResDto>> getMyWishes(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-//        if(userPrincipal == null) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//        }
-//
-//        Long memberId = userPrincipal.getMemberId();
-//        GetMemberWishesResDto responseDto = memberService.getMyWishes(memberId);
-//        CommonSuccessDto<GetMemberWishesResDto> commonResponse = CommonSuccessDto.of(responseDto, HttpStatus.OK, "get wishlist success");
-//        return ResponseEntity.ok(commonResponse);
-//    }
+    @GetMapping("/wish")
+    @Operation(summary = "회원 위시리스트 불러오기", description = "회원의 위시리스트를 불러온다.")
+    public ResponseEntity<CommonSuccessDto<GetMemberWishesResDto>> getMyWishes(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        if(userPrincipal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+        GetMemberWishesResDto responseDto = memberService.getMyWishes(memberId);
+        CommonSuccessDto<GetMemberWishesResDto> commonResponse = CommonSuccessDto.of(responseDto, HttpStatus.OK, "get wishlist success");
+        return ResponseEntity.ok(commonResponse);
+    }
 }

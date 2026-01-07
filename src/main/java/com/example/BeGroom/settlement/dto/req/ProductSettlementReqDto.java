@@ -13,11 +13,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class ProductSettlementReqDto {
 
-    @NotNull
     @Schema(example = "2025-12-01", description = "조회 시작일")
     private LocalDate startDate;
 
-    @NotNull
     @Schema(example = "2025-12-01", description = "조회 종료일")
     private LocalDate endDate;
 

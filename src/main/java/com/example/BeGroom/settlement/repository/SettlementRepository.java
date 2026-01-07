@@ -1,19 +1,20 @@
 package com.example.BeGroom.settlement.repository;
 
-import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
+import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
-public interface SettlementRepository extends JpaRepository<Settlement, Long> {
+public interface SettlementRepository extends JpaRepository<Settlement, Long>, SettlementRepositoryCustom {
 //    List<Settlement> findByAggregatedFalse();
     List<Settlement> findByStatus(SettlementStatus unsettled);
 
@@ -73,4 +74,46 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     // 주문 목록
 
 //    List<OrderListResDto> getOrderList(@Param("sellerId") Long sellerId);
+
+    // 결제금액
+    @Query("""
+        select coalesce(sum(s.paymentAmount), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    Long getTotalPaymentAmountBySeller(@Param("sellerId") Long sellerId);
+
+    // 환불금액
+    @Query("""
+        select coalesce(sum(s.refundAmount), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    BigDecimal getTotalRefundtAmountBySeller(Long sellerId);
+
+    // 수수료
+    @Query("""
+        select coalesce(sum(s.fee), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    BigDecimal getTotalFeeAmountBySeller(Long sellerId);
+
+    // 정산금액
+    @Query("""
+        select coalesce(sum(s.settlementAmount), 0)
+        from Settlement s
+        where s.seller.id = :sellerId
+    """)
+    BigDecimal getTotalSettlementAmountBySeller(Long sellerId);
+
+    // 정산 테이블에 아직 반영 안된 환불 된 정산 건
+    @Query("""
+        select s
+        from Settlement s
+        where s.payment.isSettled = true
+          and s.payment.paymentStatus = :paymentStatus
+          and s.paymentStatus = :settlementPaymentStatus
+    """)
+    List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") com.example.BeGroom.settlement.domain.PaymentStatus settlementPaymentStatus);
 }

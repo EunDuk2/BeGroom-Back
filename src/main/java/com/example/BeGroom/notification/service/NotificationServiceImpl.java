@@ -59,13 +59,11 @@ public class NotificationServiceImpl implements NotificationService {
 
         String notificationContent = "새로운 알림이 도착했습니다!"; // 실제론 템플릿 치환된 메시지 사용
 
-        // 2. 각 수신자에게 실시간 알림 전송
         for (Long receiverId : receiverIds) {
-            // 접속중인 모든 Emitter 찾기
             Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(String.valueOf(receiverId));
 
             emitters.forEach((id, emitter) -> {
-                sendToClient(emitter, id, notificationContent);
+                sendToClient(emitter, id, "notification", notificationContent);
             });
         }
     }
@@ -96,17 +94,22 @@ public class NotificationServiceImpl implements NotificationService {
         Map<String, SseEmitter> allEmitters = emitterRepository.findAll();
 
         allEmitters.forEach((id, emitter) -> {
-            sendToClient(emitter, id, eventData);
+            sendToClient(emitter, id, "notification",eventData);
         });
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @Override
     public void readNotification(Long mappingId) {
         MemberNotification memberNoti = memberNotificationRepository.findById(mappingId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 알림입니다."));
 
         memberNoti.read();
+    }
+
+    @Transactional
+    public void readAllNotifications(Long memberId) {
+        memberNotificationRepository.bulkMarkAsRead(memberId);
     }
 
     @Override
@@ -140,18 +143,18 @@ public class NotificationServiceImpl implements NotificationService {
         Map<String, String> eventData = new HashMap<>();
         eventData.put("message", "SSE connected");
 
-        sendToClient(emitter, emitterId, eventData);
+        sendToClient(emitter, emitterId, "connect", eventData);
 
         return emitter;
     }
 
-    private void sendToClient(SseEmitter emitter, String id, Object data) {
+    private void sendToClient(SseEmitter emitter, String id, String eventName, Object data) {
         try {
             emitter.send(SseEmitter.event()
                     .id(id)
-                    .name("sse")
+                    .name(eventName)
                     .data(data));
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             emitterRepository.deleteById(id);
             System.out.print("SSE 연결이 끊겨서 전송 실패. Emitter 삭제함: userId={}");
             System.out.println(id);
