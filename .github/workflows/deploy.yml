@@ -38,6 +38,7 @@ jobs:
         run: |
           docker build --platform linux/amd64 -t begroom-back .
           docker save -o begroom-back.tar begroom-back
+          sudo chmod 644 begroom-back.tar
 
       #6. EC2로 파일 전송 (수동: scp 명령어 자동화)
       - name: Copy Files to EC2
