@@ -2,7 +2,6 @@ package com.example.BeGroom.pointCharge.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
-import com.example.BeGroom.pointCharge.domain.PointCharge;
 import com.example.BeGroom.pointCharge.dto.PointChargeReqDto;
 import com.example.BeGroom.pointCharge.dto.PointChargeResDto;
 import com.example.BeGroom.pointCharge.service.PointChargeService;
@@ -43,6 +42,4 @@ public class PointChargeController {
                         )
                 );
     }
-
-
 }
