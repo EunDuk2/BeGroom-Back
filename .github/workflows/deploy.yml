@@ -62,8 +62,11 @@ jobs:
             export MYSQL_USER_PASSWORD=${{ secrets.MYSQL_USER_PASSWORD }}
             export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
             
-            docker load -i /home/ec2-user/begroom-back.tar
             cd /home/ec2-user
-            docker-compose up -d --build begroom-back
+            docker load -i begroom-back.tar
+            
+            docker-compose down
+            docker-compose up -d
+            
             docker image prune -f
-            rm /home/ec2-user/begroom-back.tar
+            rm begroom-back.tar
