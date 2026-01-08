@@ -69,14 +69,14 @@ public class CrawlingResponse {
             return salesPrice != null ? salesPrice : 0;
         }
 
-        public Integer getStock() {
-            if (getIsSoldOut()) {
-                return 0;
-            }
-            if (getIsLowStock()) {
-                return 50;
-            }
-            return 999;
-        }
+//        public Integer getStock() {
+//            if (getIsSoldOut()) {
+//                return 0;
+//            }
+//            if (getIsLowStock()) {
+//                return 50;
+//            }
+//            return 999;
+//        }
     }
 }
