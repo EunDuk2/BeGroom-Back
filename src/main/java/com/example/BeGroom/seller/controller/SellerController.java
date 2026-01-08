@@ -24,7 +24,7 @@ public class SellerController {
 
     private final SellerService sellerService;
 
-    // API 1. 회원가입
+    // API 1-1. 회원가입
     @PostMapping("/join")
     @Operation(summary = "회원가입", description = "새로운 판매자를 등록합니다.")
     public ResponseEntity<CommonSuccessDto<SellerCreateResDto>> create(
@@ -41,6 +41,24 @@ public class SellerController {
                         )
                 );
     }
+
+    // API 1-2. 판매자 프로필 조회
+    @GetMapping("/profile")
+    @Operation(summary = "판매자 프로필 조회", description = "판매자의 프로필 정보를 조회합니다.")
+    public ResponseEntity<CommonSuccessDto<SellerProfileResDto>> getProfile(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        SellerProfileResDto sellerProfileResDto = sellerService.getProfile(userPrincipal.getMemberId());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                sellerProfileResDto,
+                                HttpStatus.OK,
+                                "판매자 프로필 정보 조회 성공"
+                        )
+                );
+    }
+
 
     // API 2. 판매자 대시보드 요약 정보 조회
     @GetMapping("/dashboard")

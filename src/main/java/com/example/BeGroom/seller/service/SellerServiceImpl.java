@@ -1,21 +1,19 @@
 package com.example.BeGroom.seller.service;
 
 import com.example.BeGroom.order.repository.OrderRepository;
+import com.example.BeGroom.seller.dto.res.*;
 import com.example.BeGroom.seller.repository.projection.OrderListProjection;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.res.DashboardResDto;
-import com.example.BeGroom.seller.dto.res.OrderInfoResDto;
-import com.example.BeGroom.seller.dto.res.OrderListResDto;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
-import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +54,23 @@ public class SellerServiceImpl implements SellerService{
         sellerRepository.save(seller);
 
         return seller;
+    }
+
+    // 프로필 조회
+    public SellerProfileResDto getProfile(Long sellerId){
+        Seller seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new EntityNotFoundException("판매자를 찾을 수 없습니다."));
+
+        return new SellerProfileResDto(
+                seller.getEmail(),
+                seller.getName(),
+                seller.getPhoneNumber(),
+                seller.getFeeRate(),
+                seller.getPayoutDay(),
+                seller.getRole(),
+                seller.getCreatedAt()
+        );
+
     }
 
     // 대시보드 요약 정보 조회
