@@ -4,7 +4,7 @@ import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.dto.crawling.CrawlingRequest;
 import com.example.BeGroom.product.dto.crawling.CrawlingResultDto;
-import com.example.BeGroom.product.service.CrawlingService;
+import com.example.BeGroom.product.service.Crawling.CrawlingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
