@@ -61,10 +61,13 @@ public class CrawlingController {
                 .maxProductsPerCategory(maxProductsPerCategory)
                 .build();
 
-        List<Product> products = crawlingService.crawl(request);
+        crawlingService.crawl(request);
 
-        CrawlingResultDto result = new CrawlingResultDto(products.size(), buildMessage(categoryIds, products.size()));
+        String message = (categoryIds == null || categoryIds.isEmpty())
+                ? "전체 카테고리 크롤링이 백그라운드에서 시작되었습니다."
+                : String.format("%d개 카테고리 크롤링이 백그라운드에서 시작되었습니다.", categoryIds.size());
 
+        CrawlingResultDto result = new CrawlingResultDto(0, message); // 실시간 개수는 알 수 없으므로 0 혹은 시작 메시지 전달
         return ResponseEntity.ok(
                 CommonSuccessDto.of(
                         result,

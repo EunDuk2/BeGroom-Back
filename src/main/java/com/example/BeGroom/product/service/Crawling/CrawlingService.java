@@ -9,6 +9,7 @@ import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -30,20 +31,24 @@ public class CrawlingService {
     private final CategoryRepository categoryRepository;
 
     // 카테고리 크롤링
-    public List<Product> crawl(CrawlingRequest request) {
+    @Async
+    public void crawl(CrawlingRequest request) {
 
         List<Category> targetCategories = determineTargetCategories(request.getCategoryIds());
         if (targetCategories.isEmpty()) {
-            return new ArrayList<>();
+            log.warn("크롤링할 대상 카테고리가 없습니다.");
+            return;
         }
 
-        List<Product> allProducts = new ArrayList<>();
+        log.info("백그라운드에서 크롤링 시작: 대상 카테고리 수 {}", targetCategories.size());
+
         for (Category category : targetCategories) {
             try {
-                List<Product> products = crawlCategory(category, request.getMaxProductsPerCategory());
-                allProducts.addAll(products);
-                Thread.sleep(1000);
+                // 내부 로직은 그대로 유지하되 결과 리스트를 반환하지 않고 로그만 남깁니다.
+                crawlCategory(category, request.getMaxProductsPerCategory());
+                Thread.sleep(1000); // 1초 대기
             } catch (InterruptedException e) {
+                log.error("크롤링 중단됨");
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
@@ -51,8 +56,7 @@ public class CrawlingService {
             }
         }
 
-        return allProducts;
-    }
+        log.info("모든 백그라운드 크롤링 작업이 완료되었습니다.");    }
 
     // 단일 카테고리 크롤링 (내부 메서드)
     public List<Product> crawlCategory(Category category, int maxProducts) {
