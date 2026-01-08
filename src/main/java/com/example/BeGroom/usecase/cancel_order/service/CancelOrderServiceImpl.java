@@ -57,8 +57,8 @@ public class CancelOrderServiceImpl implements CancelOrderService {
             List<Long> receivers = List.of(receiverId);
             Map<String, String> variables = getRefundCompleteNoticeMap(order);
             notificationService.send(receivers, NotificationTemplate.ORDER_REFUND_COMPLETE.getId(), variables);
-        } catch (Exception e) {
-            // 전송 실패
+        } catch (RuntimeException e) {
+            throw e;
         }
     }
 
