@@ -1,11 +1,8 @@
 package com.example.BeGroom.seller.service;
 
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.dto.res.DashboardResDto;
-import com.example.BeGroom.seller.dto.res.OrderInfoResDto;
-import com.example.BeGroom.seller.dto.res.OrderListResDto;
+import com.example.BeGroom.seller.dto.res.*;
 import com.example.BeGroom.seller.dto.req.SellerCreateReqDto;
-import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import org.springframework.data.domain.Page;
 
 public interface SellerService {
@@ -24,4 +21,7 @@ public interface SellerService {
 
     // 최근 활동 조회
     RecentActivityResDto getRecentActivities(Long sellerId);
+
+    // 프로필 조회
+    SellerProfileResDto getProfile(Long sellerId);
 }
