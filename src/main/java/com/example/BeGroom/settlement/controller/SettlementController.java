@@ -160,7 +160,7 @@ public class SettlementController {
         // 헤더 설정: 다운로드 파일명
         // 해당 응답 화면에 보여주지 않고 다운로드
         response.setHeader(
-                "Content-Disposition",
+                "Content-Disposition",  // 컨텐츠 저장 유형 정의 (브라우저 메모리 or 다운로드 등)
                 "attachment; filename=\"" + fileName +"\""
         );
         settlementService.writeDailySettlementCsv(userPrincipal.getMemberId(), response.getWriter());
