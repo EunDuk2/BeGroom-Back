@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -41,26 +42,21 @@ public class WishlistService {
     // 위시리스트 토글 (추가/삭제)
     @Transactional
     public void toggleWishlist(Long memberId, Long productId) {
-        Product product = productRepository.findById(productId)
-                        .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+        Member member = memberRepository.findById(memberId).orElseThrow();
+        Product product = productRepository.findById(productId).orElseThrow();
 
-        wishlistRepository.findByMember_IdAndProduct_ProductId(memberId, productId)
-                .ifPresentOrElse(
-                        wishlist -> {
-                            wishlistRepository.delete(wishlist);
-                            product.decreaseWishlistCount();
-                            log.info("위시리스트 삭제 - memberId: {}, productId: {}", memberId, productId);
-                        },
-                        () -> {
-                            Member member = memberRepository.findById(memberId)
-                                    .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        Optional<Wishlist> existingWishlist = wishlistRepository.findByMember_IdAndProduct_ProductId(memberId, productId);
 
-                            Wishlist wishlist = Wishlist.create(member, product);
-                            wishlistRepository.save(wishlist);
-                            product.increaseWishlistCount();
-                            log.info("위시리스트 추가 - memberId: {}, productId: {}", memberId, productId);
-                        }
-                );
+        if (existingWishlist.isPresent()) {
+            // 이미 있으면 삭제
+            wishlistRepository.delete(existingWishlist.get());
+            product.decreaseWishlistCount(); // 여기서만 감소
+        } else {
+            // 없으면 추가
+            Wishlist wishlist = Wishlist.create(member, product);
+            wishlistRepository.save(wishlist);
+            product.increaseWishlistCount(); // 여기서만 증가
+        }
     }
 
     // 위시리스트 상품 개수 조회
