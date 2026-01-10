@@ -4,6 +4,7 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.order.exception.InvalidOrderStateException;
 import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.product.domain.ProductDetail;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -44,20 +45,30 @@ public class Order extends BaseEntity {
         this.orderStatus = orderStatus;
     }
 
-    public static Order create(Member member, Long totalAmount, OrderStatus orderStatus) {
-        return new Order(member, totalAmount, orderStatus);
+    public static Order create(Member member, List<OrderLineRequest> orderLineRequests) {
+        // 주문 생성
+        Order order = new Order(member, 0L, OrderStatus.CREATED);
+
+        for(OrderLineRequest orderLineRequest : orderLineRequests) {
+            ProductDetail productDetail = orderLineRequest.productDetail();
+            int orderQuantity = orderLineRequest.quantity();
+
+            // productDetail에게 재고 검증 요청
+            productDetail.validateOrderable(orderQuantity);
+            // orderProduct 추가 요청
+            order.addOrderProduct(productDetail, orderQuantity);
+        }
+
+        return order;
     }
 
-    public void addOrderProduct(OrderProduct orderProduct) {
-        if(orderProduct == null) {
-            throw new IllegalArgumentException("추가하려는 상품이 없습니다.");
-        }
-        if(this.orderStatus != OrderStatus.CREATED) {
-            throw new InvalidOrderStateException("상품 추가", this.orderStatus);
-        }
-        // todo - assigned 함수 고려
-        this.orderProductList.add(orderProduct);
+    private void addOrderProduct(ProductDetail productDetail, int quantity) {
+        OrderProduct orderProduct = OrderProduct.create(productDetail, quantity, productDetail.getSellingPrice());
+
         this.totalAmount += orderProduct.getTotalAmount();
+
+        orderProduct.assignOrder(this);
+        orderProductList.add(orderProduct);
     }
 
     public void markPaymentPending() {

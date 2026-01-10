@@ -3,6 +3,7 @@ package com.example.BeGroom.order.service;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.order.domain.Order;
+import com.example.BeGroom.order.domain.OrderLineRequest;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.domain.OrderStatus;
 import com.example.BeGroom.order.dto.*;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,27 +45,20 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order create(Long memberId, OrderCreateReqDto reqDto) {
-        // 사용자 검증
+        // 사용자 조회
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
 
-        // 주문 생성
-        Order order = Order.create(member, 0L, OrderStatus.CREATED);
-
-        // 상품 리스트 조회
+        // 주문 생성 요청에 필요한 lines 준비
+        List<OrderLineRequest> orderLineRequests = new ArrayList<>();
         List<OrderProductReqDto> orderProductReqDtoList = reqDto.getOrderProductList();
         for(OrderProductReqDto orderProductReqDto : orderProductReqDtoList) {
             ProductDetail productDetail = productDetailRepository
                     .findById(orderProductReqDto.getProductDetailId()).orElseThrow(() -> new EntityNotFoundException("없는 상품 옵션입니다."));
-
-            // 재고 검증
-            productDetail.validateOrderable(orderProductReqDto.getOrderQuantity());
-
-            // OrderProduct 생성
-            OrderProduct orderProduct = OrderProduct.create(order, productDetail, orderProductReqDto.getOrderQuantity(), productDetail.getSellingPrice());
-
-            // orderProduct를 order에 추가
-            order.addOrderProduct(orderProduct);
+            orderLineRequests.add(new OrderLineRequest(productDetail, orderProductReqDto.getOrderQuantity()));
         }
+
+        // 주문에게 주문 생성 요청
+        Order order = Order.create(member, orderLineRequests);
 
         // 주문 영속
         orderRepository.save(order);
