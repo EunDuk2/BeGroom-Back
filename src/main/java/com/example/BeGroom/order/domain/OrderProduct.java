@@ -47,4 +47,12 @@ public class OrderProduct extends BaseEntity {
     public void assignOrder(Order order) {
         this.order = order;
     }
+
+    public void validateOrderable() {
+        productDetail.validateOrderable(this.quantity);
+    }
+
+    public void deductStock() {
+        productDetail.decreaseStock(this.quantity);
+    }
 }

@@ -4,7 +4,10 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.order.exception.InvalidOrderStateException;
 import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentMethod;
+import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.product.domain.ProductDetail;
+import com.example.BeGroom.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -70,6 +73,29 @@ public class Order extends BaseEntity {
         orderProduct.assignOrder(this);
         orderProductList.add(orderProduct);
     }
+
+
+    // 결제 시도 시작
+    public Payment checkout(PaymentMethod paymentMethod, Wallet wallet) {
+        // 결제 시도해도 되는지 판단
+        validateCheckout(wallet);
+        return Payment.create(this, this.getTotalAmount(), paymentMethod, PaymentStatus.PROCESSING);
+    }
+
+    // 주문 가능 여부 판단
+    public void validateOrderable() {
+        for(OrderProduct orderProduct : orderProductList) {
+            orderProduct.validateOrderable();
+        }
+    }
+
+    // 결제 시도해도 되는지 판단
+    private void validateCheckout(Wallet wallet) {
+        validateOrderable();
+        wallet.canPay(this.totalAmount);
+    }
+
+
 
     public void markPaymentPending() {
         if(this.orderStatus == OrderStatus.COMPLETED ||

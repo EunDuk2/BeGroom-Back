@@ -10,6 +10,7 @@ import com.example.BeGroom.order.dto.*;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.ProductDetail;
@@ -64,6 +65,19 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
 
         return order;
+    }
+
+    public void checkout(Long memberId, Long orderId, PaymentMethod paymentMethod) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+
+        // 협력을 조율
+        Payment payment = order.checkout(paymentMethod, wallet);
+        payment.process(order, wallet);
+
+        // 결제 영속
+        paymentRepository.save(payment);
     }
 
     @Override

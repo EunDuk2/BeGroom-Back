@@ -46,4 +46,16 @@ public class Wallet extends BaseEntity {
         this.balance -= amount;
     }
 
+    public boolean canPay(Long payAmount) {
+        return this.balance > payAmount;
+    }
+
+    public void pay(Long payAmount) {
+        if(this.balance < payAmount) {
+            throw new InsufficientBalanceException(this.id);
+        }
+        this.balance -= payAmount;
+    }
+
+
 }
