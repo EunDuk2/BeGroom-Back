@@ -4,6 +4,7 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.payment.exception.InvalidPaymentStateException;
+import com.example.BeGroom.wallet.domain.ReferenceType;
 import com.example.BeGroom.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,6 +13,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import static com.example.BeGroom.wallet.domain.ReferenceType.ORDER;
 
 @Entity
 @Getter
@@ -65,7 +68,7 @@ public class Payment extends BaseEntity {
         // OrderProduct한테 재고 차감 요청
         deductStock(order.getOrderProductList());
         // 포인트 차감 요청
-        wallet.pay(order.getTotalAmount());
+        wallet.pay(order.getTotalAmount(), ORDER, order.getId());
         // 결제 승인 처리
         approve();
         // 주문 완료 처리

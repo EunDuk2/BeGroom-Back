@@ -15,6 +15,7 @@ import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.repository.ProductDetailRepository;
+import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -67,7 +68,8 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    public void checkout(Long memberId, Long orderId, PaymentMethod paymentMethod) {
+    @Override
+    public CheckoutResDto checkout(Long memberId, Long orderId, PaymentMethod paymentMethod) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
         Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
@@ -78,6 +80,8 @@ public class OrderServiceImpl implements OrderService {
 
         // 결제 영속
         paymentRepository.save(payment);
+
+        return CheckoutResDto.completed(orderId, payment.getId());
     }
 
     @Override
