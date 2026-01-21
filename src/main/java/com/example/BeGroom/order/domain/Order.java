@@ -13,8 +13,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Getter
@@ -51,6 +50,8 @@ public class Order extends BaseEntity {
     public static Order create(Member member, List<OrderLineRequest> orderLineRequests) {
         // 주문 생성
         Order order = new Order(member, 0L, OrderStatus.CREATED);
+        // 요청 데이터 자체 검증
+        validateOrderLines(orderLineRequests);
 
         for(OrderLineRequest orderLineRequest : orderLineRequests) {
             ProductDetail productDetail = orderLineRequest.productDetail();
@@ -64,6 +65,32 @@ public class Order extends BaseEntity {
 
         return order;
     }
+
+    private static void validateOrderLines(List<OrderLineRequest> orderLineRequests) {
+        if (orderLineRequests == null || orderLineRequests.isEmpty()) {
+            throw new IllegalArgumentException("주문 상품이 없습니다.");
+        }
+
+        Set<ProductDetail> uniqueProducts = new HashSet<>();
+
+        for (OrderLineRequest orderLineRequest : orderLineRequests) {
+            if (orderLineRequest == null) {
+                throw new IllegalArgumentException("주문 상품 요청이 null입니다.");
+            }
+
+            ProductDetail productDetail = orderLineRequest.productDetail();
+            int quantity = orderLineRequest.quantity();
+
+            if(quantity <= 0) {
+                throw new IllegalArgumentException("주문 상품의 수량이 0이하 입니다.");
+            }
+
+            if (!uniqueProducts.add(productDetail)) {
+                throw new IllegalArgumentException("중복된 주문 상품이 있습니다.");
+            }
+        }
+    }
+
 
     private void addOrderProduct(ProductDetail productDetail, int quantity) {
         OrderProduct orderProduct = OrderProduct.create(productDetail, quantity, productDetail.getSellingPrice());
