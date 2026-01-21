@@ -37,8 +37,8 @@ public class Wallet extends BaseEntity {
         this.balance = balance;
     }
 
-    public static Wallet create(Member member) {
-        return new Wallet(member, 0L);
+    public static Wallet create(Member member, long balance) {
+        return new Wallet(member, balance);
     }
 
     public void increaseBalance(long amount) {

@@ -112,7 +112,7 @@ public class Order extends BaseEntity {
     }
 
     // 주문 가능 여부 판단
-    public void validateOrderable() {
+    private void validateOrderable() {
         for(OrderProduct orderProduct : orderProductList) {
             orderProduct.validateOrderable();
         }

@@ -2,8 +2,12 @@ package com.example.BeGroom.order.domain;
 
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.domain.Role;
+import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentMethod;
+import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.exception.InsufficientStockException;
+import com.example.BeGroom.wallet.domain.Wallet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,11 +15,18 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.BeGroom.order.domain.OrderStatus.PAYMENT_PENDING;
+import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
+import static com.example.BeGroom.payment.domain.PaymentStatus.PROCESSING;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Order 도메인 Test")
 class OrderTest  {
+
+    /* =========================
+     *  주문 생성 성공
+     * ========================= */
 
     @DisplayName("주문을 생성하면 주문 상품이 생성되고 총 금액이 계산된다")
     @Test
@@ -181,6 +192,35 @@ class OrderTest  {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("주문 상품의 수량이 0이하 입니다.");
         }
+    }
+
+    /* =========================
+     *  결제 시도 판단 및 결제 생성 성공
+     * ========================= */
+
+    @DisplayName("결제 시도 시 재고와 포인트가 모두 충분하면 결제가 생성된다.")
+    @Test
+    void checkout_success() {
+        // given
+        Member member = createMember();
+        ProductDetail apple = createProductDetail("사과", 3000, 99);
+        ProductDetail pear = createProductDetail("배", 5000, 99);
+        List<OrderLineRequest> orderLineRequests = List.of(
+                createOrderLine(apple, 1),
+                createOrderLine(pear, 1)
+        );
+
+        Order order = Order.create(member, orderLineRequests);
+        Wallet wallet = Wallet.create(member, 10000L);
+
+        // when
+        Payment payment = order.checkout(POINT, wallet);
+
+        // then
+        assertThat(order.getOrderStatus()).isEqualTo(PAYMENT_PENDING);
+        assertThat(payment).isNotNull();
+        assertThat(payment.getPaymentStatus()).isEqualTo(PROCESSING);
+        assertThat(payment.getAmount()).isEqualTo(8000);
     }
 
     /* =========================
