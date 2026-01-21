@@ -76,17 +76,10 @@ public class Payment extends BaseEntity {
     }
 
     // 재고 차감
-    public void deductStock(List<OrderProduct> orderProductList) {
+    private void deductStock(List<OrderProduct> orderProductList) {
         for(OrderProduct orderProduct : orderProductList) {
             orderProduct.deductStock();
         }
-    }
-
-    public void markProcessing() {
-        if(this.paymentStatus != PaymentStatus.READY) {
-            throw new InvalidPaymentStateException("결제 진행", this.paymentStatus);
-        }
-        this.paymentStatus = PaymentStatus.PROCESSING;
     }
 
     public void approve() {
