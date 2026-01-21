@@ -15,7 +15,7 @@ import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.repository.ProductDetailRepository;
-import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
+import com.example.BeGroom.order.dto.checkout.CheckoutResDto;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import jakarta.persistence.EntityNotFoundException;

@@ -97,8 +97,6 @@ public class Order extends BaseEntity {
         wallet.canPay(this.totalAmount);
     }
 
-
-
     public void markPaymentPending() {
         if(this.orderStatus == OrderStatus.COMPLETED ||
                 this.orderStatus == OrderStatus.CANCELED) {
@@ -106,7 +104,6 @@ public class Order extends BaseEntity {
         }
         this.orderStatus = OrderStatus.PAYMENT_PENDING;
     }
-
 
     public void complete() {
         if(this.orderStatus != OrderStatus.PAYMENT_PENDING) {
