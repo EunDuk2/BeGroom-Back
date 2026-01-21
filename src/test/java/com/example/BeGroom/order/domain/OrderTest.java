@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.BeGroom.order.domain.OrderStatus.COMPLETED;
 import static com.example.BeGroom.order.domain.OrderStatus.PAYMENT_PENDING;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
 import static com.example.BeGroom.payment.domain.PaymentStatus.PROCESSING;
@@ -221,6 +222,24 @@ class OrderTest  {
         assertThat(payment).isNotNull();
         assertThat(payment.getPaymentStatus()).isEqualTo(PROCESSING);
         assertThat(payment.getAmount()).isEqualTo(8000);
+    }
+
+    @DisplayName("주문 상태를 검증하고 완료 처리한다.")
+    @Test
+    void complete_success() {
+        // given
+        Member member = createMember();
+        Order order = Order.builder()
+                .member(member)
+                .totalAmount(0L)
+                .orderStatus(PAYMENT_PENDING)
+                .build();
+
+        // when
+        order.complete();
+
+        // then
+        assertThat(order.getOrderStatus()).isEqualTo(COMPLETED);
     }
 
     /* =========================

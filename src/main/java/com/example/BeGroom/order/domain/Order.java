@@ -10,6 +10,7 @@ import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -41,6 +42,7 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<Payment> payments;
 
+    @Builder
     private Order(Member member, Long totalAmount, OrderStatus orderStatus) {
         this.member = member;
         this.totalAmount = totalAmount;

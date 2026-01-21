@@ -82,7 +82,7 @@ public class Payment extends BaseEntity {
         }
     }
 
-    public void approve() {
+    private void approve() {
         if(this.paymentStatus != PaymentStatus.PROCESSING) {
             throw new InvalidPaymentStateException("결제 승인", this.paymentStatus);
         }
