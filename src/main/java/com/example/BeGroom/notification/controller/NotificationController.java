@@ -8,6 +8,7 @@ import com.example.BeGroom.notification.dto.CreateNotificationReqDto;
 import com.example.BeGroom.notification.dto.CreateNotificationResDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.service.NotificationService;
+import com.example.BeGroom.notification.service.network.NotificationNetworkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,7 +29,9 @@ import java.util.Map;
 @Tag(name = "Notification API", description = "알림 관련 API")
 public class NotificationController {
     private final NotificationService notificationService;
+    private final NotificationNetworkService notificationNetworkService;
 
+    /// TODO: PC코드에 swagger등 핵심 비즈니스 로직이 아닌 코드들이 있으면 코드가 비대해지거나 설명이 비대졌을떄 보기가 편할까요?
     @GetMapping
     @Operation(summary = "사용자 알림 조회", description = "특정 사용자의 알림 리스트를 불러온다.")
     public ResponseEntity<CommonSuccessDto<GetMemberNotificationResDto>> getAllMemberNotifications(@AuthenticationPrincipal UserPrincipal userPrincipal){
@@ -115,7 +118,7 @@ public class NotificationController {
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "알림 구독 (SSE 연결)", description = "SSE와 연결합니다.")
-        public SseEmitter subscribe(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-        return notificationService.subscribe(userPrincipal.getMemberId());
+        public Object subscribe(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return notificationNetworkService.connect(userPrincipal.getMemberId());
     }
 }
