@@ -3,13 +3,17 @@ package com.example.BeGroom.member.domain;
 import com.example.BeGroom.cart.domain.Cart;
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.wishlist.domain.Wishlist;
+import com.fasterxml.classmate.AnnotationOverrides;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.BeGroom.member.domain.Role.USER;
 
 @Entity
 @Getter
@@ -50,6 +54,15 @@ public class Member extends BaseEntity {
 
     public static Member createMember(String email, String name, String password, String phoneNumber, Role role) {
         return new Member(email, name, password, phoneNumber, role);
+    }
+
+    @Builder
+    private Member(String email, String name, String password, String phoneNumber) {
+        this.email = email;
+        this.name = name;
+        this.password = password;
+        this.phoneNumber = phoneNumber;
+        this.role = USER;
     }
 
     // 연관관계 편의 메서드

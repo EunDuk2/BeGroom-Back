@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @Builder
 public class GetMemberWishesResDto {
-
     private List<WishItemDto> wish;
 
     public static GetMemberWishesResDto from(List<Wishlist> wishlists) {
