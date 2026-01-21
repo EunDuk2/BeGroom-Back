@@ -3,6 +3,7 @@ package com.example.BeGroom.settlement.repository;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,7 +23,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("select coalesce(sum(s.paymentAmount - s.refundAmount), 0) " +
             "from Settlement s " +
             "where s.seller.id = :sellerId " +
-            "and s.paymentStatus = 'PAYMENT'")
+            "and s.settlementPaymentStatus = 'PAYMENT'")
     long sumSalesAmountBySeller(@Param("sellerId") Long sellerId);
 
     // 판매자의 최근 환불
@@ -113,9 +114,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
         from Settlement s
         where s.payment.isSettled = true
           and s.payment.paymentStatus = :paymentStatus
-          and s.paymentStatus = :settlementPaymentStatus
+          and s.settlementPaymentStatus = :settlementPaymentStatus
     """)
-    List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") com.example.BeGroom.settlement.domain.PaymentStatus settlementPaymentStatus);
+    List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") SettlementPaymentStatus settlementPaymentStatus);
 
     // 미정산 지급 실행
     @Query("""

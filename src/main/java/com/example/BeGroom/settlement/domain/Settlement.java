@@ -56,7 +56,7 @@ public class Settlement extends BaseEntity {
     // 결제상태
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus = PaymentStatus.PAYMENT;
+    private SettlementPaymentStatus settlementPaymentStatus = SettlementPaymentStatus.PAYMENT;
     // 환불금액
     @Column(precision = 12, scale = 2)
     private BigDecimal refundAmount = BigDecimal.ZERO;
@@ -76,7 +76,7 @@ public class Settlement extends BaseEntity {
     }
 
     public void markRefunded(BigDecimal refundAmount) {
-        this.paymentStatus = PaymentStatus.REFUND;
+        this.settlementPaymentStatus = SettlementPaymentStatus.REFUND;
         this.refundAmount = refundAmount;
     }
 
@@ -95,7 +95,7 @@ public class Settlement extends BaseEntity {
             BigDecimal fee,
             BigDecimal settlementAmount,
             SettlementStatus status,
-            PaymentStatus paymentStatus,
+            SettlementPaymentStatus paymentStatus,
             BigDecimal refundAmount,
             LocalDateTime payoutDate,
             LocalDate date
@@ -107,7 +107,7 @@ public class Settlement extends BaseEntity {
         this.fee = fee;
         this.settlementAmount = settlementAmount;
         this.status = status;
-        this.paymentStatus = paymentStatus;
+        this.settlementPaymentStatus = paymentStatus;
         this.refundAmount = refundAmount != null ? refundAmount : BigDecimal.ZERO;
         this.payoutDate = payoutDate;
         this.date = date;

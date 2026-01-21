@@ -2,8 +2,8 @@ package com.example.BeGroom.settlement.domain.factory;
 
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.settlement.domain.PaymentStatus;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 
 import java.math.BigDecimal;
@@ -38,7 +38,7 @@ public class SettlementFactory {
                 .feeRate(feeRate)
                 .settlementAmount(settlementAmount)
                 .status(SettlementStatus.UNSETTLED)
-                .paymentStatus(PaymentStatus.PAYMENT)
+                .paymentStatus(SettlementPaymentStatus.PAYMENT)
                 .refundAmount(BigDecimal.ZERO)
                 .date(LocalDate.now())
                 .build();

@@ -1,7 +1,7 @@
 package com.example.BeGroom.settlement.service.aggregation;
 
-import com.example.BeGroom.settlement.domain.PaymentStatus;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.transaction.Transactional;
@@ -26,7 +26,7 @@ public class AggregationService {
         List<Settlement> unaggregated = settlementRepository.findByStatus(SettlementStatus.UNSETTLED);
 
         for(Settlement settlement : unaggregated){
-            if(settlement.getPaymentStatus() == PaymentStatus.REFUND){
+            if(settlement.getSettlementPaymentStatus() == SettlementPaymentStatus.REFUND){
                 updateRefund(settlement);
             }else {
                 insertPayment(settlement);

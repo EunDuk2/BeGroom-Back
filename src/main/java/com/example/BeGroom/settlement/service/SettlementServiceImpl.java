@@ -1,12 +1,8 @@
 package com.example.BeGroom.settlement.service;
 
 import com.example.BeGroom.payment.domain.Payment;
-import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
-import com.example.BeGroom.settlement.domain.DailySettlement;
-import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.domain.Settlement;
-import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.domain.factory.SettlementFactory;
 import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
@@ -28,7 +24,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static com.example.BeGroom.payment.domain.PaymentStatus.*;
-import static com.example.BeGroom.settlement.domain.PaymentStatus.*;
+import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.*;
 
 @Service

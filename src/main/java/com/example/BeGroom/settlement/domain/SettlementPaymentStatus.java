@@ -1,5 +1,5 @@
 package com.example.BeGroom.settlement.domain;
 
-public enum PaymentStatus {
+public enum SettlementPaymentStatus {
     PAYMENT, REFUND
 }
