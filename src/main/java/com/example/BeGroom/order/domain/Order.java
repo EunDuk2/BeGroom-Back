@@ -79,6 +79,8 @@ public class Order extends BaseEntity {
     public Payment checkout(PaymentMethod paymentMethod, Wallet wallet) {
         // 결제 시도해도 되는지 판단
         validateCheckout(wallet);
+        // 결제 대기로 변경
+        markPaymentPending();
         return Payment.create(this, this.getTotalAmount(), paymentMethod, PaymentStatus.PROCESSING);
     }
 

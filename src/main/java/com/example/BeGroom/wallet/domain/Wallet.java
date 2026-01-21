@@ -53,7 +53,7 @@ public class Wallet extends BaseEntity {
     }
 
     public boolean canPay(Long payAmount) {
-        return this.balance > payAmount;
+        return this.balance >= payAmount;
     }
 
     public void pay(Long payAmount, ReferenceType referenceType, Long referenceId) {
@@ -83,7 +83,7 @@ public class Wallet extends BaseEntity {
             long referenceId
     ) {
         WalletTransaction tx = WalletTransaction.create(
-                this, transactionType, before, changeAmount, after, referenceType, referenceId
+                this, transactionType, before, -changeAmount, after, referenceType, referenceId
         );
         transactions.add(tx);
     }
