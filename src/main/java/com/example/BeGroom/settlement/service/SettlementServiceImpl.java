@@ -6,6 +6,7 @@ import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.settlement.domain.DailySettlement;
 import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.domain.factory.SettlementFactory;
 import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
@@ -25,6 +26,10 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
+import static com.example.BeGroom.payment.domain.PaymentStatus.*;
+import static com.example.BeGroom.settlement.domain.PaymentStatus.*;
+import static com.example.BeGroom.settlement.domain.SettlementStatus.*;
 
 @Service
 @RequiredArgsConstructor
@@ -110,8 +115,7 @@ public class SettlementServiceImpl implements SettlementService {
     @Transactional
     @Override
     public void aggregateApprovedPayments(){
-        List<Payment> payments =
-                paymentRepository.findApprovedPayments(PaymentStatus.APPROVED);
+        List<Payment> payments = paymentRepository.findApprovedPayments(APPROVED);
 
         for(Payment payment : payments){
             Settlement settlement = SettlementFactory.create(payment);
@@ -126,16 +130,24 @@ public class SettlementServiceImpl implements SettlementService {
     @Override
     public void syncRefundedPayments() {
 
-        List<Settlement> targets =
-                settlementRepository.findRefundTargets(
-                        com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED,
-                        com.example.BeGroom.settlement.domain.PaymentStatus.PAYMENT
-                );
+        List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
 
         for (Settlement settlement : targets) {
             settlement.markRefunded(
                     BigDecimal.valueOf(settlement.getPayment().getAmount())
             );
+        }
+    }
+
+    // // 미정산 지급 실행
+    @Transactional
+    @Override
+    public void executeSettlementPayout(){
+
+        List<Settlement> targets = settlementRepository.findUnsettledTargets(UNSETTLED);
+
+        for(Settlement settlement : targets){
+            settlement.markSettled();
         }
     }
 

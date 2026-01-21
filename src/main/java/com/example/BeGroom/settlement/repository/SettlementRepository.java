@@ -116,4 +116,12 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
           and s.paymentStatus = :settlementPaymentStatus
     """)
     List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") com.example.BeGroom.settlement.domain.PaymentStatus settlementPaymentStatus);
+
+    // 미정산 지급 실행
+    @Query("""
+        select s
+        from Settlement s
+        where s.status = :status
+""")
+    List<Settlement> findUnsettledTargets(@Param("status") SettlementStatus settlementStatus);
 }

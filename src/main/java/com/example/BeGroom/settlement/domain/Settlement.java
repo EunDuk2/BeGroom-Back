@@ -62,18 +62,28 @@ public class Settlement extends BaseEntity {
     private BigDecimal refundAmount = BigDecimal.ZERO;
     // 지급일
     @Column()
-    private LocalDate payoutDate;
+    private LocalDateTime payoutDate;
     // 정산일
     @Column()
     private LocalDate date = LocalDate.now();
+    // 집계 여부
+    @Column(nullable = false)
+    private Boolean isAggregated;
 
     public void markAggregated(){
-        this.status = SettlementStatus.SETTLED;
+//        this.status = SettlementStatus.SETTLED;
+        this.isAggregated = true;
     }
 
     public void markRefunded(BigDecimal refundAmount) {
         this.paymentStatus = PaymentStatus.REFUND;
         this.refundAmount = refundAmount;
+    }
+
+    // 미정산 지급 실행
+    public void markSettled() {
+        this.status = SettlementStatus.SETTLED;
+        this.payoutDate = LocalDateTime.now();
     }
 
     @Builder
@@ -87,7 +97,7 @@ public class Settlement extends BaseEntity {
             SettlementStatus status,
             PaymentStatus paymentStatus,
             BigDecimal refundAmount,
-            LocalDate payoutDate,
+            LocalDateTime payoutDate,
             LocalDate date
     ) {
         this.seller = seller;

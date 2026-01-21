@@ -28,6 +28,9 @@ public interface SettlementService {
     // 정산 후, 환불 데이터 반영
     void syncRefundedPayments();
 
+    // 지급 실행
+    void executeSettlementPayout();
+
     // csv 내보내기
     void writeDailySettlementCsv(Long sellerId, PrintWriter writer)throws IOException;
 }
