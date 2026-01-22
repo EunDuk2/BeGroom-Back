@@ -28,13 +28,12 @@ import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import com.example.BeGroom.wallet.repository.WalletTransactionRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.BeGroom.order.dto.checkout.CheckoutStatus.COMPLETED;
@@ -67,6 +66,8 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     private WalletTransactionRepository walletTransactionRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private EntityManager em;
 
     @AfterEach
     void tearDown() {
@@ -210,6 +211,69 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         assertThat(completedOrder.getOrderStatus()).isEqualTo(OrderStatus.COMPLETED);
         assertThat(completedOrder.getTotalAmount()).isEqualTo(13000);
     }
+
+
+    /* =========================
+     *  외부 성능 테스트
+     * ========================= */
+
+    @Test
+    @DisplayName("상품 개수 증가에 따른 findById vs findAllByIdIn 비교")
+    @Disabled("성능 비교용 실험 테스트")
+    void findById_vs_findAllByIdIn_by_product_count() {
+        Member member = createAndSaveMember();
+        Product product = createAndSaveProductHierarchy();
+
+        int[] productCounts = {1, 5, 10, 50, 100, 500};
+
+        for (int count : productCounts) {
+
+            // given: 상품 count개 생성
+            List<ProductDetail> saved = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                ProductDetail pd = createAndSaveProductDetail(product, 3000, 5);
+                saved.add(productDetailRepository.save(pd));
+            }
+
+            List<Long> ids = saved.stream()
+                    .map(ProductDetail::getProductDetailId)
+                    .toList();
+
+        /* ===============================
+           findById
+         =============================== */
+            em.clear();
+            long startFindById = System.nanoTime();
+
+            for (Long id : ids) {
+                productDetailRepository.findById(id).orElseThrow();
+            }
+
+            long endFindById = System.nanoTime();
+
+        /* ===============================
+           findAllByIdIn
+         =============================== */
+            em.clear();
+            long startFindAll = System.nanoTime();
+
+            productDetailRepository.findAllByProductDetailIdIn(ids);
+
+            long endFindAll = System.nanoTime();
+
+            System.out.println("""
+            상품 개수: %d
+            - findById 시간     : %d ns
+            - findAllByIdIn 시간: %d ns
+            --------------------------------
+            """.formatted(
+                    count,
+                    endFindById - startFindById,
+                    endFindAll - startFindAll
+            ));
+        }
+    }
+
 
 
     /* =========================
