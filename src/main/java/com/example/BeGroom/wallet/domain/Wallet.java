@@ -76,11 +76,11 @@ public class Wallet extends BaseEntity {
 
     private void recordTransaction(
             TransactionType transactionType,
-            long before,
-            long changeAmount,
-            long after,
+            Long before,
+            Long changeAmount,
+            Long after,
             ReferenceType referenceType,
-            long referenceId
+            Long referenceId
     ) {
         WalletTransaction tx = WalletTransaction.create(
                 this, transactionType, before, -changeAmount, after, referenceType, referenceId
