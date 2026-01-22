@@ -46,7 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
             Long receiverId = order.getMember().getId();
             List<Long> receivers = List.of(receiverId);
             Map<String, String> variables = getOrderCompleteNoticeMap(order);
-            notificationService.send(receivers, NotificationTemplate.ORDER_SINGLE_PRODUCT.getId(), variables);
+            notificationService.send(receivers, NotificationTemplate.ORDER_PRODUCT.getId(), variables);
         } catch (RuntimeException e) {
             throw e;
         }

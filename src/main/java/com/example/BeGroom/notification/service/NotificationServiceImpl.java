@@ -4,6 +4,7 @@ import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.notification.domain.MemberNotification;
 import com.example.BeGroom.notification.domain.Notification;
+import com.example.BeGroom.notification.domain.NotificationMessage;
 import com.example.BeGroom.notification.dto.CreateNotificationReqDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.repository.EmitterRepository;
@@ -25,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.example.BeGroom.notification.domain.NotificationMessage.NEW_NOTIFICATION;
 
 @Service
 @RequiredArgsConstructor
@@ -68,7 +71,7 @@ public class NotificationServiceImpl implements NotificationService {
         memberNotificationRepository.saveAll(notifications);
 
         // 원하는 메시지 컨텐츠 생성
-        Map<String, Object> eventData = MessageUtil.createSseMessage("새로운 알림이 도착했습니다!");
+        Map<String, Object> eventData = MessageUtil.createMessageByHashMap(NEW_NOTIFICATION.getMessage());
 
         // 실시간 메시지 전송
         notificationNetworkService.send(eventData, NotificationTarget.Specific.of(receiverIds));
@@ -84,7 +87,7 @@ public class NotificationServiceImpl implements NotificationService {
         memberNotificationRepository.saveAll(notifications);
 
         // 원하는 메시지 컨텐츠 생성
-        Map<String, Object> eventData = MessageUtil.createSseMessage("새로운 알림이 도착했습니다!");
+        Map<String, Object> eventData = MessageUtil.createMessageByHashMap(NEW_NOTIFICATION.getMessage());
 
         // 실시간 메시지 전송
         notificationNetworkService.send(eventData, new NotificationTarget.Broadcast());
@@ -94,7 +97,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void readNotification(Long mappingId) {
         MemberNotification memberNotification = memberNotificationRepository.findById(mappingId)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 알림입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 알림이 존재하지 않습니다."));
 
         memberNotification.read();
     }

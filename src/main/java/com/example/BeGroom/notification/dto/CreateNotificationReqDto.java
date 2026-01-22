@@ -6,12 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class CreateNotificationReqDto {
     @NotNull
     @Schema(example = "NOTICE")
@@ -28,4 +28,12 @@ public class CreateNotificationReqDto {
     @NotEmpty
     @Schema(example = "/")
     private String link;
+
+    @Builder
+    private CreateNotificationReqDto (NotificationType type, String title, String message, String link) {
+        this.type = type;
+        this.title = title;
+        this.message = message;
+        this.link = link;
+    }
 }
