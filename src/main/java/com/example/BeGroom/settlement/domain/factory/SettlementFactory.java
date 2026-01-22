@@ -38,9 +38,8 @@ public class SettlementFactory {
                 .feeRate(feeRate)
                 .settlementAmount(settlementAmount)
                 .status(SettlementStatus.UNSETTLED)
-                .paymentStatus(SettlementPaymentStatus.PAYMENT)
+                .settlementPaymentStatus(SettlementPaymentStatus.PAYMENT)
                 .refundAmount(BigDecimal.ZERO)
-                .date(LocalDate.now())
                 .build();
     }
 }

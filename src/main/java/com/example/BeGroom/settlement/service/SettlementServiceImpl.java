@@ -68,7 +68,7 @@ public class SettlementServiceImpl implements SettlementService {
 
         return settlements.map(s -> new ProductSettlementResDto(
                 s.getId(),
-                s.getDate(),
+                s.getCreatedAt().toLocalDate(),
                 s.getPaymentAmount(),
                 s.getRefundAmount(),
                 s.getFee(),
@@ -113,8 +113,10 @@ public class SettlementServiceImpl implements SettlementService {
     public void aggregateApprovedPayments(){
         List<Payment> payments = paymentRepository.findApprovedPayments(APPROVED);
 
+        //TODO: insert 쿼리 호출을 줄여보자! (서칭해보세요!!) - bulk insert
         for(Payment payment : payments){
-            Settlement settlement = SettlementFactory.create(payment);
+            Settlement settlement = Settlement.create(payment);
+//            Settlement settlement = SettlementFactory.create(payment);
             settlementRepository.save(settlement);
 
             payment.markSettled();
@@ -150,6 +152,7 @@ public class SettlementServiceImpl implements SettlementService {
     // csv 내보내기
     @Override
     public void writeDailySettlementCsv(Long sellerId, PrintWriter writer)throws IOException {
+        //TODO: 페이징 쿼리 필요, 1억개 가져온다고 가정하면 조회하는것도 느리고.. 그리고 메모리도 용량이 커지겟져(OOM)
         List<DailySettlementCsvDto> settlementCsvDtos =
                 settlementRepository.findAllDailySettlementBySeller(sellerId);
 
