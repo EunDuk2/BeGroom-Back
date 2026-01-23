@@ -24,7 +24,7 @@ public class CrawlingFetcher {
                 .retrieve()
                 .bodyToMono(CrawlingResponse.class)
                 .doOnError(e -> log.error("목록 조회 중 오류 발생: {}", e.getMessage()))
-                .block(); // 기존 서비스 로직 동기 처리를 위해 block 사용
+                .block();
     }
 
     public Mono<ProductOptionResponse> fetchProductDetailAsync(Long productNo) {
@@ -34,7 +34,7 @@ public class CrawlingFetcher {
                 .bodyToMono(ProductOptionResponse.class)
                 .onErrorResume(e -> {
                     log.error("상세 조회 실패 (productNo: {}): {}", productNo, e.getMessage());
-                    return Mono.just(new ProductOptionResponse()); // 실패 시 빈 객체 반환하여 전체 흐름 유지
+                    return Mono.just(new ProductOptionResponse()); // 실패 시 빈 객체 반환
                 });
     }
 }

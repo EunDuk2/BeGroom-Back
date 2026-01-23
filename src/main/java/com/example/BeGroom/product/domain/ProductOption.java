@@ -3,36 +3,43 @@ package com.example.BeGroom.product.domain;
 import com.example.BeGroom.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.Assert;
 
-@Entity
-@Table(name = "product_option")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@Table(name = "product_option")
+@Entity
 public class ProductOption extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "option_id")
-    private Long optionId;
+    private Long id;
 
-    @Column(name = "option_type", nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private String optionType;
 
-    @Column(name = "option_value", nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String optionValue;
 
-    @Column(name = "display_name", nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String displayName;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
+    @Column(nullable = false)
     private Boolean isActive = true;
 
+    @Builder
+    private ProductOption(String optionType, String optionValue, String displayName, Boolean isActive) {
+        Assert.hasText(optionType, "옵션 타입은 필수입니다.");
+        Assert.hasText(optionValue, "옵션 값은 필수입니다.");
+        validateDisplayName(displayName);
 
-    // 옵션 정보 수정
-    public void updateOptionInfo(String displayName) {
+        this.optionType = optionType;
+        this.optionValue = optionValue;
+        this.displayName = displayName;
+        this.isActive = (isActive != null) ? isActive : true;
+    }
+
+    public void updateDisplayName(String displayName) {
         validateDisplayName(displayName);
         this.displayName = displayName;
     }
@@ -49,9 +56,7 @@ public class ProductOption extends BaseEntity {
 
     // 유효성 검사
     private void validateDisplayName(String displayName) {
-        if (displayName == null || displayName.isBlank()) {
-            throw new IllegalArgumentException("옵션 표시명은 필수입니다.");
-        }
+        Assert.hasText(displayName, "옵션 표시명은 필수입니다.");
         if (displayName.length() > 100) {
             throw new IllegalArgumentException("옵션 표시명은 100자를 초과할 수 없습니다.");
         }

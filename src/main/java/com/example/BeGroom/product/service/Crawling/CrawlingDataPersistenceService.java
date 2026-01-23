@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -32,37 +33,28 @@ public class CrawlingDataPersistenceService {
     private final BrandRepository brandRepository;
     private final ProductCategoryRepository productCategoryRepository;
     private final SellerRepository sellerRepository;
+    private final CategoryRepository categoryRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Product saveProductWithTransaction(CrawlingResponse.ProductData productData, ProductOptionResponse detailResponse) {
 
         // 중복 체크
-        Optional<Product> existing = productRepository.findByProductNo(productData.getNo());
+        Optional<Product> existing = productRepository.findByNo(productData.getNo());
         if (existing.isPresent()) {
             return existing.get();
         }
 
         // 브랜드
-        Brand brand = processBrand(productData, detailResponse);
+        Brand brand = processBrand(detailResponse);
 
         // Product 엔티티 생성 및 저장
         Product product = Product.builder()
-                .productNo(productData.getNo())
+                .no(productData.getNo())
                 .brand(brand)
                 .name(productData.getName())
                 .shortDescription(productData.getShortDescription())
-                .salesPrice(productData.getSalesPrice())
-                .discountedPrice(productData.getDiscountedPrice())
-                .discountRate(productData.getDiscountRate())
-                .isBuyNow(productData.getIsBuyNow())
-                .isPurchaseStatus(productData.getIsPurchaseStatus())
-                .isOnlyAdult(productData.getIsOnlyAdult())
-                .isSoldOut(productData.getIsSoldOut())
-                .soldOutTitle(productData.getSoldOutTitle())
-                .soldOutText(productData.getSoldOutText())
-                .canRestockNotify(productData.getCanRestockNotify())
-                .isLowStock(productData.getIsLowStock())
                 .productStatus(determineProductStatus(productData))
+                .productNotice(detailResponse != null && detailResponse.getData() != null ? new ArrayList<>(detailResponse.getData().getProductNotice()) : null)
                 .build();
 
         product = productRepository.save(product);
@@ -72,7 +64,7 @@ public class CrawlingDataPersistenceService {
             productImageRepository.save(ProductImage.builder()
                     .product(product)
                     .imageUrl(productData.getListImageUrl())
-                    .imageType(ProductImage.ImageType.MAIN)
+                    .imageType(ImageType.MAIN)
                     .sortOrder(1)
                     .build());
         }
@@ -85,82 +77,107 @@ public class CrawlingDataPersistenceService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveCategoryMapping(Product product, Category category) {
-        if (productCategoryRepository.existsByProduct_ProductIdAndCategory_CategoryId(product.getProductId(), category.getCategoryId())) {
+        Category managedCategory = categoryRepository.findById(category.getId())
+            .orElseThrow(() -> new EntityNotFoundException("카테고리를 찾을 수 없습니다: " + category.getId()));
+
+        if (productCategoryRepository.existsByProduct_IdAndCategory_Id(product.getId(), category.getId())) {
             return;
         }
 
-        long existingCount = productCategoryRepository.countByProduct_ProductId(product.getProductId());
+        long existingCount = productCategoryRepository.countByProduct_Id(product.getId());
         productCategoryRepository.save(ProductCategory.builder()
                 .product(product)
-                .category(category)
+                .category(managedCategory)
                 .isPrimary(existingCount == 0)
                 .build());
     }
 
-    private Brand processBrand(CrawlingResponse.ProductData data, ProductOptionResponse detailResponse) {
-        if (detailResponse != null && detailResponse.getData() != null) {
+    private void processDetailAndOptions(Product product, CrawlingResponse.ProductData data, ProductOptionResponse detailResponse) {
+        List<ProductDetail> savedDetails = new ArrayList<>();
+
+        if (detailResponse == null || detailResponse.getData() == null) {
+            savedDetails.add(saveProductDetail(product, data.getName(), data.getNo(),
+                data.getSalesPrice(), data.getDiscountedPrice(), data.getIsSoldOut()));
+        } else {
+            ProductOptionResponse.OptionData optionData = detailResponse.getData();
+
+            // 상세 설명 및 고시정보 업데이트
+            String productDetailHtml = optionData.getProductDetail() != null ? optionData.getProductDetail().getLegacyContent() : null;
+            product.updateBasicInfo(
+                product.getName(),
+                product.getShortDescription(),
+                productDetailHtml,
+                optionData.getProductNotice() != null ? new ArrayList<>(optionData.getProductNotice()) : null
+            );
+            productRepository.save(product);
+
+            // 상세 상품 있으면 저장, 없으면 기본 상세 저장
+            if (optionData.getDealProducts() != null && !optionData.getDealProducts().isEmpty()) {
+                for (ProductOptionResponse.DealProduct deal : optionData.getDealProducts()) {
+                    savedDetails.add(saveProductDetail(product, deal.getName(), deal.getNo(),
+                        deal.getBasePrice(), deal.getDiscountedPrice(), deal.getIsSoldOut()));
+                }
+            } else {
+                savedDetails.add(saveProductDetail(product, data.getName(), data.getNo(),
+                    data.getSalesPrice(), data.getDiscountedPrice(), data.getIsSoldOut()));
+            }
+
+            syncOptionMappings(savedDetails, optionData);
+        }
+    }
+
+    private ProductDetail saveProductDetail(Product product, String name, Long no, Integer originalPrice, Integer discountedPrice, Boolean isSoldOut) {
+        int quantity = Boolean.TRUE.equals(isSoldOut) ? 0 : random.nextInt(100) + 1;
+
+        ProductDetail detail = ProductDetail.builder()
+            .product(product)
+            .no(no)
+            .name(name)
+            .initialQuantity(quantity)
+            .build();
+
+        detail.addPrice(originalPrice, discountedPrice);
+
+        return productDetailRepository.save(detail);
+    }
+
+    private Brand processBrand(ProductOptionResponse detailResponse) {
+        if (detailResponse != null && detailResponse.getData() != null && detailResponse.getData().getBrandInfo() != null) {
             return getOrCreateBrand(detailResponse.getData().getBrandInfo());
         }
         return brandRepository.findById(1L).orElse(null);
     }
 
-    private void processDetailAndOptions(Product product, CrawlingResponse.ProductData data, ProductOptionResponse detailResponse) {
-        if (detailResponse == null || detailResponse.getData() == null) {
-            saveBasicProductDetail(product, data);
-            return;
+    private Brand getOrCreateBrand(ProductOptionResponse.BrandInfo brandInfo) {
+        if (brandInfo.getNameGate() == null || brandInfo.getNameGate().getName() == null) {
+            return brandRepository.findById(1L).orElse(null);
         }
 
-        ProductOptionResponse.OptionData optionData = detailResponse.getData();
+        Long brandCode = brandInfo.getNameGate().getBrandCode();
+        String brandName = brandInfo.getNameGate().getName();
+        return brandRepository.findByBrandCode(brandCode)
+            .map(existingBrand -> {
+                // 정보 업데이트 로직
+                String logoUrl = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getImage() : null;
+                String description = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getDescription() : null;
+                existingBrand.updateInfo(brandName, logoUrl, description);
+                return brandRepository.save(existingBrand);
+            })
+            .orElseGet(() -> {
+                Seller systemSeller = sellerRepository.findById(1L)
+                    .orElseThrow(() -> new EntityNotFoundException("기본 판매자 정보가 없습니다."));
 
-        // 상세 설명 및 고시정보 업데이트
-        String productDetailHtml = optionData.getProductDetail() != null ? optionData.getProductDetail().getLegacyContent() : null;
-        product.updateProductOption(
-                optionData.getExpirationDate(),
-                optionData.getGuides(),
-                productDetailHtml,
-                optionData.getProductNotice()
-        );
-        productRepository.save(product);
-
-        // 상세 상품 있으면 저장, 없으면 기본 상세 저장
-        if (optionData.getDealProducts() != null && !optionData.getDealProducts().isEmpty()) {
-            for (ProductOptionResponse.DealProduct deal : optionData.getDealProducts()) {
-                // 재고 랜덤 삽입
-                int quantity = Boolean.TRUE.equals(deal.getIsSoldOut()) ? 0 : random.nextInt(100) + 1;
-
-                productDetailRepository.save(ProductDetail.builder()
-                        .product(product)
-                        .name(deal.getName())
-                        .basePrice(deal.getBasePrice())
-                        .discountedPrice(deal.getDiscountedPrice())
-                        .quantity(quantity)
-                        .isAvailable(!Boolean.TRUE.equals(deal.getIsSoldOut()))
-                        .build());
-            }
-        } else {
-            saveBasicProductDetail(product, data);
-        }
-
-        // 배송/포장 옵션 매핑
-        syncOptionMappings(product, optionData);
+                return brandRepository.save(Brand.builder()
+                    .seller(systemSeller)
+                    .brandCode(brandCode)
+                    .name(brandName)
+                    .logoUrl(brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getImage() : null)
+                    .description(brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getDescription() : null)
+                    .build());
+            });
     }
 
-    private void saveBasicProductDetail(Product product, CrawlingResponse.ProductData data) {
-
-        int quantity = Boolean.TRUE.equals(data.getIsSoldOut()) ? 0 : random.nextInt(100) + 1;
-
-        productDetailRepository.save(ProductDetail.builder()
-                .product(product)
-                .name(data.getName())
-                .basePrice(data.getSalesPrice())
-                .discountedPrice(data.getDiscountedPrice())
-                .quantity(quantity)
-                .isAvailable(!Boolean.TRUE.equals(data.getIsSoldOut()))
-                .build());
-    }
-
-    private void syncOptionMappings(Product product, ProductOptionResponse.OptionData data) {
-        List<ProductDetail> details = productDetailRepository.findByProduct_ProductId(product.getProductId());
+    private void syncOptionMappings(List<ProductDetail> details, ProductOptionResponse.OptionData data) {
         if (details.isEmpty()) return;
 
         if (data.getStorageType() != null && !data.getStorageType().isEmpty()) {
@@ -171,66 +188,21 @@ public class CrawlingDataPersistenceService {
         }
     }
 
-    private Brand getOrCreateBrand(ProductOptionResponse.BrandInfo brandInfo) {
-        if (brandInfo == null || brandInfo.getNameGate() == null || brandInfo.getNameGate().getName() == null) {
-            return brandRepository.findById(1L).orElse(null);
-        }
-
-        Long brandCode = brandInfo.getNameGate().getBrandCode();
-        String brandName = brandInfo.getNameGate().getName();
-        String logoUrl = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getImage() : null;
-        String description = brandInfo.getLogoGate() != null ? brandInfo.getLogoGate().getDescription() : null;
-
-        Optional<Brand> existingBrand = brandRepository.findByBrandCode(brandCode);
-
-        // 이미 브랜드가 존재하면 정보 업데이트 후 반환
-        if (existingBrand.isPresent()) {
-            Brand brand = existingBrand.get();
-            if (logoUrl != null || description != null) {
-                brand.updateBrandInfo(logoUrl, description);
-                return brandRepository.save(brand);
-            }
-            return brand;
-        }
-
-        // 새 브랜드 생성 및 Seller 연관관계 편의 메서드 호출
-        Seller systemSeller = sellerRepository.findById(1L)
-                .orElseThrow(() -> new EntityNotFoundException("기본 판매자 정보가 없습니다."));
-
-        Brand newBrand = Brand.builder()
-                .seller(systemSeller)
-                .brandCode(brandCode)
-                .name(brandName)
-                .logoUrl(logoUrl)
-                .description(description)
-                .build();
-
-        systemSeller.addBrand(newBrand); // 기존 코드의 addBrand 로직 유지
-        return brandRepository.save(newBrand);
-    }
-
     private void mapOption(List<ProductDetail> details, String type, String value) {
         productOptionRepository.findByOptionTypeAndOptionValue(type, value)
-                .or(() -> type.equals("delivery") ? productOptionRepository.findByOptionTypeAndOptionValue("delivery", "NORMAL_PARCEL") : Optional.empty())
-                .ifPresent(option -> {
-                    for (ProductDetail detail : details) {
-                        boolean exists = productOptionMappingRepository.findByProductDetail_ProductDetailId(detail.getProductDetailId())
-                                .stream().anyMatch(m -> m.getProductOption().getOptionId().equals(option.getOptionId()));
-                        if (!exists) {
-                            productOptionMappingRepository.save(ProductOptionMapping.builder()
-                                    .productDetail(detail)
-                                    .productOption(option)
-                                    .build());
-                        }
-                    }
-                });
+            .or(() -> "delivery".equals(type) ?
+                productOptionRepository.findByOptionTypeAndOptionValue("delivery", "NORMAL_PARCEL") : Optional.empty())
+            .ifPresent(option -> {
+                for (ProductDetail detail : details) {
+                    detail.addOption(option); // ProductDetail의 연관관계 편의 메서드 활용
+                }
+            });
     }
 
-    private Product.ProductStatus determineProductStatus(CrawlingResponse.ProductData data) {
-        if (!data.getIsPurchaseStatus()) {
-            return Product.ProductStatus.WAIT;
+    private ProductStatus determineProductStatus(CrawlingResponse.ProductData data) {
+        if (Boolean.TRUE.equals(data.getIsSoldOut())) {
+            return ProductStatus.SOLD_OUT;
         }
-
-        return data.getIsSoldOut() ? Product.ProductStatus.SOLD_OUT : Product.ProductStatus.SALE;
+        return ProductStatus.SALE;
     }
 }

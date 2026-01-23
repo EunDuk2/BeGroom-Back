@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductCategoryRepository extends JpaRepository<ProductCategory, Long> {
 
-    boolean existsByProduct_ProductIdAndCategory_CategoryId(Long productId, Long categoryId);
-    long countByProduct_ProductId(Long productId);
+    boolean existsByProduct_IdAndCategory_Id(Long productId, Long categoryId);
+    long countByProduct_Id(Long productId);
 }

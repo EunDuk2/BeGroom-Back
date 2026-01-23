@@ -6,19 +6,15 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "product_category")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-
+@Table(name = "product_category")
+@Entity
 public class ProductCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "product_category_id")
-    private Long productCategoryId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
@@ -28,30 +24,35 @@ public class ProductCategory {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Column(name = "is_primary", nullable = false)
-    @Builder.Default
-    private Boolean isPrimary = false;
+    @Column(nullable = false)
+    private Boolean isPrimary;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Builder
+    private ProductCategory(Product product, Category category, Boolean isPrimary) {
+        if (product == null) throw new IllegalArgumentException("상품 정보는 필수입니다.");
+        if (category == null) throw new IllegalArgumentException("카테고리 정보는 필수입니다.");
 
-    public static ProductCategory create(Product product, Category category, boolean isPrimary) {
-        return ProductCategory.builder()
-                .product(product)
-                .category(category)
-                .isPrimary(isPrimary)
-                .build();
+        this.product = product;
+        this.category = category;
+        this.isPrimary = (isPrimary != null) ? isPrimary : false;
+
+        connect();
+    }
+
+    private void connect() {
+        if (!product.getProductCategories().contains(this)) {
+            product.getProductCategories().add(this);
+        }
+        if (!category.getProductCategories().contains(this)) {
+            category.getProductCategories().add(this);
+        }
     }
 
     public void updatePrimary(boolean isPrimary) {
         this.isPrimary = isPrimary;
     }
-
-    // 편의 메서드
-    protected void setProduct(Product product) {
-        this.product = product;
-    }
-
 }

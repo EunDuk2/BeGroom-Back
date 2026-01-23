@@ -3,88 +3,84 @@ package com.example.BeGroom.product.domain;
 import com.example.BeGroom.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "category")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@Table(name = "category")
+@Entity
 public class Category extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "category_id")
-    private Long categoryId;
+    private Long id;
+
+    @Column(nullable = false, length = 20)
+    private String externalCategoryId;
 
     // 부모 카테고리 참조
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id", insertable = false, updatable = false)
+    @JoinColumn(name = "parent_id")
     private Category parent;
 
     // 자식 카테고리 목록
-    @OneToMany(mappedBy = "parent")
-    @Builder.Default
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Category> children = new ArrayList<>();
 
-    // ProductCategory 연관관계
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<ProductCategory> productCategories = new ArrayList<>();
 
-    @Column(name = "external_category_id", nullable = false, length = 20)
-    private String externalCategoryId;
-
-    @Column(name = "category_name", nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private String categoryName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "category_type", nullable = false)
-    @Builder.Default
-    private CategoryType categoryType = CategoryType.BASIC;
+    @Column(nullable = false)
+    private CategoryType categoryType;
 
-    @Column(name = "level", nullable = false)
+    @Column(nullable = false)
     private Integer level;
 
-    @Column(name = "sort_order", nullable = false)
-    @Builder.Default
-    private Integer sortOrder = 10;
+    @Column(nullable = false)
+    private Integer sortOrder;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
+    @Column(nullable = false)
+    private Boolean isActive;
 
-    @Column(name = "start_date")
     private LocalDateTime startDate;
-
-    @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Builder
+    private Category(String externalCategoryId, Category parent, String categoryName, CategoryType categoryType, Integer sortOrder, Boolean isActive, LocalDateTime startDate, LocalDateTime endDate) {
+        validateCategoryName(categoryName);
+        Assert.hasText(externalCategoryId, "외부 카테고리 ID가 필요합니다.");
 
-    public enum CategoryType {
-        BASIC, SEASON, EVENT, BEST, DISCOUNT
+        this.externalCategoryId = externalCategoryId;
+        this.categoryName = categoryName;
+        this.categoryType = (categoryType != null) ? categoryType : CategoryType.BASIC;
+        this.sortOrder = (sortOrder != null) ? sortOrder : 10;
+        this.isActive = (isActive != null) ? isActive : true;
+        this.startDate = startDate;
+        this.endDate = endDate;
+
+        setParent(parent);
     }
-
 
     // 카테고리 기본 정보 수정
     public void updateCategoryInfo(String categoryName, Integer sortOrder) {
         validateCategoryName(categoryName);
-        validateSortOrder(sortOrder);
+        if (sortOrder != null && sortOrder < 0) throw new IllegalArgumentException("정렬 순서는 0 이상이어야 합니다.");
 
         this.categoryName = categoryName;
         this.sortOrder = sortOrder;
     }
 
-    // 카테고리 활성화
     public void activate() {
         this.isActive = true;
     }
-
-    // 카테고리 비활성화
     public void deactivate() {
         this.isActive = false;
     }
@@ -98,19 +94,27 @@ public class Category extends BaseEntity {
         this.endDate = end;
     }
 
-    // 유효성 검사
-    private void validateCategoryName(String categoryName) {
-        if (categoryName == null || categoryName.isBlank()) {
-            throw new IllegalArgumentException("카테고리명은 필수입니다.");
+    public void setParent(Category parent) {
+        if (this.parent != null) {
+            this.parent.getChildren().remove(this);
         }
-        if (categoryName.length() > 50) {
-            throw new IllegalArgumentException("카테고리명은 50자를 초과할 수 없습니다.");
+
+        this.parent = parent;
+        if (parent != null) {
+            if (!parent.getChildren().contains(this)) {
+                parent.getChildren().add(this);
+            }
+            this.level = parent.getLevel() + 1;
+        } else {
+            this.level = 1;
         }
     }
 
-    private void validateSortOrder(Integer sortOrder) {
-        if (sortOrder == null || sortOrder < 0) {
-            throw new IllegalArgumentException("정렬 순서는 0 이상이어야 합니다.");
+    // 유효성 검사
+    private void validateCategoryName(String name) {
+        Assert.hasText(name, "카테고리명은 필수입니다.");
+        if (name.length() > 50) {
+            throw new IllegalArgumentException("카테고리명은 50자를 초과할 수 없습니다.");
         }
     }
 }
