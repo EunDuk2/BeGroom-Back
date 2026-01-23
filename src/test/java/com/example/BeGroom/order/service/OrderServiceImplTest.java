@@ -35,6 +35,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.example.BeGroom.order.dto.checkout.CheckoutStatus.COMPLETED;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
@@ -273,6 +277,79 @@ class OrderServiceImplTest extends IntegrationTestSupport {
             ));
         }
     }
+
+
+
+
+    @DisplayName("동시에 주문 체크아웃을 시도하면 어떤 결과가 나오는지 확인한다")
+    @Test
+    void checkout_concurrent_observe() throws InterruptedException {
+        // given
+        Member member = createAndSaveMember();
+        createAndSaveWallet(member);
+
+        Product product = createAndSaveProductHierarchy();
+
+        // 재고 충분히 줌
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 5000, 5);
+
+        OrderCreateReqDto orderCreateReqDto =
+                createOrderCreateReqDto(
+                        productDetail1, 1,
+                        productDetail2, 2
+                );
+
+        Order order = orderService.create(member.getId(), orderCreateReqDto);
+
+        int threadCount = 2;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failCount = new AtomicInteger();
+
+        // when
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    startLatch.await(); // 동시에 출발
+                    orderService.checkout(member.getId(), order.getId(), POINT);
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    System.out.println("=== test === checkout 실패: " + e.getClass().getSimpleName()
+                            + " - " + e.getMessage());
+                    failCount.incrementAndGet();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();   // 동시에 시작
+        doneLatch.await();        // 모두 종료 대기
+
+        // then (일단은 관찰 위주)
+        System.out.println("=== test === 성공한 결제 수: " + successCount.get());
+        System.out.println("=== test === 실패한 결제 수: " + failCount.get());
+
+        List<Payment> payments = paymentRepository.findAll();
+        Order completedOrder = orderRepository.findById(order.getId()).get();
+
+        System.out.println("=== test === 결제 개수: " + payments.size());
+        System.out.println("=== test === 주문 상태: " + completedOrder.getOrderStatus());
+
+        ProductDetail reloaded1 =
+                productDetailRepository.findById(productDetail1.getProductDetailId()).get();
+        ProductDetail reloaded2 =
+                productDetailRepository.findById(productDetail2.getProductDetailId()).get();
+
+        System.out.println("=== test === 상품1 남은 재고: " + reloaded1.getQuantity());
+        System.out.println("=== test === 상품2 남은 재고: " + reloaded2.getQuantity());
+    }
+
 
 
 
