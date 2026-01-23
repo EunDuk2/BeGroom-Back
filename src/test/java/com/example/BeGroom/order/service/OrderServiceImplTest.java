@@ -355,6 +355,67 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         System.out.println("=== test === 상품2 남은 재고: " + reloaded2.getStock().getQuantity());
     }
 
+    @DisplayName("동시에 요청하지 않아도 오래된 상태로 Lost Update가 발생하는지 확인한다")
+    @Test
+    void checkout_lost_update_without_concurrency() throws Exception {
+        // given
+        Member member = createAndSaveMember();
+        createAndSaveWallet(member);
+
+        Product product = createAndSaveProductHierarchy();
+
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 5000, 5);
+
+        OrderCreateReqDto orderCreateReqDto =
+                createOrderCreateReqDto(
+                        productDetail1, 2,
+                        productDetail2, 2
+                );
+
+        Order order = orderService.create(member.getId(), orderCreateReqDto);
+
+        CountDownLatch aReadDone = new CountDownLatch(1);
+        CountDownLatch bCommitDone = new CountDownLatch(1);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+        // Thread A: 먼저 읽고 멈춤
+        executorService.submit(() -> {
+            try {
+                orderService.checkoutWithDelay(
+                        member.getId(),
+                        order.getId(),
+                        aReadDone,
+                        bCommitDone
+                );
+            } catch (Exception e) {
+                System.out.println("Thread A 실패: " + e.getMessage());
+            }
+        });
+
+        // Thread B: A가 읽은 뒤 실행
+        executorService.submit(() -> {
+            try {
+                aReadDone.await(); // A가 조회 끝낼 때까지 대기
+                orderService.checkout(member.getId(), order.getId(), POINT);
+            } catch (Exception e) {
+                System.out.println("Thread B 실패: " + e.getMessage());
+            } finally {
+                bCommitDone.countDown();
+            }
+        });
+
+        Thread.sleep(1000); // 둘 다 종료 대기
+
+        // then
+        ProductDetail reloaded =
+                productDetailRepository.findById(productDetail1.getProductDetailId()).get();
+
+        System.out.println("=== test === 최종 재고: " + reloaded.getQuantity());
+    }
+
+
 
 
 
