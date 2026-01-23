@@ -5,8 +5,11 @@ import com.example.BeGroom.member.domain.Role;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.product.domain.Brand;
+import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.exception.InsufficientStockException;
+import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.wallet.domain.Wallet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -257,11 +260,33 @@ class OrderTest  {
     }
 
     private ProductDetail createProductDetail(String name, int price, int quantity) {
-        return ProductDetail.builder()
-                .name(name)
-                .basePrice(price)
-                .quantity(quantity)
+        Seller seller
+                = Seller.createSeller("", "", "", "");
+
+        Brand brand = Brand
+                .builder()
+                .seller(seller)
+                .brandCode(1L)
+                .name("aa")
                 .build();
+
+        Product product = Product
+                .builder()
+                .no(1L)
+                .brand(brand)
+                .name("dd")
+                .build();
+
+        ProductDetail productDetail = ProductDetail.builder()
+                .name(name)
+                .product(product)
+                .initialQuantity(quantity)
+                .no(1L)
+                .build();
+
+        productDetail.addPrice(price, price);
+
+        return productDetail;
     }
 
     private OrderLineRequest createOrderLine(ProductDetail productDetail, int quantity) {

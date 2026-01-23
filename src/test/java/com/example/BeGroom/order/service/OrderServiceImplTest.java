@@ -33,6 +33,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,7 @@ import static com.example.BeGroom.payment.domain.PaymentStatus.APPROVED;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Transactional
 class OrderServiceImplTest extends IntegrationTestSupport {
 
     @Autowired
@@ -74,19 +76,19 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     @Autowired
     private EntityManager em;
 
-    @AfterEach
-    void tearDown() {
-        paymentRepository.deleteAllInBatch();
-        orderProductRepository.deleteAllInBatch();
-        orderRepository.deleteAllInBatch();
-        walletTransactionRepository.deleteAllInBatch();
-        walletRepository.deleteAllInBatch();
-        memberRepository.deleteAllInBatch();
-        productDetailRepository.deleteAllInBatch();
-        productRepository.deleteAllInBatch();
-        brandRepository.deleteAllInBatch();
-        sellerRepository.deleteAllInBatch();
-    }
+//    @AfterEach
+//    void tearDown() {
+//        paymentRepository.deleteAllInBatch();
+//        orderProductRepository.deleteAllInBatch();
+//        orderRepository.deleteAllInBatch();
+//        walletTransactionRepository.deleteAllInBatch();
+//        walletRepository.deleteAllInBatch();
+//        memberRepository.deleteAllInBatch();
+//        productDetailRepository.deleteAllInBatch();
+//        productRepository.deleteAllInBatch();
+//        brandRepository.deleteAllInBatch();
+//        sellerRepository.deleteAllInBatch();
+//    }
 
 
     /* =========================
@@ -103,10 +105,11 @@ class OrderServiceImplTest extends IntegrationTestSupport {
             // given
             Member member = createAndSaveMember();
 
-            Product product = createAndSaveProductHierarchy();
+            Product product1 = createAndSaveProductHierarchy(1L, "1");
+            Product product2 = createAndSaveProductHierarchy(2L, "2");
 
-            ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
-            ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
+            ProductDetail productDetail1 = createAndSaveProductDetail(product1, 1L, 3000, 5);
+            ProductDetail productDetail2 = createAndSaveProductDetail(product2, 2L, 5000, 5);
 
             OrderCreateReqDto orderCreateReqDto =
                     createOrderCreateReqDto(
@@ -142,7 +145,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         @DisplayName("존재하지 않는 회원이면 주문 생성에 실패한다")
         void fail_when_member_not_found() {
             // given
-            Product product = createAndSaveProductHierarchy();
+            Product product = createAndSaveProductHierarchy(1L, "1");
             ProductDetail productDetail = createAndSaveProductDetail(product, 1L, 3000, 5);
 
             OrderCreateReqDto orderCreateReqDto =
@@ -187,10 +190,11 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         Member member = createAndSaveMember();
         createAndSaveWallet(member);
 
-        Product product = createAndSaveProductHierarchy();
+        Product product1 = createAndSaveProductHierarchy(1L, "1");
+        Product product2 = createAndSaveProductHierarchy(2L, "2");
 
-        ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
-        ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
+        ProductDetail productDetail1 = createAndSaveProductDetail(product1, 1L, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product2, 2L, 5000, 5);
 
         OrderCreateReqDto orderCreateReqDto =
                 createOrderCreateReqDto(
@@ -227,7 +231,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     @Disabled("성능 비교용 실험 테스트")
     void findById_vs_findAllByIdIn_by_product_count() {
         Member member = createAndSaveMember();
-        Product product = createAndSaveProductHierarchy();
+        Product product = createAndSaveProductHierarchy(1L, "1");
 
         int[] productCounts = {1, 5, 10, 50, 100, 500};
 
@@ -289,7 +293,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         Member member = createAndSaveMember();
         createAndSaveWallet(member);
 
-        Product product = createAndSaveProductHierarchy();
+        Product product = createAndSaveProductHierarchy(1L, "1");
 
         // 재고 충분히 줌
         ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
@@ -386,7 +390,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
      *  Seller → Brand → Product
      * ========================= */
 
-    private Product createAndSaveProductHierarchy() {
+    private Product createAndSaveProductHierarchy(Long brandCode, String name) {
         Seller seller = Seller.createSeller(
                 "seller@naver.com",
                 "seller",
@@ -397,12 +401,13 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
         Brand brand = Brand.builder()
                 .seller(seller)
-                .name("brand")
+                .brandCode(brandCode)
+                .name(name)
                 .build();
         brandRepository.save(brand);
 
         Product product = Product.builder()
-                .no(1L)
+                .no(brandCode)
                 .brand(brand)
                 .name("product1")
                 .productStatus(ProductStatus.SALE)
