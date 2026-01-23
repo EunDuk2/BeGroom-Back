@@ -4,6 +4,7 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MemberNotification extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) //TODO: Autoincrement인데 그러면 병렬로 insert시 어떻게 될까요?(IDENTity 말고 딴것도 공부해보시고 장단점을 파악해보세요)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,4 +46,13 @@ public class MemberNotification extends BaseEntity {
         this.isRead = true;
         this.readAt = LocalDateTime.now();
     }
+
+    @Builder
+    private MemberNotification(Member member, Notification notification, String metaData, boolean isRead){
+        this.member = member;
+        this.notification = notification;
+        this.isRead = isRead;
+        this.metaData = metaData;
+    }
+
 }

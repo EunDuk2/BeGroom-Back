@@ -1,19 +1,21 @@
 package com.example.BeGroom.notification.service;
 
 import com.example.BeGroom.member.domain.Member;
-import com.example.BeGroom.member.dto.MemberCreateReqDto;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.notification.domain.MemberNotification;
 import com.example.BeGroom.notification.domain.Notification;
-import com.example.BeGroom.notification.domain.NotificationType;
+import com.example.BeGroom.notification.domain.NotificationMessage;
 import com.example.BeGroom.notification.dto.CreateNotificationReqDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.repository.EmitterRepository;
 import com.example.BeGroom.notification.repository.MemberNotificationRepository;
 import com.example.BeGroom.notification.repository.NotificationRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.example.BeGroom.notification.service.network.NotificationNetworkService;
+import com.example.BeGroom.notification.service.network.NotificationTarget;
+import com.example.BeGroom.notification.util.MessageUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -25,93 +27,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.example.BeGroom.notification.domain.NotificationMessage.NEW_NOTIFICATION;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final MemberNotificationRepository memberNotificationRepository;
     private final MemberRepository memberRepository;
-    private final ObjectMapper objectMapper;
-
-    @Override
-    public GetMemberNotificationResDto getMyNotifications(Long memberId) {
-        List<MemberNotification> notiList = memberNotificationRepository.findAllByMemberIdOrderByCreatedAtDesc(memberId);
-        long unreadCount = memberNotificationRepository.countByMemberIdAndIsReadFalse(memberId);
-        return GetMemberNotificationResDto.of(notiList, unreadCount);
-    }
-
-    @Transactional(readOnly = false)
-    @Override
-    public void send(List<Long> receiverIds, Long templateId, Map<String, String> variables) {
-        Notification template = notificationRepository.findById(templateId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 타입의 알림 템플릿이 없습니다."));
-
-        String jsonMetaData;
-        jsonMetaData = objectMapper.writeValueAsString(variables);
-
-        List<Member> receivers = memberRepository.findAllById(receiverIds);
-
-        List<MemberNotification> notifications = receivers.stream()
-                .map(receiver -> new MemberNotification(receiver, template, jsonMetaData))
-                .collect(Collectors.toList());
-
-        memberNotificationRepository.saveAll(notifications);
-
-        Map<String, Object> eventData = new HashMap<>();
-        eventData.put("message", "새로운 알림이 도착했습니다!");
-
-        for (Long receiverId : receiverIds) {
-            Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(String.valueOf(receiverId));
-
-            emitters.forEach((id, emitter) -> {
-                sendToClient(emitter, id, "notification", eventData);
-            });
-        }
-    }
-
-    @Transactional(readOnly = false)
-    public void sendToAllMembers(Long templateId, Map<String, String> variables) {
-        Notification template = notificationRepository.findById(templateId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 타입의 알림 템플릿이 없습니다."));
-
-        String jsonMetaData;
-        jsonMetaData = objectMapper.writeValueAsString(variables);
-
-        List<Long> targetIds = memberRepository.findAllIds();
-
-        List<MemberNotification> notifications = targetIds.stream()
-                .map(targetId -> {
-                    Member memberProxy = memberRepository.getReferenceById(targetId);
-                    return new MemberNotification(memberProxy, template, jsonMetaData);
-                })
-                .collect(Collectors.toList());
-
-        memberNotificationRepository.saveAll(notifications);
-
-        Map<String, Object> eventData = new HashMap<>();
-        eventData.put("message", "새로운 알림이 도착했습니다!");
-        eventData.put("link", "https://begroom.vercel.app/my");
-
-        Map<String, SseEmitter> allEmitters = emitterRepository.findAll();
-
-        allEmitters.forEach((id, emitter) -> {
-            sendToClient(emitter, id, "notification",eventData);
-        });
-    }
-
-    @Transactional
-    @Override
-    public void readNotification(Long mappingId) {
-        MemberNotification memberNoti = memberNotificationRepository.findById(mappingId)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 알림입니다."));
-
-        memberNoti.read();
-    }
-
-    @Transactional
-    public void readAllNotifications(Long memberId) {
-        memberNotificationRepository.bulkMarkAsRead(memberId);
-    }
+    private final NotificationNetworkService notificationNetworkService;
+    private final NotificationHistoryService notificationHistoryService;
 
     @Override
     @Transactional
@@ -128,39 +53,57 @@ public class NotificationServiceImpl implements NotificationService {
         return notification;
     }
 
-    private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
-    private final EmitterRepository emitterRepository;
+    @Override
+    @Transactional(readOnly = true)
+    public GetMemberNotificationResDto getMyNotifications(Long memberId) {
+        List<MemberNotification> notiList = memberNotificationRepository.findAllByMemberIdOrderByCreatedAtDesc(memberId);
+        long unreadCount = memberNotificationRepository.countByMemberIdAndIsReadFalse(memberId);
+        return GetMemberNotificationResDto.of(notiList, unreadCount);
+    }
 
     @Override
-    public SseEmitter subscribe(Long memberId) {
-        String emitterId = memberId + "_" + System.currentTimeMillis();
-        SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
+    @Transactional(readOnly = false)
+    public void send(List<Long> receiverIds, Long templateId, Map<String, String> variables) {
+        // MemberNotification 객체 생성
+        List<MemberNotification> notifications = notificationHistoryService.createMemberNotification(receiverIds, templateId, variables);
 
-        emitterRepository.save(emitterId, emitter);
+        // DB Insert
+        memberNotificationRepository.saveAll(notifications);
 
-        emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
-        emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
+        // 원하는 메시지 컨텐츠 생성
+        Map<String, Object> eventData = MessageUtil.createMessageByHashMap(NEW_NOTIFICATION.getMessage());
 
-        Map<String, String> eventData = new HashMap<>();
-        eventData.put("message", "SSE connected");
-
-        sendToClient(emitter, emitterId, "connect", eventData);
-
-        return emitter;
+        // 실시간 메시지 전송
+        notificationNetworkService.send(eventData, NotificationTarget.Specific.of(receiverIds));
     }
 
-    private void sendToClient(SseEmitter emitter, String id, String eventName, Object data) {
-        try {
-            emitter.send(SseEmitter.event()
-                    .id(id)
-                    .name(eventName)
-                    .data(data));
-        } catch (IOException | IllegalStateException e) {
-            emitterRepository.deleteById(id);
-            System.out.print("SSE 연결이 끊겨서 전송 실패. Emitter 삭제함: userId={}");
-            System.out.println(id);
+    @Transactional(readOnly = false)
+    public void sendToAllMembers(Long templateId, Map<String, String> variables) {
+        // MemberNotification 객체 생성
+        List<Long> receiverIds = memberRepository.findAllIds();
+        List<MemberNotification> notifications = notificationHistoryService.createMemberNotification(receiverIds, templateId, variables);
 
-        }
+        // DB Insert
+        memberNotificationRepository.saveAll(notifications);
+
+        // 원하는 메시지 컨텐츠 생성
+        Map<String, Object> eventData = MessageUtil.createMessageByHashMap(NEW_NOTIFICATION.getMessage());
+
+        // 실시간 메시지 전송
+        notificationNetworkService.send(eventData, new NotificationTarget.Broadcast());
     }
 
+    @Override
+    @Transactional
+    public void readNotification(Long mappingId) {
+        MemberNotification memberNotification = memberNotificationRepository.findById(mappingId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 알림이 존재하지 않습니다."));
+
+        memberNotification.read();
+    }
+
+    @Transactional
+    public void readAllNotifications(Long memberId) {
+        memberNotificationRepository.bulkMarkAsRead(memberId);
+    }
 }

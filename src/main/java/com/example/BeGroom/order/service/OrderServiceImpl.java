@@ -3,16 +3,19 @@ package com.example.BeGroom.order.service;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.order.domain.Order;
+import com.example.BeGroom.order.domain.OrderLineRequest;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.domain.OrderStatus;
 import com.example.BeGroom.order.dto.*;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.repository.ProductDetailRepository;
+import com.example.BeGroom.order.dto.checkout.CheckoutResDto;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,32 +47,47 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order create(Long memberId, OrderCreateReqDto reqDto) {
-        // 사용자 검증
+        // 사용자 조회
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
 
-        // 주문 생성
-        Order order = Order.create(member, 0L, OrderStatus.CREATED);
-
-        // 상품 리스트 조회
+        // 주문 생성 요청에 필요한 lines 준비
+        List<OrderLineRequest> orderLineRequests = new ArrayList<>();
         List<OrderProductReqDto> orderProductReqDtoList = reqDto.getOrderProductList();
+
+        //TODO: 그러면.. In쿼리로 한번에 가져와서 비교해서 없으면 던지고 있으면 비즈니스 로직 수행, O(N) 최악, O(1), O(n/2)
+        //i/o비용 vs cpu 연산(비교해보자!)
         for(OrderProductReqDto orderProductReqDto : orderProductReqDtoList) {
             ProductDetail productDetail = productDetailRepository
                     .findById(orderProductReqDto.getProductDetailId()).orElseThrow(() -> new EntityNotFoundException("없는 상품 옵션입니다."));
-
-            // 재고 검증
-            productDetail.validateOrderable(orderProductReqDto.getOrderQuantity());
-
-            // OrderProduct 생성
-            OrderProduct orderProduct = OrderProduct.create(order, productDetail, orderProductReqDto.getOrderQuantity(), productDetail.getSellingPrice());
-
-            // orderProduct를 order에 추가
-            order.addOrderProduct(orderProduct);
+            orderLineRequests.add(new OrderLineRequest(productDetail, orderProductReqDto.getOrderQuantity()));
         }
+
+        // 주문에게 주문 생성 요청
+        Order order = Order.create(member, orderLineRequests);
 
         // 주문 영속
         orderRepository.save(order);
 
         return order;
+    }
+
+    // todo : 트랜잭션 분리 추후
+    @Override
+    @Transactional
+    public CheckoutResDto checkout(Long memberId, Long orderId, PaymentMethod paymentMethod) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+
+        //TODO: 트랜잭션 범위가 너무 크다.. 트랜잭션을 분리해서 관리해볼 필요가 있다.
+        // 협력을 조율
+        Payment payment = order.checkout(paymentMethod, wallet);
+        payment.process(order, wallet);
+
+        // 결제 영속
+        paymentRepository.save(payment);
+
+        return CheckoutResDto.completed(orderId, payment.getId());
     }
 
     @Override

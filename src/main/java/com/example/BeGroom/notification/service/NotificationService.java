@@ -12,13 +12,15 @@ import java.util.List;
 import java.util.Map;
 
 public interface NotificationService {
-    public void send(List<Long> receiverIds, Long templateId, Map<String, String> variables);
+    /** 알림 Create, Read */
+    Notification createNotification(CreateNotificationReqDto reqDto);
     public GetMemberNotificationResDto getMyNotifications(Long memberId);
 
-    public void readAllNotifications(Long memberId);
+    /** 알림 읽음 처리 로직 */
     public void readNotification(Long mappingId);
-    Notification createNotification(CreateNotificationReqDto reqDto);
-    public void sendToAllMembers(Long templateId, Map<String, String> variables);
+    public void readAllNotifications(Long memberId);
 
-    public SseEmitter subscribe(Long memberId);
+    /** 실시간 메시지 전송 로직 */
+    public void send(List<Long> receiverIds, Long templateId, Map<String, String> variables);
+    public void sendToAllMembers(Long templateId, Map<String, String> variables);
 }

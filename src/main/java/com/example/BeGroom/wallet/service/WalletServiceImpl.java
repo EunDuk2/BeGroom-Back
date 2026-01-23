@@ -32,7 +32,7 @@ public class WalletServiceImpl implements WalletService {
             throw new IllegalStateException("존재하는 wallet입니다.");
         }
         // wallet 생성
-        Wallet wallet = Wallet.create(member);
+        Wallet wallet = Wallet.create(member, 0);
         walletRepository.save(wallet);
 
         return wallet;
