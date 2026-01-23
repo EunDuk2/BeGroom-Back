@@ -6,6 +6,7 @@ import com.example.BeGroom.order.exception.InvalidOrderStateException;
 import com.example.BeGroom.payment.domain.Payment;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -38,7 +39,14 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<Payment> payments;
 
-    private Order(Member member, Long totalAmount, OrderStatus orderStatus) {
+//    private Order(Member member, Long totalAmount, OrderStatus orderStatus) {
+//        this.member = member;
+//        this.totalAmount = totalAmount;
+//        this.orderStatus = orderStatus;
+//    }
+
+    @Builder
+    public Order(Member member, Long totalAmount, OrderStatus orderStatus) {
         this.member = member;
         this.totalAmount = totalAmount;
         this.orderStatus = orderStatus;

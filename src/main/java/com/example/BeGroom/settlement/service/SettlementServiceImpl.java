@@ -3,7 +3,6 @@ package com.example.BeGroom.settlement.service;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.settlement.domain.Settlement;
-import com.example.BeGroom.settlement.domain.factory.SettlementFactory;
 import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository;
@@ -111,13 +110,13 @@ public class SettlementServiceImpl implements SettlementService {
     @Transactional
     @Override
     public void aggregateApprovedPayments(){
-        List<Payment> payments = paymentRepository.findApprovedPayments(APPROVED);
+        List<Payment> payments = paymentRepository.findApprovedPayments();
 
-        //TODO: insert 쿼리 호출을 줄여보자! (서칭해보세요!!) - bulk insert
+        //TODO: insert 쿼리 호출을 줄여보자! (서칭해보세요!!) - batch insert 쓰기
         for(Payment payment : payments){
             Settlement settlement = Settlement.create(payment);
-//            Settlement settlement = SettlementFactory.create(payment);
             settlementRepository.save(settlement);
+
 
             payment.markSettled();
         }

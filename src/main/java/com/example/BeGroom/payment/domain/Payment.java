@@ -5,6 +5,7 @@ import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.payment.exception.InvalidPaymentStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -46,16 +47,25 @@ public class Payment extends BaseEntity {
     @Column(columnDefinition = "VARCHAR(20)")
     private PaymentFailReason paymentFailReason;
 
-    private Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
+//    private Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
+//        this.order = order;
+//        this.amount = amount;
+//        this.paymentMethod = paymentMethod;
+//        this.paymentStatus = paymentStatus;
+//        this.isSettled = false;
+//    }
+
+    @Builder
+    public Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus, boolean isSettled) {
         this.order = order;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.paymentStatus = paymentStatus;
-        this.isSettled = false;
+        this.isSettled = isSettled;
     }
 
     public static Payment create(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus) {
-        return new Payment(order, amount, paymentMethod, paymentStatus);
+        return new Payment(order, amount, paymentMethod, paymentStatus, false);
     }
 
     public void markProcessing() {

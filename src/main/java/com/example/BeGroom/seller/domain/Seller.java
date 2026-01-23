@@ -6,6 +6,7 @@ import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.settlement.domain.Settlement;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
@@ -46,7 +47,8 @@ public class Seller extends BaseEntity{
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Brand> brands = new ArrayList<>();
 
-    private Seller(String email, String name, String password, String phoneNumber) {
+    @Builder
+    public Seller(String email, String name, String password, String phoneNumber) {
         this.email = email;
         this.name = name;
         this.password = password;
