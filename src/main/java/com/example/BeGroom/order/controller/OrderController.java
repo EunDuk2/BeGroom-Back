@@ -5,6 +5,8 @@ import com.example.BeGroom.common.response.CommonSuccessDto;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.dto.*;
 import com.example.BeGroom.order.service.OrderService;
+import com.example.BeGroom.order.dto.checkout.CheckoutReqDto;
+import com.example.BeGroom.order.dto.checkout.CheckoutResDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,6 +46,27 @@ public class OrderController {
                         )
                 );
     }
+
+    @PostMapping("/{orderId}/checkout")
+    public ResponseEntity<CommonSuccessDto<CheckoutResDto>> checkout(
+            @AuthenticationPrincipal UserPrincipal user,
+            @PathVariable Long orderId,
+            @Valid @RequestBody CheckoutReqDto reqDto
+    ) {
+        CheckoutResDto checkoutResDto
+                = orderService.checkout(user.getMemberId(), orderId, reqDto.getPaymentMethod());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        CommonSuccessDto.of(
+                                checkoutResDto,
+                                HttpStatus.OK,
+                                "결제 요청 성공"
+                        )
+                );
+    }
+
+
 
     @GetMapping
     @Operation(summary = "주문 내역 조회", description = "로그인한 사용자의 주문 내역을 조회한다.")

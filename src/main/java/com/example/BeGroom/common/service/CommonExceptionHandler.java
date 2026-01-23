@@ -1,7 +1,7 @@
 package com.example.BeGroom.common.service;
 
-import com.example.BeGroom.usecase.checkout.dto.CheckoutResDto;
-import com.example.BeGroom.usecase.checkout.exception.CheckoutException;
+import com.example.BeGroom.order.dto.checkout.CheckoutResDto;
+import com.example.BeGroom.order.exception.CheckoutException;
 import com.example.BeGroom.common.response.CommonErrorDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;

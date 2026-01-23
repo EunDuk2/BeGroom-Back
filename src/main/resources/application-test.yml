@@ -4,10 +4,12 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+    
   jpa:
     hibernate:
       ddl-auto: create
     show-sql: true
+
   sql:
     init:
       mode: never
