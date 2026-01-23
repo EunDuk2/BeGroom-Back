@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface ProductOptionMappingRepository extends JpaRepository<ProductOptionMapping, Long> {
 
-    List<ProductOptionMapping> findByProductDetail_ProductDetailId(Long productDetailId);
+    List<ProductOptionMapping> findByProductDetail_Id(Long productDetailId);
 }

@@ -1,7 +1,6 @@
 package com.example.BeGroom.product.controller;
 
 import com.example.BeGroom.common.response.CommonSuccessDto;
-import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.dto.crawling.CrawlingRequest;
 import com.example.BeGroom.product.dto.crawling.CrawlingResultDto;
 import com.example.BeGroom.product.service.Crawling.CrawlingService;
@@ -61,28 +60,26 @@ public class CrawlingController {
                 .maxProductsPerCategory(maxProductsPerCategory)
                 .build();
 
-        List<Product> products = crawlingService.crawl(request);
+        crawlingService.crawl(request);
 
-        CrawlingResultDto result = new CrawlingResultDto(products.size(), buildMessage(categoryIds, products.size()));
+        String message = createStartMessage(categoryIds);
 
-        return ResponseEntity.ok(
+        CrawlingResultDto result = new CrawlingResultDto(0, message); // 실시간 개수는 알 수 없으므로 0 혹은 시작 메시지 전달
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+            .body(
                 CommonSuccessDto.of(
                         result,
-                        HttpStatus.OK,
-                        "크롤링 완료"
+                        HttpStatus.ACCEPTED,
+                        "크롤링 요청이 수락되었습니다."
                 )
         );
     }
 
     // 응답 메시지 생성
-    private String buildMessage(List<Long> categoryIds, int productCount) {
+    private String createStartMessage(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
-            return String.format("전체 중분류 카테고리 크롤링 완료 (%d개 상품)", productCount);
-        } else if (categoryIds.size() == 1) {
-            return String.format("카테고리 크롤링 완료 (%d개 상품)", productCount);
-        } else {
-            return String.format("%d개 카테고리 크롤링 완료 (%d개 상품)",
-                    categoryIds.size(), productCount);
+            return "전체 카테고리에 대한 크롤링 작업이 백그라운드에서 시작되었습니다.";
         }
+        return String.format("%d개의 지정된 카테고리에 대한 크롤링 작업이 시작되었습니다.", categoryIds.size());
     }
 }

@@ -28,7 +28,7 @@ public class OrderProductResDto {
 
     public static OrderProductResDto of(OrderProduct orderProduct) {
         return OrderProductResDto.builder()
-                .productDetailId(orderProduct.getProductDetail().getProductDetailId())
+                .productDetailId(orderProduct.getProductDetail().getId())
                 .productName(orderProduct.getProductDetail().getName())
                 .orderPrice(orderProduct.getPrice())
                 .orderQuantity(orderProduct.getQuantity())

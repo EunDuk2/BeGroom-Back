@@ -7,6 +7,7 @@ import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
+import com.example.BeGroom.product.domain.ImageType;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.domain.ProductImage;
@@ -92,7 +93,7 @@ public class MemberServiceImpl implements MemberService {
                                 ProductDetail productDetail = op.getProductDetail();
                                 Product product = productDetail.getProduct();
                                 String imageUrl = product.getProductImages().stream()
-                                        .filter(image -> ProductImage.ImageType.MAIN.equals(image.getImageType()))
+                                        .filter(image -> ImageType.MAIN.equals(image.getImageType()))
                                         .findFirst()
                                         .map(ProductImage::getImageUrl)
                                         .orElseGet(() -> !product.getProductImages().isEmpty()

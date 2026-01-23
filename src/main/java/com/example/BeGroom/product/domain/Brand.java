@@ -4,72 +4,75 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.seller.domain.Seller;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "brand")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@Table(name = "brand")
+@Entity
 public class Brand extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "brand_id")
-    private Long brandId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private Seller seller;
 
-    @Column(name = "brand_code", unique = true)
+    @Column(unique = true, nullable = false)
     private Long brandCode;
 
-    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
 
-    @Column(name = "logo_url", length = 500)
+    @Column(length = 500)
     private String logoUrl;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @OneToMany(mappedBy = "brand", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<Product> products = new ArrayList<>();
 
+    @Builder
+    private Brand(Seller seller, Long brandCode, String name, String logoUrl, String description) {
+        Assert.notNull(seller, "판매자 정보는 필수입니다.");
+        Assert.notNull(brandCode, "브랜드 코드는 필수입니다.");
+        Assert.hasText(name, "브랜드 이름은 필수입니다.");
 
-    public void updateBrandInfo(String logoUrl, String description) {
+        this.brandCode = brandCode;
+        this.name = name;
         this.logoUrl = logoUrl;
         this.description = description;
+
+        assignSeller(seller);
     }
 
-    // 브랜드 이름 변경
-    public void changeName(String name) {
-        validateName(name);
-        this.name = name;
-    }
-
-    // 이름 유효성 검사
-    private void validateName(String name) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("브랜드 이름은 필수이며 공백일 수 없습니다.");
+    public void assignSeller(Seller seller) {
+        if (this.seller != null) {
+            this.seller.getBrands().remove(this);
         }
-        if (name.length() > 100) {
-            throw new IllegalArgumentException("브랜드 이름은 100자를 초과할 수 없습니다.");
-        }
-    }
 
-    // 연관관계 편의 메서드
-    public void addProduct(Product product) {
-        this.products.add(product);
-        product.setBrand(this);
-    }
-
-    public void setSeller(Seller seller) {
         this.seller = seller;
+
+        if (seller != null && !seller.getBrands().contains(this)) {
+            seller.getBrands().add(this);
+        }
+    }
+
+    public void addProduct(Product product) {
+        if (product != null && product.getBrand() != this) {
+            product.updateBrand(this);
+        }
+    }
+
+    public void updateInfo(String name, String logoUrl, String description) {
+        this.name = name;
+        this.logoUrl = logoUrl;
+        this.description = description;
     }
 }

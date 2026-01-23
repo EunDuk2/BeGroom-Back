@@ -20,6 +20,7 @@ import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductDetail;
+import com.example.BeGroom.product.domain.ProductStatus;
 import com.example.BeGroom.product.repository.BrandRepository;
 import com.example.BeGroom.product.repository.ProductDetailRepository;
 import com.example.BeGroom.product.repository.ProductRepository;
@@ -104,8 +105,8 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
             Product product = createAndSaveProductHierarchy();
 
-            ProductDetail productDetail1 = createAndSaveProductDetail(product, 3000, 5);
-            ProductDetail productDetail2 = createAndSaveProductDetail(product, 5000, 5);
+            ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
+            ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
 
             OrderCreateReqDto orderCreateReqDto =
                     createOrderCreateReqDto(
@@ -124,13 +125,13 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
             assertThat(order.getOrderProductList()).hasSize(2)
                     .extracting(
-                            op -> op.getProductDetail().getProductDetailId(),
+                            op -> op.getProductDetail().getId(),
                             OrderProduct::getQuantity,
                             OrderProduct::getPrice
                     )
                     .containsExactlyInAnyOrder(
-                            tuple(productDetail1.getProductDetailId(), 1, 3000),
-                            tuple(productDetail2.getProductDetailId(), 2, 5000)
+                            tuple(productDetail1.getId(), 1, 3000),
+                            tuple(productDetail2.getId(), 2, 5000)
                     );
 
             // 실제 저장 여부
@@ -142,7 +143,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         void fail_when_member_not_found() {
             // given
             Product product = createAndSaveProductHierarchy();
-            ProductDetail productDetail = createAndSaveProductDetail(product, 3000, 5);
+            ProductDetail productDetail = createAndSaveProductDetail(product, 1L, 3000, 5);
 
             OrderCreateReqDto orderCreateReqDto =
                     createOrderCreateReqDto(
@@ -188,8 +189,8 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
         Product product = createAndSaveProductHierarchy();
 
-        ProductDetail productDetail1 = createAndSaveProductDetail(product, 3000, 5);
-        ProductDetail productDetail2 = createAndSaveProductDetail(product, 5000, 5);
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
 
         OrderCreateReqDto orderCreateReqDto =
                 createOrderCreateReqDto(
@@ -235,12 +236,12 @@ class OrderServiceImplTest extends IntegrationTestSupport {
             // given: 상품 count개 생성
             List<ProductDetail> saved = new ArrayList<>();
             for (int i = 0; i < count; i++) {
-                ProductDetail pd = createAndSaveProductDetail(product, 3000, 5);
+                ProductDetail pd = createAndSaveProductDetail(product, (long) i, 3000, 5);
                 saved.add(productDetailRepository.save(pd));
             }
 
             List<Long> ids = saved.stream()
-                    .map(ProductDetail::getProductDetailId)
+                    .map(ProductDetail::getId)
                     .toList();
 
         /* ===============================
@@ -261,7 +262,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
             em.clear();
             long startFindAll = System.nanoTime();
 
-            productDetailRepository.findAllByProductDetailIdIn(ids);
+            productDetailRepository.findAllByIdIn(ids);
 
             long endFindAll = System.nanoTime();
 
@@ -291,8 +292,8 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         Product product = createAndSaveProductHierarchy();
 
         // 재고 충분히 줌
-        ProductDetail productDetail1 = createAndSaveProductDetail(product, 3000, 5);
-        ProductDetail productDetail2 = createAndSaveProductDetail(product, 5000, 5);
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
 
         OrderCreateReqDto orderCreateReqDto =
                 createOrderCreateReqDto(
@@ -342,12 +343,12 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         System.out.println("=== test === 주문 상태: " + completedOrder.getOrderStatus());
 
         ProductDetail reloaded1 =
-                productDetailRepository.findById(productDetail1.getProductDetailId()).get();
+                productDetailRepository.findById(productDetail1.getId()).get();
         ProductDetail reloaded2 =
-                productDetailRepository.findById(productDetail2.getProductDetailId()).get();
+                productDetailRepository.findById(productDetail2.getId()).get();
 
-        System.out.println("=== test === 상품1 남은 재고: " + reloaded1.getQuantity());
-        System.out.println("=== test === 상품2 남은 재고: " + reloaded2.getQuantity());
+        System.out.println("=== test === 상품1 남은 재고: " + reloaded1.getStock().getQuantity());
+        System.out.println("=== test === 상품2 남은 재고: " + reloaded2.getStock().getQuantity());
     }
 
 
@@ -401,10 +402,10 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         brandRepository.save(brand);
 
         Product product = Product.builder()
-                .productNo(1L)
+                .no(1L)
                 .brand(brand)
                 .name("product1")
-                .salesPrice(10000)
+                .productStatus(ProductStatus.SALE)
                 .build();
         return productRepository.save(product);
     }
@@ -413,13 +414,15 @@ class OrderServiceImplTest extends IntegrationTestSupport {
      *  ProductDetail
      * ========================= */
 
-    private ProductDetail createAndSaveProductDetail(Product product, int price, int quantity) {
+    private ProductDetail createAndSaveProductDetail(Product product, Long no, int price, int quantity) {
         ProductDetail productDetail = ProductDetail.builder()
                 .product(product)
+                .no(no)
                 .name("detail")
-                .basePrice(price)
-                .quantity(quantity)
+                .initialQuantity(quantity)
                 .build();
+
+        productDetail.addPrice(price, price);
         return productDetailRepository.save(productDetail);
     }
 
@@ -433,8 +436,8 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     ) {
         return new OrderCreateReqDto(
                 List.of(
-                        new OrderProductReqDto(pd1.getProductDetailId(), qty1),
-                        new OrderProductReqDto(pd2.getProductDetailId(), qty2)
+                        new OrderProductReqDto(pd1.getId(), qty1),
+                        new OrderProductReqDto(pd2.getId(), qty2)
                 )
         );
     }

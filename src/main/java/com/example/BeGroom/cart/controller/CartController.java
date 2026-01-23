@@ -25,10 +25,10 @@ public class CartController {
 
     @GetMapping
     @Operation(summary = "장바구니 조회", description = "회원의 장바구니 전체 조회")
-    public ResponseEntity<CommonSuccessDto<CartResDto>> getCart(
+    public ResponseEntity<CommonSuccessDto<CartResponse>> getCart(
             @AuthenticationPrincipal UserPrincipal user
     ) {
-        CartResDto cart = cartService.getCart(user.getMemberId());
+        CartResponse cart = cartService.getCart(user.getMemberId());
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(
@@ -43,7 +43,7 @@ public class CartController {
     @Operation(summary = "장바구니 상품 추가", description = "장바구니에 상품 추가")
     public ResponseEntity<CommonSuccessDto<Void>> addItem(
             @AuthenticationPrincipal UserPrincipal user,
-            @Valid @RequestBody CartAddListReqDto request
+            @Valid @RequestBody CartRequest.CartAddList request
     ) {
         cartService.addItems(user.getMemberId(), request.getItems());
 
@@ -61,7 +61,7 @@ public class CartController {
     public ResponseEntity<CommonSuccessDto<Void>> updateQuantity(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long cartItemId,
-            @Valid @RequestBody CartItemUpdateQuantityReqDto request
+            @Valid @RequestBody CartRequest.CartItemUpdateQuantity request
     ) {
         cartService.updateQuantity(user.getMemberId(), cartItemId, request.getQuantity());
 
@@ -113,7 +113,7 @@ public class CartController {
     public ResponseEntity<CommonSuccessDto<Void>> updateSelected(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable Long cartItemId,
-            @Valid @RequestBody CartItemUpdateSelectedReqDto request
+            @Valid @RequestBody CartRequest.CartItemUpdateSelected request
     ) {
         cartService.updateSelected(user.getMemberId(), cartItemId, request.getIsSelected());
 

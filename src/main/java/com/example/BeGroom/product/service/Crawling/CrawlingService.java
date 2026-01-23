@@ -5,20 +5,14 @@ import com.example.BeGroom.product.dto.crawling.CrawlingRequest;
 import com.example.BeGroom.product.dto.crawling.CrawlingResponse;
 import com.example.BeGroom.product.dto.crawling.ProductOptionResponse;
 import com.example.BeGroom.product.repository.*;
-import com.example.BeGroom.seller.domain.Seller;
-import com.example.BeGroom.seller.repository.SellerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -29,46 +23,52 @@ public class CrawlingService {
     private final CrawlingDataPersistenceService persistenceService;
     private final CategoryRepository categoryRepository;
 
+    private static final int ROOT_LEVEL = 1;
+    private static final int MIDDLE_LEVEL = 2;
+
     // 카테고리 크롤링
-    public List<Product> crawl(CrawlingRequest request) {
+    @Async
+    public void crawl(CrawlingRequest request) {
 
         List<Category> targetCategories = determineTargetCategories(request.getCategoryIds());
         if (targetCategories.isEmpty()) {
-            return new ArrayList<>();
+            log.warn("크롤링할 대상 카테고리가 없습니다.");
+            return;
         }
 
-        List<Product> allProducts = new ArrayList<>();
+        log.info("백그라운드에서 크롤링 시작: 대상 카테고리 수 {}", targetCategories.size());
+
         for (Category category : targetCategories) {
             try {
-                List<Product> products = crawlCategory(category, request.getMaxProductsPerCategory());
-                allProducts.addAll(products);
-                Thread.sleep(1000);
+                crawlCategory(category, request.getMaxProductsPerCategory());
+                Thread.sleep(1000); // 1초 대기
             } catch (InterruptedException e) {
+                log.error("크롤링 중단됨");
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                log.error("카테고리 크롤링 실패 - categoryId: {}, 에러: {}", category.getCategoryId(), e.getMessage());
+                log.error("카테고리 크롤링 실패 - categoryId: {}, 에러: {}", category.getId(), e.getMessage());
             }
         }
 
-        return allProducts;
+        log.info("모든 백그라운드 크롤링 작업이 완료되었습니다.");
     }
 
     // 단일 카테고리 크롤링 (내부 메서드)
-    public List<Product> crawlCategory(Category category, int maxProducts) {
+    public void crawlCategory(Category category, int maxProducts) {
 
-        List<Product> savedProducts = new ArrayList<>();
+        int savedCount = 0;
         int page = 1;
         int perPage = 96;
 
-        while (savedProducts.size() < maxProducts) {
+        while (savedCount < maxProducts) {
             try {
                 // 목록 조회
                 CrawlingResponse response = crawlingFetcher.fetchCategoryProducts(category.getExternalCategoryId(), page, perPage);
                 if (response == null || response.getData() == null || response.getData().isEmpty()) break;
 
                 List<CrawlingResponse.ProductData> pageData = response.getData();
-                int remainingLimit = maxProducts - savedProducts.size();
+                int remainingLimit = maxProducts - savedCount;
 
                 List<ProductWithDetail> batchResults = Flux.fromIterable(pageData)
                         .take(remainingLimit)
@@ -83,9 +83,9 @@ public class CrawlingService {
                 if (batchResults != null) {
                     for (ProductWithDetail item : batchResults) {
                         try {
-                            Product product = persistenceService.saveProductWithTransaction(item.data(), item.detail());
-                            persistenceService.saveCategoryMapping(product, category);
-                            savedProducts.add(product);
+                            Product savedproduct = persistenceService.saveProductWithTransaction(item.data(), item.detail());
+                            persistenceService.saveCategoryMapping(savedproduct, category);
+                            savedCount++;
                         } catch (Exception e) {
                             log.error("상품 저장 실패 - productNo: {}, 에러: {}", item.data().getNo(), e.getMessage());
                         }
@@ -94,19 +94,17 @@ public class CrawlingService {
 
                 if (pageData.size() < perPage) break;
                 page++;
-                Thread.sleep(1000); // API 요청 간격 (1초)
+                Thread.sleep(1000);
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
                 log.error("API 호출 실패 - categoryId: {}, page: {}, 에러: {}",
-                        category.getCategoryId(), page, e.getMessage());
+                        category.getId(), page, e.getMessage());
                 break;
             }
         }
-
-        return savedProducts;
     }
 
     private List<Category> determineTargetCategories(List<Long> categoryIds) {
@@ -120,10 +118,10 @@ public class CrawlingService {
             Category category = categoryRepository.findById(categoryId)
                     .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다: " + categoryId));
 
-            if (category.getLevel() == 1) {
-                List<Category> subCategories = categoryRepository.findByParent_CategoryIdAndIsActiveOrderBySortOrderAsc(category.getCategoryId(), true);
+            if (category.getLevel() == ROOT_LEVEL) {
+                List<Category> subCategories = categoryRepository.findByParent_IdAndIsActiveOrderBySortOrderAsc(category.getId(), true);
                 targetCategories.addAll(subCategories);
-            } else if (category.getLevel() == 2) {
+            } else if (category.getLevel() == MIDDLE_LEVEL) {
                 targetCategories.add(category);
             } else {
                 throw new IllegalArgumentException("지원하지 않는 카테고리 레벨: " + category.getLevel());

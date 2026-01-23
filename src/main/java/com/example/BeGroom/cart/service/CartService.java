@@ -2,20 +2,15 @@ package com.example.BeGroom.cart.service;
 
 import com.example.BeGroom.cart.domain.Cart;
 import com.example.BeGroom.cart.domain.CartItem;
-import com.example.BeGroom.cart.dto.CartAddListReqDto;
-import com.example.BeGroom.cart.dto.CartItemAddReqDto;
-import com.example.BeGroom.cart.dto.CartItemResDto;
-import com.example.BeGroom.cart.dto.CartResDto;
+import com.example.BeGroom.cart.dto.CartItemResponse;
+import com.example.BeGroom.cart.dto.CartRequest;
+import com.example.BeGroom.cart.dto.CartResponse;
 import com.example.BeGroom.cart.repository.CartItemRepository;
 import com.example.BeGroom.cart.repository.CartRepository;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
-import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductDetail;
-import com.example.BeGroom.product.domain.ProductImage;
-import com.example.BeGroom.product.domain.ProductOption;
 import com.example.BeGroom.product.repository.ProductDetailRepository;
-import com.example.BeGroom.product.repository.ProductImageRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,90 +29,37 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final MemberRepository memberRepository;
     private final ProductDetailRepository productDetailRepository;
-    private final ProductImageRepository productImageRepository;
 
-    // 장바구니 전체 조회 (DTO 변환)
+    // 장바구니 전체 조회
     @Transactional
-    public CartResDto getCart(Long memberId) {
+    public CartResponse getCart(Long memberId) {
         Cart cart = getOrCreateCart(memberId);
 
-        List<CartItem> sortedItems = cartItemRepository.findByCart_CartIdOrderByCreatedAtDesc(cart.getCartId());
-
-        // CartItem -> CartItemResDto 변환
-        List<CartItemResDto> itemDto = sortedItems.stream()
-                .map(this::convertToDto)
+        List<CartItemResponse> itemDtos = cart.getCartItems().stream()
+                .map(CartItemResponse::from)
                 .toList();
 
-        // 가격 자동 계산
-        return CartResDto.from(itemDto);
-    }
-
-    // 회원의 장바구니 조회 (관리자)
-    @Transactional
-    public Cart getOrCreateCart(Long memberId) {
-        return cartRepository.findByMemberId(memberId)
-                .orElseGet(() -> createCart(memberId));
-    }
-
-    // 장바구니 생성
-    @Transactional
-    public Cart createCart(Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
-
-        Cart cart = Cart.create(member);
-        return cartRepository.save(cart);
+        return CartResponse.from(itemDtos);
     }
 
     // 장바구니에 상품 담기 (중복 상품은 수량 증가)
     @Transactional
-    public void addItems(Long memberId, List<CartItemAddReqDto> itemRequests) {
+    public void addItems(Long memberId, List<CartRequest.CartItemAdd> itemRequests) {
         Cart cart = getOrCreateCart(memberId);
 
-        for (CartItemAddReqDto req : itemRequests) {
-            executeAddItem(cart, req.getProductDetailId(), req.getQuantity());
-        }
-    }
+        for (CartRequest.CartItemAdd req : itemRequests) {
+            ProductDetail productDetail = productDetailRepository.findById(req.getProductDetailId())
+                .orElseThrow(() -> new EntityNotFoundException("상품 정보를 찾을 수 없습니다."));
 
-    @Transactional
-    public void addItem(Long memberId, Long productDetailId, Integer quantity) {
-        this.addItems(memberId, List.of(new CartItemAddReqDto(productDetailId, quantity)));
-    }
-
-    private void executeAddItem(Cart cart, Long productDetailId, Integer quantity) {
-        ProductDetail productDetail = productDetailRepository.findById(productDetailId)
-                .orElseThrow(() -> new EntityNotFoundException("상품 옵션 정보를 찾을 수 없습니다."));
-
-        // 판매 중지된 상품 방어 로직
-        if (!productDetail.getIsAvailable()) {
-            throw new IllegalStateException("현재 구매할 수 없는 상품입니다: " + productDetail.getName());
+            cart.addProduct(productDetail, req.getQuantity());
         }
 
-        cartItemRepository.findByCart_CartIdAndProductDetail_ProductDetailId(cart.getCartId(), productDetailId)
-                .ifPresentOrElse(
-                        existingItem -> {
-                            existingItem.increaseQuantity(quantity);
-                            log.info("기존 상품 수량 증가: cartItemId={}, quantity={}", existingItem.getCartItemId(), existingItem.getQuantity());
-                        },
-                        () -> {
-                            CartItem newItem = CartItem.builder()
-                                    .cart(cart)
-                                    .productDetail(productDetail)
-                                    .quantity(quantity)
-                                    .isSelected(true)
-                                    .build();
-
-                            newItem.updateQuantity(quantity);
-                            cart.addItem(newItem);
-                            cartItemRepository.save(newItem);
-                            log.info("새로운 상품 추가: productDetailId={}, quantity={}", productDetailId, quantity);
-                        }
-                );
+        cartRepository.save(cart);
     }
 
     // 상품 수량 변경 (+, - 조정이 아닌 숫자로 변경 시)
     @Transactional
-    public void updateQuantity(Long memberId, Long cartItemId, Integer quantity) {
+    public void updateQuantity(Long memberId, Long cartItemId, int quantity) {
         CartItem cartItem = getCartItemWithValidation(memberId, cartItemId);
         cartItem.updateQuantity(quantity);
         log.info("장바구니 상품 수량 변경 - cartItemId: {}, quantity: {}", cartItemId, quantity);
@@ -125,7 +67,7 @@ public class CartService {
 
     // 상품 수량 증가
     @Transactional
-    public void increaseQuantity(Long memberId, Long cartItemId, Integer amount) {
+    public void increaseQuantity(Long memberId, Long cartItemId, int amount) {
         CartItem cartItem = getCartItemWithValidation(memberId, cartItemId);
         cartItem.increaseQuantity(amount);
         log.info("장바구니 상품 수량 증가 - cartItemId: {}, amount: {}", cartItemId, amount);
@@ -133,7 +75,7 @@ public class CartService {
 
     // 상품 수량 감소
     @Transactional
-    public void decreaseQuantity(Long memberId, Long cartItemId, Integer amount) {
+    public void decreaseQuantity(Long memberId, Long cartItemId, int amount) {
         CartItem cartItem = getCartItemWithValidation(memberId, cartItemId);
         cartItem.decreaseQuantity(amount);
         log.info("장바구니 상품 수량 감소 - cartItemId: {}, amount: {}", cartItemId, amount);
@@ -145,22 +87,21 @@ public class CartService {
         CartItem cartItem = getCartItemWithValidation(memberId, cartItemId);
         cartItem.updateSelected(isSelected);
         log.info("장바구니 상품 선택 상태 변경 - cartItemId: {}, isSelected: {}",
-                cartItemId, isSelected);
+            cartItemId, isSelected);
     }
 
     // 상품 전체 선택 / 선택 해제
     @Transactional
     public void updateAllSelection(Long memberId, Boolean isSelected) {
         Cart cart = getOrCreateCart(memberId);
-        cartItemRepository.updateAllSelectedByCartId(cart.getCartId(), isSelected);
+        cart.getCartItems().forEach(item -> item.updateSelected(isSelected));
     }
 
-    // 상품 삭제 (개별)
+    // 개별 상품 삭제
     @Transactional
     public void deleteItem(Long memberId, Long cartItemId) {
         CartItem cartItem = getCartItemWithValidation(memberId, cartItemId);
-
-        cartItemRepository.delete(cartItem);
+        cartItem.getCart().getCartItems().remove(cartItem);
         log.info("장바구니 상품 삭제 - cartItemId: {}", cartItemId);
     }
 
@@ -168,64 +109,37 @@ public class CartService {
     @Transactional
     public void deleteSelectedItems(Long memberId) {
         Cart cart = getOrCreateCart(memberId);
-
-        cartItemRepository.deleteByCart_CartIdAndIsSelected(cart.getCartId(), true);
-        log.info("장바구니 선택 상품 삭제 - memberId: {}", memberId);
+        cart.getCartItems().removeIf(CartItem::getIsSelected);
     }
 
     // 장바구니 비우기 (전체 상품 삭제)
     @Transactional
     public void clearCart(Long memberId) {
         Cart cart = getOrCreateCart(memberId);
-
-        cartItemRepository.deleteByCart_CartId(cart.getCartId());
-        log.info("장바구니 비우기 - memberId: {}", memberId);
+        cart.getCartItems().clear();
     }
 
     // 장바구니 상품 개수 조회
     public long getItemCount(Long memberId) {
         return cartRepository.findByMemberId(memberId)
-                .map(cart -> cartItemRepository.countByCart_CartId(cart.getCartId()))
-                .orElse(0L);
+            .map(cart -> (long) cart.getCartItems().size())
+            .orElse(0L);
     }
 
-    // ===== Private 헬퍼 메서드 =====
-    // CartItem -> CartItemDto 변환
-    private CartItemResDto convertToDto(CartItem cartItem) {
-        ProductDetail productDetail = cartItem.getProductDetail();
-        Product product = productDetail.getProduct();
 
-        String deliveryType = productDetail.getOptionMappings().stream()
-                .map(mapping -> mapping.getProductOption())
-                .filter(option -> "delivery".equals(option.getOptionType()))
-                .map(ProductOption::getOptionValue)
-                .findFirst()
-                .orElse("NORMAL_PARCEL");
+    // 회원의 장바구니 조회 (관리자)
+    @Transactional
+    public Cart getOrCreateCart(Long memberId) {
+        return cartRepository.findByMemberId(memberId)
+                .orElseGet(() -> {
+                    Member member = memberRepository.findById(memberId)
+                        .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
-        String mainImageUrl = productImageRepository
-                .findByProduct_ProductIdAndImageTypeOrderBySortOrderAsc(
-                        product.getProductId(),
-                        ProductImage.ImageType.MAIN
-                )
-                .stream()
-                .findFirst()
-                .map(ProductImage::getImageUrl)
-                .orElse(null);
-
-        return CartItemResDto.of(
-                cartItem,
-                product.getName(),
-                mainImageUrl,
-                productDetail.getName(),
-                productDetail.getBasePrice(),
-                productDetail.getDiscountedPrice(),
-                !productDetail.getIsAvailable(),
-                productDetail.getQuantity(),
-                deliveryType
-        );
+                    Cart newCart = Cart.create(member);
+                    return cartRepository.save(newCart);
+                });
     }
 
-    // 장바구니 상품 조회 및 소유권 검증
     private CartItem getCartItemWithValidation(Long memberId, Long cartItemId) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new IllegalArgumentException("장바구니 상품을 찾을 수 없습니다."));
