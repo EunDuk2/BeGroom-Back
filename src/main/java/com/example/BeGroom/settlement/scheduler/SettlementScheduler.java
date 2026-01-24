@@ -29,6 +29,7 @@ public class SettlementScheduler {
         settlementService.executeSettlementPayout();
     }
 
+    // 기간별 정산 집계
     private void periodAggregation(){
         aggregationService.aggregate();
     }
