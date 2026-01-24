@@ -30,7 +30,7 @@ public class SettlementScheduler {
     }
 
     // 기간별 정산 집계
-    private void periodAggregation(){
+    private void periodAggregation() {
         aggregationService.aggregate();
     }
 }
