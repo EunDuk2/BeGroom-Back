@@ -26,6 +26,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
     private Long defaultTimeout;
 
     @Override
+
     public SseEmitter connect(Long memberId, LocalDateTime connectTime) {
         if(memberId == null || memberId <= 0L){
             throw new IllegalArgumentException("멤버 ID는 양수여야 합니다.");
@@ -89,7 +90,6 @@ public class SseNotificationNetworkService implements NotificationNetworkService
     public void sendToMembers(Map<String, Object> msg, List<Long> receiverIds){
         for (Long receiverId : receiverIds) {
             Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(receiverId);
-
             emitters.forEach((id, emitter) -> {
                 sendBySse(emitter, id, "notification", msg);
             });

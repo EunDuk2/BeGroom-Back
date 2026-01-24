@@ -4,7 +4,6 @@ import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.notification.domain.MemberNotification;
 import com.example.BeGroom.notification.domain.Notification;
-import com.example.BeGroom.notification.domain.NotificationMessage;
 import com.example.BeGroom.notification.dto.CreateNotificationReqDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.repository.EmitterRepository;
@@ -98,7 +97,6 @@ public class NotificationServiceImpl implements NotificationService {
     public void readNotification(Long mappingId) {
         MemberNotification memberNotification = memberNotificationRepository.findById(mappingId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 알림이 존재하지 않습니다."));
-
         memberNotification.read();
     }
 

@@ -120,6 +120,7 @@ public class NotificationController {
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "알림 구독 (SSE 연결)", description = "SSE와 연결합니다.")
         public Object subscribe(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+
         return notificationNetworkService.connect(userPrincipal.getMemberId(), LocalDateTime.now());
     }
 }

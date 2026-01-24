@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Entity
 @Getter
@@ -56,24 +57,34 @@ public class Settlement extends BaseEntity {
     // 결제상태
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus = PaymentStatus.PAYMENT;
+    private SettlementPaymentStatus settlementPaymentStatus = SettlementPaymentStatus.PAYMENT;
     // 환불금액
     @Column(precision = 12, scale = 2)
     private BigDecimal refundAmount = BigDecimal.ZERO;
     // 지급일
     @Column()
-    private LocalDate payoutDate;
+    private LocalDateTime payoutDate;
     // 정산일
-    @Column()
-    private LocalDate date = LocalDate.now();
+//    @Column()
+//    private LocalDate date = LocalDate.now();
+    // 집계 여부
+    @Column(nullable = false)
+    private Boolean isAggregated;
 
     public void markAggregated(){
-        this.status = SettlementStatus.SETTLED;
+//        this.status = SettlementStatus.SETTLED;
+        this.isAggregated = true;
     }
 
     public void markRefunded(BigDecimal refundAmount) {
-        this.paymentStatus = PaymentStatus.REFUND;
+        this.settlementPaymentStatus = SettlementPaymentStatus.REFUND;
         this.refundAmount = refundAmount;
+    }
+
+    // 미정산 지급 실행
+    public void markSettled() {
+        this.status = SettlementStatus.SETTLED;
+        this.payoutDate = LocalDateTime.now();
     }
 
     @Builder
@@ -85,10 +96,8 @@ public class Settlement extends BaseEntity {
             BigDecimal fee,
             BigDecimal settlementAmount,
             SettlementStatus status,
-            PaymentStatus paymentStatus,
-            BigDecimal refundAmount,
-            LocalDate payoutDate,
-            LocalDate date
+            SettlementPaymentStatus settlementPaymentStatus,
+            BigDecimal refundAmount
     ) {
         this.seller = seller;
         this.payment = payment;
@@ -97,9 +106,40 @@ public class Settlement extends BaseEntity {
         this.fee = fee;
         this.settlementAmount = settlementAmount;
         this.status = status;
-        this.paymentStatus = paymentStatus;
+        this.settlementPaymentStatus = settlementPaymentStatus;
         this.refundAmount = refundAmount != null ? refundAmount : BigDecimal.ZERO;
         this.payoutDate = payoutDate;
-        this.date = date;
     }
+
+
+    public static Settlement create(Payment payment) {
+        Long paymentAmount = payment.getAmount();
+        BigDecimal feeRate = new BigDecimal("10.00");
+        BigDecimal fee = BigDecimal.valueOf(paymentAmount)
+                .multiply(feeRate)
+                .divide(new BigDecimal("100"));
+        BigDecimal settlementAmount = BigDecimal.valueOf(paymentAmount).subtract(fee);
+
+        Optional<Seller> sellerOpt = payment.getOrder()
+                .getOrderProductList()
+                .stream()
+                .findFirst()
+                .map(op -> op.getProductDetail().getProduct().getBrand().getSeller());
+
+        Seller seller = sellerOpt.orElse(null);
+
+        return Settlement.builder()
+                .seller(seller)
+                .payment(payment)
+                .paymentAmount(paymentAmount)
+                .fee(fee)
+                .feeRate(feeRate)
+                .settlementAmount(settlementAmount)
+                .status(SettlementStatus.UNSETTLED)
+                .settlementPaymentStatus(SettlementPaymentStatus.PAYMENT)
+                .refundAmount(BigDecimal.ZERO)
+                .build();
+    }
+
+
 }

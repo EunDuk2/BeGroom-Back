@@ -51,9 +51,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("""
     select p
     from Payment p
-    where p.paymentStatus = :status
+    where p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.APPROVED
         and p.isSettled = false
     """)
-    List<Payment> findApprovedPayments(@Param("status") PaymentStatus status);
+    List<Payment> findApprovedPayments();
 
 }

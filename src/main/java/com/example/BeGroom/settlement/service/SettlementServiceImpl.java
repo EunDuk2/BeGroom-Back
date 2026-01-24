@@ -1,12 +1,8 @@
 package com.example.BeGroom.settlement.service;
 
 import com.example.BeGroom.payment.domain.Payment;
-import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
-import com.example.BeGroom.settlement.domain.DailySettlement;
-import com.example.BeGroom.settlement.domain.PeriodType;
 import com.example.BeGroom.settlement.domain.Settlement;
-import com.example.BeGroom.settlement.domain.factory.SettlementFactory;
 import com.example.BeGroom.settlement.dto.res.*;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository;
@@ -25,6 +21,10 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
+import static com.example.BeGroom.payment.domain.PaymentStatus.*;
+import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT;
+import static com.example.BeGroom.settlement.domain.SettlementStatus.*;
 
 @Service
 @RequiredArgsConstructor
@@ -67,7 +67,7 @@ public class SettlementServiceImpl implements SettlementService {
 
         return settlements.map(s -> new ProductSettlementResDto(
                 s.getId(),
-                s.getDate(),
+                s.getCreatedAt().toLocalDate(),
                 s.getPaymentAmount(),
                 s.getRefundAmount(),
                 s.getFee(),
@@ -110,12 +110,13 @@ public class SettlementServiceImpl implements SettlementService {
     @Transactional
     @Override
     public void aggregateApprovedPayments(){
-        List<Payment> payments =
-                paymentRepository.findApprovedPayments(PaymentStatus.APPROVED);
+        List<Payment> payments = paymentRepository.findApprovedPayments();
 
+        //TODO: insert 쿼리 호출을 줄여보자! (서칭해보세요!!) - batch insert 쓰기
         for(Payment payment : payments){
-            Settlement settlement = SettlementFactory.create(payment);
+            Settlement settlement = Settlement.create(payment);
             settlementRepository.save(settlement);
+
 
             payment.markSettled();
         }
@@ -126,11 +127,7 @@ public class SettlementServiceImpl implements SettlementService {
     @Override
     public void syncRefundedPayments() {
 
-        List<Settlement> targets =
-                settlementRepository.findRefundTargets(
-                        com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED,
-                        com.example.BeGroom.settlement.domain.PaymentStatus.PAYMENT
-                );
+        List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
 
         for (Settlement settlement : targets) {
             settlement.markRefunded(
@@ -139,9 +136,22 @@ public class SettlementServiceImpl implements SettlementService {
         }
     }
 
+    // // 미정산 지급 실행
+    @Transactional
+    @Override
+    public void executeSettlementPayout(){
+
+        List<Settlement> targets = settlementRepository.findUnsettledTargets(UNSETTLED);
+
+        for(Settlement settlement : targets){
+            settlement.markSettled();
+        }
+    }
+
     // csv 내보내기
     @Override
     public void writeDailySettlementCsv(Long sellerId, PrintWriter writer)throws IOException {
+        //TODO: 페이징 쿼리 필요, 1억개 가져온다고 가정하면 조회하는것도 느리고.. 그리고 메모리도 용량이 커지겟져(OOM)
         List<DailySettlementCsvDto> settlementCsvDtos =
                 settlementRepository.findAllDailySettlementBySeller(sellerId);
 

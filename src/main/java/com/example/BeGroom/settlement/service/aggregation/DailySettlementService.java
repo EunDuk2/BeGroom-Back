@@ -17,7 +17,7 @@ public class DailySettlementService implements SettlementAggregator {
     @Transactional
     @Override
     public void aggregate(Settlement settlement){
-        LocalDate date = settlement.getDate();
+        LocalDate date = settlement.getCreatedAt().toLocalDate();
         dailySettlementRepository.upsertAggregate(
                 date,
                 settlement.getSeller().getId(),
@@ -31,7 +31,7 @@ public class DailySettlementService implements SettlementAggregator {
     @Transactional
     @Override
     public void refund(Settlement settlement){
-        LocalDate date = settlement.getDate();
+        LocalDate date = settlement.getCreatedAt().toLocalDate();
         dailySettlementRepository.updateRefund(
                 date,
                 settlement.getSeller().getId(),
