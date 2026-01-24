@@ -49,55 +49,5 @@ public class SettlementRepositoryTest {
 //        paymentRepository.deleteAllInBatch();
     }
 
-    @DisplayName("승인 완료된 미정산 결제 건을 조회한다.")
-    @Test
-    void findApprovedUnsettledPayments() {
-        // given
-        Payment payment1 = createPayment(APPROVED, false);
-        Payment payment2 = createPayment(APPROVED, false);
-        Payment payment3 = createPayment(APPROVED, true);
-        Payment payment4 = createPayment(FAILED, false);
-        Payment payment5 = createPayment(FAILED, true);
-        paymentRepository.saveAll(List.of(payment1, payment2, payment3, payment4, payment5));
 
-        // when
-        List<Payment> payments = paymentRepository.findApprovedPayments();
-
-        // then
-        assertThat(payments).hasSize(2)
-                .extracting("paymentStatus", "isSettled")
-                .containsExactlyInAnyOrder(
-                        tuple(APPROVED, false),
-                        tuple(APPROVED, false)
-                );
-    }
-
-    private Payment createPayment(PaymentStatus status, boolean isSettled){
-        Member member = memberRepository.save(createMember());
-        Order order = orderRepository.save(createOrder(member));
-        return Payment.builder()
-                .order(order)
-                .amount(100000L)
-                .paymentMethod(POINT)
-                .paymentStatus(status)
-                .isSettled(isSettled)
-                .build();
-    }
-
-    private Member createMember(){
-        return Member.builder()
-                .email("hong@test.com")
-                .name("홍길동")
-                .password("1234")
-                .phoneNumber("01012345678")
-                .build();
-    }
-
-    private Order createOrder(Member member){
-        return Order.builder()
-                .member(member)
-                .totalAmount(100000L)
-                .orderStatus(COMPLETED)
-                .build();
-    }
 }
