@@ -16,6 +16,8 @@ public class SettlementScheduler {
     @Scheduled(fixedDelay = 10000)
     public void run() {
         aggregateSettlement();
+        payoutSettlement();
+        periodAggregation();
     }
 
     // 승인 완료된 미정산 결제건 정산 테이블에 적재
