@@ -4,6 +4,7 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.product.domain.ProductDetail;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -29,6 +30,7 @@ public class OrderProduct extends BaseEntity {
     @Column(nullable = false)
     private Integer price;
 
+    @Builder
     private OrderProduct(Order order, ProductDetail productDetail, Integer quantity, Integer price) {
         this.order = order;
         this.productDetail = productDetail;
