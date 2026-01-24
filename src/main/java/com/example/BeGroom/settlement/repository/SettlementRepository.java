@@ -1,18 +1,23 @@
 package com.example.BeGroom.settlement.repository;
 
 import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
+import com.example.BeGroom.seller.dto.res.RecentSettlementResDto;
 import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
+
+import static com.example.BeGroom.seller.dto.res.RecentActivityResDto.*;
 
 @Repository
 public interface SettlementRepository extends JpaRepository<Settlement, Long>, SettlementRepositoryCustom {
@@ -26,32 +31,31 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
             "and s.settlementPaymentStatus = 'PAYMENT'")
     long sumSalesAmountBySeller(@Param("sellerId") Long sellerId);
 
-    // 판매자의 최근 환불
-//    @Query("""
-//        select new com.example.BeGroom.seller.dto.res.RecentActivityResDto.RecentSettlementDto(
-//            s.id,
-//            s.settlementAmount,
-//            s.createdAt
-//        )
-//        from Settlement s
-//        where s.seller.id = :sellerId
-//            and s.status = 'SETTLED'
-//        order by s.createdAt desc
-//    """)
-//    List<RecentActivityResDto.RecentSettlementDto> findLatestSettledBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
-    @Query(value = """
-    select
-        s.id as settlementId,
-        s.settlement_amount as settlementAmount,
-        s.created_at as createdAt
-    from settlement s
-    where s.seller_id = :sellerId
-      and s.status = 'SETTLED'
-    order by s.created_at desc
-    limit 1
-""", nativeQuery = true)
-    List<RecentSettlementProjection> findLatestSettledBySeller(@Param("sellerId") Long sellerId);
-
+    // 판매자의 최근 정산
+    @Query("""
+        select new com.example.BeGroom.seller.dto.res.RecentSettlementResDto(
+            s.id,
+            s.settlementAmount,
+            s.createdAt
+        )
+        from Settlement s
+        where s.seller.id = :sellerId
+            and s.status = 'SETTLED'
+        order by s.createdAt desc
+    """)
+    List<RecentSettlementResDto> findLatestSettlementBySellerId(@Param("sellerId") Long sellerId, Pageable pageable);
+//    @Query(value = """
+//    select
+//        s.id as settlementId,
+//        s.settlement_amount as settlementAmount,
+//        s.created_at as createdAt
+//    from settlement s
+//    where s.seller_id = :sellerId
+//      and s.status = 'SETTLED'
+//    order by s.created_at desc
+//    limit 1
+//""", nativeQuery = true)
+//    List<RecentSettlementProjection> findLatestSettledBySeller(@Param("sellerId") Long sellerId);
 
 
     // 판매자의 총 환불 건수

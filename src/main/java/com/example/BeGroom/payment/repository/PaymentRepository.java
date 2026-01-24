@@ -2,7 +2,8 @@ package com.example.BeGroom.payment.repository;
 
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentStatus;
-import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
+import com.example.BeGroom.seller.dto.res.RecentPaymentResDto;
+import com.example.BeGroom.seller.dto.res.RecentRefundResDto;
 import com.example.BeGroom.seller.repository.projection.RecentRefundProjection;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,34 +19,40 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderIdAndPaymentStatus(Long orderId, PaymentStatus paymentStatus);
 
-    // 판매자의 최근 환불
-//    @Query("""
-//        select new com.example.BeGroom.seller.dto.res.RecentActivityResDto.RecentRefundDto(
-//            p.id,
-//            s.refundAmount,
-//            s.createdAt
-//        )
-//        from Settlement s
-//        join s.payment p
-//        where s.seller.id = :sellerId
-//            and s.refundAmount > 0
-//        order by s.createdAt desc
-//    """)
-//    List<RecentActivityResDto.RecentRefundDto> findLatestRefundBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
+    // 판매자의 최근 주문
+    @Query("""
+        select new com.example.BeGroom.seller.dto.res.RecentPaymentResDto(
+                o.id,
+                o.totalAmount,
+                pay.approvedAt
+                )
+        from Order o
+        join o.orderProductList op
+        join op.productDetail pd
+        join pd.product p
+        join o.payments pay
+        join p.brand b
+        where b.seller.id = :sellerId
+            and pay.paymentStatus = 'APPROVED'
+        order by pay.approvedAt desc
+    """)
+    List<RecentPaymentResDto> findLatestOrderBySellerId(@Param("sellerId") Long sellerId, Pageable pageable);
 
-    @Query(value = """
-    select 
-        p.id as paymentId,
-        s.refund_amount as refundAmount,
-        s.created_at as createdAt
-    from settlement s
-    join payment p on s.payment_id = p.id
-    where s.seller_id = :sellerId
-      and s.refund_amount > 0
-    order by s.created_at desc
-    limit 1
-""", nativeQuery = true)
-    List<RecentRefundProjection> findLatestRefundBySeller(@Param("sellerId") Long sellerId);
+
+    // 판매자의 최근 환불
+    @Query("""
+        select new com.example.BeGroom.seller.dto.res.RecentRefundResDto(
+            p.id,
+            s.refundAmount,
+            s.createdAt
+        )
+        from Settlement s
+        right join s.payment p
+        where s.seller.id = :sellerId
+            and p.paymentStatus = :status
+        order by s.createdAt desc
+    """)
+    List<RecentRefundResDto> findLatestRefundBySellerId(@Param("sellerId") Long sellerId, @Param("status") PaymentStatus status, Pageable pageable);
 
     // 정산되지 않은 결제 승인 데이터
     @Query("""
