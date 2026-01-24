@@ -2,16 +2,19 @@ spring:
   config:
     activate:
       on-profile: test
+  task:
+    scheduling:
+      enabled: false
 
   datasource:
-    url: jdbc:h2:mem:~/begroomApplication;MODE=MySQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3307/begroom
+    username: root
+    password: 1234
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -20,10 +23,3 @@ spring:
   sql:
     init:
       mode: never
-
-jwt:
-  expirationAt: 3600000
-  secretKeyAt: YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5
-
-sse:
-  timeout: 3600000

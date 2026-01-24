@@ -1,10 +1,7 @@
 package com.example.BeGroom.member.dto;
 
 import com.example.BeGroom.member.domain.Member;
-import com.example.BeGroom.product.domain.Category;
-import com.example.BeGroom.product.domain.Product;
-import com.example.BeGroom.product.domain.ProductCategory;
-import com.example.BeGroom.product.domain.ProductImage;
+import com.example.BeGroom.product.domain.*;
 import com.example.BeGroom.wishlist.domain.Wishlist;
 import lombok.*;
 
@@ -52,7 +49,7 @@ public class GetMemberWishesResDto {
                     .orElse("기타");
 
             String imageUrl = product.getProductImages().stream()
-                    .filter(image -> ProductImage.ImageType.MAIN.equals(image.getImageType()))
+                    .filter(image -> ImageType.MAIN.equals(image.getImageType()))
                     .findFirst()
                     .map(ProductImage::getImageUrl)
                     .orElseGet(() -> !product.getProductImages().isEmpty()
@@ -60,8 +57,8 @@ public class GetMemberWishesResDto {
                             : "");
 
             return WishItemDto.builder()
-                    .id(wishlist.getWishlistId())
-                    .productId(product.getProductId())
+                    .id(wishlist.getId())
+                    .productId(product.getId())
                     .name(product.getName())
                     .price(product.getSalesPrice())
                     .imageUrl(imageUrl)

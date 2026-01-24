@@ -1,10 +1,11 @@
 package com.example.BeGroom.notification.service.network;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 public interface NotificationNetworkService {
     // 프로토콜 연결 메서드
-    default Object connect(Long memberId){ return new Object(); };
+    default Object connect(Long memberId, LocalDateTime connectTime){ return new Object(); };
 
     // 알림 전송 메서드
     void send(Map<String, Object> msg, NotificationTarget target);

@@ -17,14 +17,22 @@ public class EmitterRepository {
             return emitter;
     }
 
+    public void saveAll(Map<String, SseEmitter> emitters) {
+        emitters.forEach(this::save);
+    }
+
     public void deleteById(String id) {
         emitters.remove(id);
     }
 
-    public Map<String, SseEmitter> findAllStartWithById(String memberId) {
+    public void deleteAll() {
+        emitters.forEach((id, emitter) -> emitters.remove(id));
+    }
+
+    public Map<String, SseEmitter> findAllStartWithById(Long memberId) {
         Map<String, SseEmitter> result = new ConcurrentHashMap<>();
         emitters.forEach((id, emitter) -> {
-            if(id.startsWith(memberId)){
+            if(id.startsWith(memberId.toString())){
                 result.put(id, emitter);
             }
         });

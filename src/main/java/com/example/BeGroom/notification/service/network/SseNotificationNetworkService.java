@@ -8,8 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+
+import static com.example.BeGroom.notification.domain.NotificationMessage.SSE_CONNECTED;
 
 @Slf4j
 @Service
@@ -22,8 +26,14 @@ public class SseNotificationNetworkService implements NotificationNetworkService
     private Long defaultTimeout;
 
     @Override
-    public SseEmitter connect(Long memberId) {
-        String emitterId = memberId + "_" + System.currentTimeMillis();
+
+    public SseEmitter connect(Long memberId, LocalDateTime connectTime) {
+        if(memberId == null || memberId <= 0L){
+            throw new IllegalArgumentException("멤버 ID는 양수여야 합니다.");
+        }
+
+        long timestamp = connectTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        String emitterId = memberId + "_" + timestamp;
         SseEmitter emitter = new SseEmitter(defaultTimeout);
 
         emitter.onCompletion(() -> {
@@ -37,7 +47,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
 
         emitterRepository.save(emitterId, emitter);
 
-        sendBySse(emitter, emitterId, "connect", "connected!");
+        sendBySse(emitter, emitterId, "connect", SSE_CONNECTED);
 
         return emitter;
     }
@@ -52,19 +62,18 @@ public class SseNotificationNetworkService implements NotificationNetworkService
 
     @Override
     public void disconnect(Long memberId) {
-        // 1. 해당 회원의 모든 Emitter를 찾습니다.
-        Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(String.valueOf(memberId));
+        if(memberId == null || memberId <= 0L){
+            throw new IllegalArgumentException("멤버 ID는 양수여야 합니다.");
+        }
 
-        // 2. 루프를 돌면서 정리합니다.
+        Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(memberId);
+
         emitters.forEach((id, emitter) -> {
             try {
-                // [중요] 클라이언트에게 "연결 끝났다"고 기술적으로 끊어줍니다.
                 emitter.complete();
             } catch (Exception e) {
-                // 이미 끊긴 경우 등 에러 무시 (로그만 남김)
-                log.warn("disconnect fail : " + id);
+                log.warn("[SSE] Disconnect failed : " + id);
             } finally {
-                // [중요] 저장소에서도 지워줍니다.
                 emitterRepository.deleteById(id);
             }
         });
@@ -80,8 +89,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
 
     public void sendToMembers(Map<String, Object> msg, List<Long> receiverIds){
         for (Long receiverId : receiverIds) {
-            Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(String.valueOf(receiverId));
-
+            Map<String, SseEmitter> emitters = emitterRepository.findAllStartWithById(receiverId);
             emitters.forEach((id, emitter) -> {
                 sendBySse(emitter, id, "notification", msg);
             });
@@ -96,9 +104,6 @@ public class SseNotificationNetworkService implements NotificationNetworkService
                     .data(data));
         } catch (IOException | IllegalStateException e) {
             emitterRepository.deleteById(id);
-            System.out.print("SSE 연결이 끊겨서 전송 실패. Emitter 삭제함: userId={}");
-            System.out.println(id);
-
         }
     }
 

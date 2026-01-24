@@ -2,7 +2,10 @@ package com.example.BeGroom.payment.domain;
 
 import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.order.domain.Order;
+import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.payment.exception.InvalidPaymentStateException;
+import com.example.BeGroom.wallet.domain.ReferenceType;
+import com.example.BeGroom.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -10,6 +13,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import static com.example.BeGroom.wallet.domain.ReferenceType.ORDER;
 
 @Entity
 @Getter
@@ -68,14 +74,25 @@ public class Payment extends BaseEntity {
         return new Payment(order, amount, paymentMethod, paymentStatus, false);
     }
 
-    public void markProcessing() {
-        if(this.paymentStatus != PaymentStatus.READY) {
-            throw new InvalidPaymentStateException("결제 진행", this.paymentStatus);
-        }
-        this.paymentStatus = PaymentStatus.PROCESSING;
+    public void process(Order order, Wallet wallet) {
+        // OrderProduct한테 재고 차감 요청
+        deductStock(order.getOrderProductList());
+        // 포인트 차감 요청
+        wallet.pay(order.getTotalAmount(), ORDER, order.getId());
+        // 결제 승인 처리
+        approve();
+        // 주문 완료 처리
+        order.complete();
     }
 
-    public void approve() {
+    // 재고 차감
+    private void deductStock(List<OrderProduct> orderProductList) {
+        for(OrderProduct orderProduct : orderProductList) {
+            orderProduct.deductStock();
+        }
+    }
+
+    private void approve() {
         if(this.paymentStatus != PaymentStatus.PROCESSING) {
             throw new InvalidPaymentStateException("결제 승인", this.paymentStatus);
         }

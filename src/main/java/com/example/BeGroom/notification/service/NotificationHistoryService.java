@@ -24,7 +24,6 @@ public class NotificationHistoryService {
     private final ObjectMapper objectMapper;
 
     /** 알림 내역 생성 */
-    @Transactional(readOnly = true)
     public List<MemberNotification> createMemberNotification(List<Long> receiverIds, Long templateId, Map<String, String> variables) {
 
         Notification template = notificationRepository.findById(templateId)
@@ -33,6 +32,10 @@ public class NotificationHistoryService {
         String jsonMetaData = convertToJson(variables);
 
         List<Member> receivers = memberRepository.findAllById(receiverIds);
+        if (receivers.size() != receiverIds.size()) {
+            throw new EntityNotFoundException("해당하는 멤버가 없습니다.");
+        }
+
 
         return receivers.stream()
                 .map(receiver -> new MemberNotification(receiver, template, jsonMetaData))

@@ -2,16 +2,19 @@ package com.example.BeGroom.wishlist.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
-import com.example.BeGroom.wishlist.dto.WishlistListResDto;
-import com.example.BeGroom.wishlist.dto.WishlistResDto;
-import com.example.BeGroom.wishlist.dto.WishlistToggleReqDto;
+import com.example.BeGroom.wishlist.dto.WishlistListResponse;
+import com.example.BeGroom.wishlist.dto.WishlistResponse;
+import com.example.BeGroom.wishlist.dto.WishlistToggleRequest;
 import com.example.BeGroom.wishlist.service.WishlistService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,17 +33,13 @@ public class WishlistController {
 
     @GetMapping
     @Operation(summary = "위시리스트 조회", description = "회원의 위시리스트 전체 조회 (기본: 최신순 정렬)")
-    public ResponseEntity<CommonSuccessDto<WishlistListResDto>> getWishlist(
+    public ResponseEntity<CommonSuccessDto<WishlistListResponse>> getWishlist(
             @AuthenticationPrincipal UserPrincipal user,
-            @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "DESC") String direction
+            @Parameter(hidden = true)
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Sort sortObj = Sort.by(sortDirection, sort);
-
-        List<WishlistResDto> items = wishlistService.getWishlist(user.getMemberId(), sortObj);
-        WishlistListResDto response = WishlistListResDto.from(items);
+        List<WishlistResponse> items = wishlistService.getWishlist(user.getMemberId(), pageable.getSort());
+        WishlistListResponse response = WishlistListResponse.from(items);
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(
@@ -55,7 +54,7 @@ public class WishlistController {
     @Operation(summary = "위시리스트 토글", description = "위시리스트에 상품 추가 또는 삭제")
     public ResponseEntity<CommonSuccessDto<Void>> toggleWishlist(
             @AuthenticationPrincipal UserPrincipal user,
-            @Valid @RequestBody WishlistToggleReqDto request
+            @Valid @RequestBody WishlistToggleRequest request
     ) {
         wishlistService.toggleWishlist(user.getMemberId(), request.getProductId());
 

@@ -13,7 +13,11 @@ import java.util.Map;
 public class MessageUtil {
     private MessageUtil() {}
 
-    public static Map<String, Object> createSseMessage(String message) {
+    public static Map<String, Object> createMessageByHashMap(String message) {
+        if(message.isEmpty()){
+            throw new IllegalArgumentException("메시지가 비어있습니다.");
+        }
+
         Map<String, Object> eventData = new HashMap<>();
         eventData.put("message", message);
         return eventData;

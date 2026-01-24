@@ -4,14 +4,17 @@ import com.example.BeGroom.common.entity.BaseEntity;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.order.exception.InvalidOrderStateException;
 import com.example.BeGroom.payment.domain.Payment;
+import com.example.BeGroom.payment.domain.PaymentMethod;
+import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.product.domain.ProductDetail;
+import com.example.BeGroom.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
 @Getter
@@ -39,33 +42,88 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<Payment> payments;
 
-//    private Order(Member member, Long totalAmount, OrderStatus orderStatus) {
-//        this.member = member;
-//        this.totalAmount = totalAmount;
-//        this.orderStatus = orderStatus;
-//    }
-
     @Builder
-    public Order(Member member, Long totalAmount, OrderStatus orderStatus) {
+    private Order(Member member, Long totalAmount, OrderStatus orderStatus) {
         this.member = member;
         this.totalAmount = totalAmount;
         this.orderStatus = orderStatus;
     }
 
-    public static Order create(Member member, Long totalAmount, OrderStatus orderStatus) {
-        return new Order(member, totalAmount, orderStatus);
+    public static Order create(Member member, List<OrderLineRequest> orderLineRequests) {
+        // 주문 생성
+        Order order = new Order(member, 0L, OrderStatus.CREATED);
+        // 요청 데이터 자체 검증
+        validateOrderLines(orderLineRequests);
+
+        for(OrderLineRequest orderLineRequest : orderLineRequests) {
+            ProductDetail productDetail = orderLineRequest.productDetail();
+            int orderQuantity = orderLineRequest.quantity();
+
+            // productDetail에게 재고 검증 요청
+            productDetail.validateOrderable(orderQuantity);
+            // orderProduct 추가 요청
+            order.addOrderProduct(productDetail, orderQuantity);
+        }
+
+        return order;
     }
 
-    public void addOrderProduct(OrderProduct orderProduct) {
-        if(orderProduct == null) {
-            throw new IllegalArgumentException("추가하려는 상품이 없습니다.");
+    private static void validateOrderLines(List<OrderLineRequest> orderLineRequests) {
+        if (orderLineRequests == null || orderLineRequests.isEmpty()) {
+            throw new IllegalArgumentException("주문 상품이 없습니다.");
         }
-        if(this.orderStatus != OrderStatus.CREATED) {
-            throw new InvalidOrderStateException("상품 추가", this.orderStatus);
+
+        Set<ProductDetail> uniqueProducts = new HashSet<>();
+
+        for (OrderLineRequest orderLineRequest : orderLineRequests) {
+            if (orderLineRequest == null) {
+                throw new IllegalArgumentException("주문 상품 요청이 null입니다.");
+            }
+
+            ProductDetail productDetail = orderLineRequest.productDetail();
+            int quantity = orderLineRequest.quantity();
+
+            if(quantity <= 0) {
+                throw new IllegalArgumentException("주문 상품의 수량이 0이하 입니다.");
+            }
+
+            if (!uniqueProducts.add(productDetail)) {
+                throw new IllegalArgumentException("중복된 주문 상품이 있습니다.");
+            }
         }
-        // todo - assigned 함수 고려
-        this.orderProductList.add(orderProduct);
+    }
+
+
+    private void addOrderProduct(ProductDetail productDetail, int quantity) {
+        OrderProduct orderProduct = OrderProduct.create(productDetail, quantity, productDetail.getSellingPrice());
+
         this.totalAmount += orderProduct.getTotalAmount();
+
+        orderProduct.assignOrder(this);
+        orderProductList.add(orderProduct);
+    }
+
+
+    // 결제 시도 시작
+    public Payment checkout(PaymentMethod paymentMethod, Wallet wallet) {
+        // 결제 시도해도 되는지 판단
+        validateCheckout(wallet);
+        // 결제 대기로 변경
+        markPaymentPending();
+        return Payment.create(this, this.getTotalAmount(), paymentMethod, PaymentStatus.PROCESSING);
+    }
+
+    // 주문 가능 여부 판단
+    private void validateOrderable() {
+        for(OrderProduct orderProduct : orderProductList) {
+            orderProduct.validateOrderable();
+        }
+    }
+
+    // 결제 시도해도 되는지 판단
+    private void validateCheckout(Wallet wallet) {
+        validateOrderable();
+        wallet.canPay(this.totalAmount);
     }
 
     public void markPaymentPending() {
@@ -75,7 +133,6 @@ public class Order extends BaseEntity {
         }
         this.orderStatus = OrderStatus.PAYMENT_PENDING;
     }
-
 
     public void complete() {
         if(this.orderStatus != OrderStatus.PAYMENT_PENDING) {

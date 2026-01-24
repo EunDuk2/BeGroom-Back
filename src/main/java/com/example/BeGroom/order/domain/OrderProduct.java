@@ -36,12 +36,23 @@ public class OrderProduct extends BaseEntity {
         this.price = price;
     }
 
-    public static OrderProduct create(Order order, ProductDetail productDetail, Integer quantity, Integer price) {
-        return new OrderProduct(order, productDetail, quantity, price);
+    public static OrderProduct create(ProductDetail productDetail, Integer quantity, Integer price) {
+        return new OrderProduct(null, productDetail, quantity, price);
     }
 
     public Long getTotalAmount() {
         return (long) getPrice() * getQuantity();
     }
 
+    public void assignOrder(Order order) {
+        this.order = order;
+    }
+
+    public void validateOrderable() {
+        productDetail.validateOrderable(this.quantity);
+    }
+
+    public void deductStock() {
+        productDetail.decreaseStock(this.quantity);
+    }
 }

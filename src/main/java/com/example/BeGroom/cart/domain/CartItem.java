@@ -5,18 +5,15 @@ import com.example.BeGroom.product.domain.ProductDetail;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity
-@Table(name = "cart_item")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@Table(name = "cart_item")
+@Entity
 public class CartItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cart_item_id")
-    private Long cartItemId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
@@ -26,51 +23,65 @@ public class CartItem extends BaseEntity {
     @JoinColumn(name = "product_detail_id", nullable = false)
     private ProductDetail productDetail;
 
-    @Column(name = "quantity", nullable = false)
-    @Builder.Default
-    private Integer quantity = 1;
+    @Column(nullable = false)
+    private int quantity;
 
-    @Column(name = "is_selected", nullable = false)
-    @Builder.Default
-    private Boolean isSelected = true;
+    @Column(nullable = false)
+    private Boolean isSelected;
 
+    @Builder
+    private CartItem(Cart cart, ProductDetail productDetail, Integer quantity, Boolean isSelected) {
+        this.cart = cart;
+        this.productDetail = productDetail;
+        this.quantity = (quantity != null) ? quantity : 1;
+        this.isSelected = (isSelected != null) ? isSelected : true;
+
+        validateStock(this.quantity);
+    }
+
+    public static CartItem create(Cart cart, ProductDetail productDetail, int quantity) {
+        CartItem cartItem = CartItem.builder()
+            .cart(cart)
+            .productDetail(productDetail)
+            .quantity(quantity)
+            .isSelected(true)
+            .build();
+
+        cart.addCartItem(cartItem);
+        return cartItem;
+    }
 
     // 선택 상태 변경
     public void updateSelected(Boolean isSelected) {
         this.isSelected = isSelected;
     }
 
-    // 수량 변경
-    public void updateQuantity(Integer quantity) {
-        if (quantity == null || quantity <= 0) {
-            throw new IllegalArgumentException("수량은 1개 이상이어야 합니다.");
-        }
-        if (quantity > this.productDetail.getQuantity()) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
-        }
+    // 수량 변경 시 재고 검증 로직 포함
+    public void updateQuantity(int quantity) {
+        validateStock(quantity);
         this.quantity = quantity;
     }
 
-    // 수량 증가
-    public void increaseQuantity(Integer amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("증가량은 1개 이상이어야 합니다.");
-        }
-        if (this.quantity + amount > this.productDetail.getQuantity()) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
-        }
-        this.quantity += amount;
+    public void increaseQuantity(int amount) {
+        if (amount <= 0) throw new IllegalArgumentException("증가량은 1개 이상이어야 합니다.");
+        updateQuantity(this.quantity + amount);
     }
 
-    // 수량 감소
-    public void decreaseQuantity(Integer amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("감소량은 1개 이상이어야 합니다.");
-        }
-        if (this.quantity - amount <= 0) {
+    public void decreaseQuantity(int amount) {
+        if (amount <= 0) throw new IllegalArgumentException("감소량은 1개 이상이어야 합니다.");
+        updateQuantity(this.quantity - amount);
+    }
+
+    public int calculateItemPrice() {
+        return this.productDetail.getSellingPrice() * this.quantity;
+    }
+
+    private void validateStock(int quantity) {
+        if (quantity <= 0) {
             throw new IllegalArgumentException("수량은 1개 이상이어야 합니다.");
         }
-        this.quantity -= amount;
+
+        this.productDetail.validateOrderable(quantity);
     }
 
     // 연관관계

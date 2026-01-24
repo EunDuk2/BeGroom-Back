@@ -15,19 +15,17 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     List<Wishlist> findByMember_Id(Long memberId, Sort sort);
 
     // 회원이 특정 상품을 이미 찜했는지 확인 (단건 조회)
-    Optional<Wishlist> findByMember_IdAndProduct_ProductId(Long memberId, Long productId);
-
-    // 회원의 특정 상품 위시 여부 확인
-    boolean existsByMember_IdAndProduct_ProductId(Long memberId, Long productId);
-
-    // 특정 회원의 특정 상품 찜 취소 (삭제)
-    void deleteByMember_IdAndProduct_ProductId(Long memberId, Long productId);
+    Optional<Wishlist> findByMember_IdAndProduct_Id(Long memberId, Long productId);
 
     // 회원의 위시리스트 개수 조회
     long countByMember_Id(Long memberId);
 
     // 특정 상품을 찜한 회원 수 조회
-    long countByProduct_ProductId(Long productId);
+    long countByProduct_Id(Long productId);
 
     List<Wishlist> findAllByMember_Id(Long memberId);
+
+    // 회원의 특정 상품 위시 여부 확인
+    boolean existsByMember_IdAndProduct_Id(Long memberId, Long productId);
+
 }

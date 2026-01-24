@@ -59,9 +59,4 @@ public class Seller extends BaseEntity{
         return new Seller(email, name, password, phoneNumber);
     }
 
-    public void addBrand(Brand brand) {
-        this.brands.add(brand);
-        brand.setSeller(this);
-    }
-
 }

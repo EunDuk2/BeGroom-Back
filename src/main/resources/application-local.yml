@@ -41,14 +41,14 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:h2:mem:~/begroomApplication;MODE=MySQL
+    url: jdbc:h2:mem:~/begroomApplication
     driver-class-name: org.h2.Driver
     username: sa
     password:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
