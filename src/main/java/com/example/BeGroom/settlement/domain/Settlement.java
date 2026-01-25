@@ -101,7 +101,8 @@ public class Settlement extends BaseEntity {
             SettlementStatus status,
             SettlementPaymentStatus settlementPaymentStatus,
             BigDecimal refundAmount,
-            LocalDateTime payoutDate
+            LocalDateTime payoutDate,
+            boolean isAggregated
     ) {
         this.seller = seller;
         this.payment = payment;

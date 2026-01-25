@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -42,6 +43,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 
 import static com.example.BeGroom.order.domain.OrderStatus.COMPLETED;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
@@ -87,12 +89,11 @@ public class AggregationServiceTest {
     private MonthlySettlementRepository monthlySettlementRepository;
     @Autowired
     private YearlySettlementRepository yearlySettlementRepository;
-
-    private Member member;
-    private Seller seller;
-    private ProductDetail productDetail;
     @Autowired
     private AggregationService aggregationService;
+
+    private Seller seller;
+    private Order order;
 
 //    @AfterEach
 //    void tearDown(){
@@ -101,7 +102,7 @@ public class AggregationServiceTest {
 
     @BeforeEach
     void setUp(){
-        member = Member.builder()
+        Member member = Member.builder()
                 .email("hong@test.com")
                 .name("홍길동")
                 .password("1234")
@@ -137,15 +138,147 @@ public class AggregationServiceTest {
                 .build();
         productRepository.save(product);
 
-        productDetail = ProductDetail.builder()
+        ProductDetail productDetail = ProductDetail.builder()
                 .no(1L)
                 .product(product)
                 .name("사과")
                 .initialQuantity(1)
                 .build();
         productDetailRepository.save(productDetail);
+
+        order = Order.builder()
+                .member(member)
+                .totalAmount(100000L)
+                .orderStatus(COMPLETED)
+                .build();
+        orderRepository.save(order);
+
+        OrderProduct orderProduct = OrderProduct.builder()
+                .price(100000)
+                .productDetail(productDetail)
+                .order(order)
+                .quantity(1)
+                .build();
+        orderProductRepository.save(orderProduct);
+
+        // order에 orderProduct 추가
+        order.addOrderProduct(orderProduct);
     }
-    
+
+    @Nested
+    @DisplayName("날짜 및 기간 경계값 정합성 테스트")
+    class DateBoundaryAggregation{
+
+        @DisplayName("일간 경계: 23:59:59와 00:00:00 데이터는 각각의 일간 레코드에 집계된다.")
+        @Test
+        void aggregateDailyBoundary() {
+            // given
+            LocalDateTime today = LocalDateTime.of(2025, 1, 25, 23, 59, 59);
+            LocalDateTime tomorrow = LocalDateTime.of(2025, 1, 26, 0, 0, 0);
+
+            Settlement settlement1 = createSettlementWithPayoutDate(today, SETTLED, PAYMENT, false);
+            Settlement settlement2 = createSettlementWithPayoutDate(tomorrow, SETTLED, PAYMENT, false);
+            settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+            // when
+            aggregationService.aggregate();
+
+            // then
+            DailySettlement day25 = dailySettlementRepository.findById(new DailySettlementId(today.toLocalDate(), seller.getId())).get();
+            DailySettlement day26 = dailySettlementRepository.findById(new DailySettlementId(tomorrow.toLocalDate(), seller.getId())).get();
+
+            assertThat(day25.getId().getDate()).isEqualTo(LocalDate.of(2025, 1, 25));
+            assertThat(day26.getId().getDate()).isEqualTo(LocalDate.of(2025, 1, 26));
+
+        }
+
+        @DisplayName("주간 경계: 주차가 바뀌는 시점의 데이터가 각각의 주간 레코드에 집계된다.")
+        @Test
+        void aggregateWeeklyBoundary() {
+            // given : 2026/1/25(일) 밤과 2026/1/26(월) 새벽
+            LocalDateTime sundayNight = LocalDateTime.of(2026, 1, 25, 23, 59, 59);
+            LocalDateTime mondayMorning = LocalDateTime.of(2026, 1, 26, 0, 0, 0);
+
+            Settlement settlement1 = createSettlementWithPayoutDate(sundayNight, SETTLED, PAYMENT, false);
+            Settlement settlement2 = createSettlementWithPayoutDate(mondayMorning, SETTLED, PAYMENT, false);
+            settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+            WeeklyPeriod wp1 = WeeklyPeriod.calc(sundayNight.toLocalDate());
+            WeeklyPeriod wp2 = WeeklyPeriod.calc(mondayMorning.toLocalDate());
+
+            // when
+            aggregationService.aggregate();
+
+            // then
+            WeeklySettlement week4 = weeklySettlementRepository.findById(
+                    new WeeklySettlementId(wp1.getYear(), wp1.getMonth(), wp1.getWeek(), seller.getId())).get();
+            WeeklySettlement week5 = weeklySettlementRepository.findById(
+                    new WeeklySettlementId(wp2.getYear(), wp2.getMonth(), wp2.getWeek(), seller.getId())).get();
+
+            assertThat(week4.getId())
+                    .extracting("year", "month", "week")
+                    .containsExactlyInAnyOrder(2026, 1, 4);
+            assertThat(week5.getId())
+                    .extracting("year", "month", "week")
+                    .containsExactlyInAnyOrder(2026, 1, 5);
+
+        }
+
+        @DisplayName("월간 경계: 말일과 초일 데이터는 각각의 월간 레코드에 집계된다.")
+        @Test
+        void aggregateMonthlyBoundary() {
+            // given : 1/31 밤과 2/1 새벽
+            LocalDateTime janLast = LocalDateTime.of(2026, 1, 31, 23, 59, 59);
+            LocalDateTime febFirst = LocalDateTime.of(2026, 2, 1, 0, 0, 0);
+
+            Settlement settlement1 = createSettlementWithPayoutDate(janLast, SETTLED, PAYMENT, false);
+            Settlement settlement2 = createSettlementWithPayoutDate(febFirst, SETTLED, PAYMENT, false);
+            settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+            // when
+            aggregationService.aggregate();
+
+            // then
+            MonthlySettlement jan = monthlySettlementRepository.findById(
+                    new MonthlySettlementId(janLast.getYear(), janLast.getMonthValue(), seller.getId())).get();
+            MonthlySettlement feb = monthlySettlementRepository.findById(
+                    new MonthlySettlementId(febFirst.getYear(), febFirst.getMonthValue(), seller.getId())).get();
+
+            assertThat(jan.getId())
+                    .extracting("year", "month")
+                    .containsExactlyInAnyOrder(2026, 1);
+            assertThat(feb.getId())
+                    .extracting("year", "month")
+                    .containsExactlyInAnyOrder(2026, 2);
+
+        }
+
+        @DisplayName("연간 경계: 연말과 연초 데이터는 각각의 연간 레코드에 집계된다.")
+        @Test
+        void aggregateYearlyBoundary() {
+            // given : 2025년 마지막과 2026 시작
+            LocalDateTime decLast = LocalDateTime.of(2025, 12, 31, 23, 59, 59);
+            LocalDateTime janFirst = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
+
+            Settlement settlement1 = createSettlementWithPayoutDate(decLast, SETTLED, PAYMENT, false);
+            Settlement settlement2 = createSettlementWithPayoutDate(janFirst, SETTLED, PAYMENT, false);
+            settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+            // when
+            aggregationService.aggregate();
+
+            // then
+            YearlySettlement dec = yearlySettlementRepository.findById(
+                    new YearlySettlementId(decLast.getYear(), seller.getId())).get();
+            YearlySettlement jan = yearlySettlementRepository.findById(
+                    new YearlySettlementId(janFirst.getYear(), seller.getId())).get();
+
+            assertThat(dec.getId().getYear()).isEqualTo(2025);
+            assertThat(jan.getId().getYear()).isEqualTo(2026);
+
+        }
+
+    }
 
     @DisplayName("지급 완료된 정산건이 모든 기간별 집계 레코드로 생성된다.")
     @Test
@@ -224,28 +357,42 @@ public class AggregationServiceTest {
         );
     }
 
+    private Settlement createSettlementWithPayoutDate(
+            LocalDateTime date, SettlementStatus status, SettlementPaymentStatus paymentStatus, boolean isAggregated){
+
+        Payment payment = Payment.builder()
+                .order(order)
+                .amount(10000L)
+                .paymentMethod(POINT)
+                .paymentStatus(APPROVED)
+                .isSettled(true)
+                .build();
+
+        paymentRepository.save(payment);
+
+        Settlement settlement = Settlement.builder()
+                .seller(seller)
+                .payment(payment)
+                .paymentAmount(10000L)
+                .feeRate(BigDecimal.valueOf(10.00))
+                .fee(BigDecimal.valueOf(1000.00))
+                .settlementAmount(BigDecimal.valueOf(9000.00))
+                .status(status)
+                .settlementPaymentStatus(paymentStatus)
+                .refundAmount(BigDecimal.ZERO)
+                .payoutDate(date)
+                .isAggregated(isAggregated)
+                .build();
+
+        ReflectionTestUtils.setField(settlement, "payoutDate", date);
+
+        return settlement;
+    }
+
 
     private Settlement createSettlement(
             Long paymentAmount, BigDecimal fee, BigDecimal amount, BigDecimal refundAmount,
             SettlementStatus status, SettlementPaymentStatus paymentStatus) {
-
-        Order order = Order.builder()
-                .member(member)
-                .totalAmount(100000L)
-                .orderStatus(COMPLETED)
-                .build();
-        orderRepository.save(order);
-
-        OrderProduct orderProduct = OrderProduct.builder()
-                .price(100000)
-                .productDetail(productDetail)
-                .order(order)
-                .quantity(1)
-                .build();
-        orderProductRepository.save(orderProduct);
-
-        // order에 orderProduct 추가
-        order.addOrderProduct(orderProduct);
 
         Payment payment = Payment.builder()
                 .order(order)
@@ -256,10 +403,6 @@ public class AggregationServiceTest {
                 .build();
 
         paymentRepository.save(payment);
-
-//        Long totalPaymentAmount = paymentAmount;
-//        BigDecimal feeRate = BigDecimal.valueOf(10.00);
-//        BigDecimal totalFee = BigDecimal.valueOf(totalPaymentAmount).multiply(feeRate).divide(new BigDecimal("100"));
 
         return Settlement.builder()
                 .seller(seller)
