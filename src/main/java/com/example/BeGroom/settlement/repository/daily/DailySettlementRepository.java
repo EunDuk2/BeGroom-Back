@@ -10,6 +10,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.Optional;
+import java.util.function.Supplier;
+
 @Repository
 public interface DailySettlementRepository extends JpaRepository<DailySettlement, DailySettlementId>, DailySettlementRepositoryCustom {
 
@@ -26,4 +30,6 @@ public interface DailySettlementRepository extends JpaRepository<DailySettlement
         order by ds.id.date desc
     """)
     Page<DailySettlementResDto> findDailySettlement(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    Optional<DailySettlement> findById(DailySettlementId dailySettlementId);
 }

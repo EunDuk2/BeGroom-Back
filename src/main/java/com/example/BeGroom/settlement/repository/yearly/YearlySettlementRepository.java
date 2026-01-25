@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface YearlySettlementRepository extends JpaRepository<YearlySettlement, YearlySettlementId>, YearlySettlementRepositoryCustom {
 
@@ -28,4 +30,6 @@ public interface YearlySettlementRepository extends JpaRepository<YearlySettleme
         order by ys.id.year desc
     """)
     Page<YearlySettlementResDto> findYearlySettlement(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    Optional<YearlySettlement> findById(YearlySettlementId yearlySettlementId);
 }

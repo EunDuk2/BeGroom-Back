@@ -12,13 +12,13 @@ import java.io.Serializable;
 @EqualsAndHashCode
 public class WeeklySettlementId implements Serializable {
     // 년
-    @Column(name = "settlement_year", nullable = false)
+    @Column(nullable = false)
     private int year;
     // 월
-    @Column(name = "settlement_month", nullable = false)
+    @Column(nullable = false)
     private int month;
     // 주차
-    @Column(name = "settlement_week", nullable = false)
+    @Column(nullable = false)
     private int week;
     // 판매자ID
     @Column(nullable = false)
