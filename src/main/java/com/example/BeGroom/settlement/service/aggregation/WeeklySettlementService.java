@@ -21,7 +21,7 @@ public class WeeklySettlementService implements SettlementAggregator{
     @Override
     public void aggregate(Settlement settlement){
         // 년, 월, 주차 계산
-        WeeklyPeriod period = WeeklyPeriod.calc(settlement.getDate());
+        WeeklyPeriod period = WeeklyPeriod.calc(settlement.getCreatedAt().toLocalDate());
 
         weeklySettlementRepository.upsertAggregate(
                 period.getYear(),
@@ -41,7 +41,7 @@ public class WeeklySettlementService implements SettlementAggregator{
     @Override
     public void refund(Settlement settlement){
         // 년, 월, 주차 계산
-        WeeklyPeriod period = WeeklyPeriod.calc(settlement.getDate());
+        WeeklyPeriod period = WeeklyPeriod.calc(settlement.getCreatedAt().toLocalDate());
 
         weeklySettlementRepository.updateRefund(
                 period.getYear(),

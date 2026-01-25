@@ -40,7 +40,6 @@ class NotificationServiceTest extends IntegrationTestSupport {
 
     @MockitoSpyBean
     private MemberNotificationRepository memberNotificationRepository;
-
     @Autowired
     private MemberRepository memberRepository;
 

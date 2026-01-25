@@ -12,7 +12,7 @@ import java.io.Serializable;
 @EqualsAndHashCode
 public class YearlySettlementId implements Serializable {
     // 년
-    @Column(nullable = false)
+    @Column(name = "settlement_year", nullable = false)
     private int year;
     // 판매자ID
     @Column(nullable = false)

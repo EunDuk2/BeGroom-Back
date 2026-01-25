@@ -8,7 +8,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/begroom
+    url: jdbc:mysql://localhost:3306/begroom?rewriteBatchedStatements=true
     username: root
     password: 1234
 
@@ -19,6 +19,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 100
+          batch_versioned_data: true
+        order_updates: true
 
 sse:
   timeout: 3600000

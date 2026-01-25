@@ -17,7 +17,7 @@ public class YearlySettlementService implements SettlementAggregator{
     @Transactional
     @Override
     public void aggregate(Settlement settlement){
-        LocalDate originDate = settlement.getDate();
+        LocalDate originDate = settlement.getCreatedAt().toLocalDate();;
         // 연도
         int year = originDate.getYear();
 
@@ -41,7 +41,7 @@ public class YearlySettlementService implements SettlementAggregator{
     @Transactional
     @Override
     public void refund(Settlement settlement){
-        LocalDate originDate = settlement.getDate();
+        LocalDate originDate = settlement.getCreatedAt().toLocalDate();;
         // 연도
         int year = originDate.getYear();
 
