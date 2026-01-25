@@ -125,4 +125,6 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") SettlementPaymentStatus settlementPaymentStatus);
 
     Optional<Settlement> findByPayment(Payment payment);
+
+    List<Settlement> findByStatusAndIsAggregatedFalse(SettlementStatus settlementStatus);
 }

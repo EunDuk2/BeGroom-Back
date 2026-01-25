@@ -203,7 +203,7 @@ public class SettlementServiceTest {
         Settlement result = settlementRepository.findById(settlement.getId()).orElseThrow();
         assertThat(result)
                 .extracting("refundAmount", "settlementPaymentStatus", "settlementAmount")
-                .contains(new BigDecimal("100000"), REFUND, BigDecimal.ZERO);
+                .contains(new BigDecimal("100000"), REFUND, new BigDecimal("90000.0"));
 
     }
 

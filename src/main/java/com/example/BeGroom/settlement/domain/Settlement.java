@@ -76,14 +76,12 @@ public class Settlement extends BaseEntity {
     private Boolean isAggregated;
 
     public void markAggregated(){
-//        this.status = SettlementStatus.SETTLED;
         this.isAggregated = true;
     }
 
     public void markRefunded(BigDecimal refundAmount) {
         this.settlementPaymentStatus = REFUND;
         this.refundAmount = refundAmount;
-        this.settlementAmount = BigDecimal.ZERO;
     }
 
     // 미정산 지급 실행
