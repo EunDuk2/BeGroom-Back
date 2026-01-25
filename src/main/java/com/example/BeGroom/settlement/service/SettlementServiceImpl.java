@@ -140,8 +140,8 @@ public class SettlementServiceImpl implements SettlementService {
     @Transactional
     @Override
     public void executeSettlementPayout(){
-
-        List<Settlement> targets = settlementRepository.findUnsettledTargets(UNSETTLED);
+        // todo : 배치 업데이트 고민하기
+        List<Settlement> targets = settlementRepository.findByStatus(UNSETTLED);
 
         for(Settlement settlement : targets){
             settlement.markSettled();

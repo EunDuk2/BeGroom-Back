@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.*;
@@ -88,7 +89,7 @@ public class Settlement extends BaseEntity {
     // 미정산 지급 실행
     public void markSettled() {
         this.status = SETTLED;
-        this.payoutDate = LocalDateTime.now();
+        this.payoutDate = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
     }
 
     @Builder
@@ -101,7 +102,8 @@ public class Settlement extends BaseEntity {
             BigDecimal settlementAmount,
             SettlementStatus status,
             SettlementPaymentStatus settlementPaymentStatus,
-            BigDecimal refundAmount
+            BigDecimal refundAmount,
+            LocalDateTime payoutDate
     ) {
         this.seller = seller;
         this.payment = payment;
@@ -113,6 +115,7 @@ public class Settlement extends BaseEntity {
         this.settlementPaymentStatus = settlementPaymentStatus;
         this.refundAmount = refundAmount != null ? refundAmount : BigDecimal.ZERO;
         this.isAggregated = false;
+        this.payoutDate = payoutDate;
     }
 
 

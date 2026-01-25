@@ -22,8 +22,9 @@ import static com.example.BeGroom.seller.dto.res.RecentActivityResDto.*;
 
 @Repository
 public interface SettlementRepository extends JpaRepository<Settlement, Long>, SettlementRepositoryCustom {
-//    List<Settlement> findByAggregatedFalse();
-    List<Settlement> findByStatus(SettlementStatus unsettled);
+
+    // 미정산건
+    List<Settlement> findByStatus(SettlementStatus settlementStatus);
 
     // 총 주문 수(환불 제외)
     @Query("select coalesce(sum(s.paymentAmount - s.refundAmount), 0) " +
@@ -122,14 +123,6 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
           and s.settlementPaymentStatus = :settlementPaymentStatus
     """)
     List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") SettlementPaymentStatus settlementPaymentStatus);
-
-    // 미정산 지급 실행
-    @Query("""
-        select s
-        from Settlement s
-        where s.status = :status
-""")
-    List<Settlement> findUnsettledTargets(@Param("status") SettlementStatus settlementStatus);
 
     Optional<Settlement> findByPayment(Payment payment);
 }
