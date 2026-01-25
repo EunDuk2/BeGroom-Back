@@ -362,10 +362,10 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         Member member = createAndSaveMember();
         createAndSaveWallet(member);
 
-        Product product = createAndSaveProductHierarchy();
+        Product product = createAndSaveProductHierarchy(1L, "1");
 
-        ProductDetail productDetail1 = createAndSaveProductDetail(product, 3000, 5);
-        ProductDetail productDetail2 = createAndSaveProductDetail(product, 5000, 5);
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
 
         OrderCreateReqDto orderCreateReqDto =
                 createOrderCreateReqDto(
@@ -410,9 +410,9 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
         // then
         ProductDetail reloaded =
-                productDetailRepository.findById(productDetail1.getProductDetailId()).get();
+                productDetailRepository.findById(productDetail1.getId()).get();
 
-        System.out.println("=== test === 최종 재고: " + reloaded.getQuantity());
+        System.out.println("=== test === 최종 재고: " + reloaded.getStock().getQuantity());
     }
 
 
