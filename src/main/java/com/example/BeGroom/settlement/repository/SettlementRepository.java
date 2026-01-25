@@ -1,5 +1,6 @@
 package com.example.BeGroom.settlement.repository;
 
+import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
 import com.example.BeGroom.seller.dto.res.RecentSettlementResDto;
@@ -129,4 +130,6 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
         where s.status = :status
 """)
     List<Settlement> findUnsettledTargets(@Param("status") SettlementStatus settlementStatus);
+
+    Optional<Settlement> findByPayment(Payment payment);
 }

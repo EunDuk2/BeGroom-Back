@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static com.example.BeGroom.order.domain.OrderStatus.COMPLETED;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
@@ -176,10 +177,14 @@ public class SettlementServiceTest {
         settlementService.aggregateApprovedPayments();
 
         // then
-        Settlement settlement = settlementRepository.findById(payment.getId()).orElseThrow();
+        Optional<Settlement> settlement = settlementRepository.findByPayment(payment);
         assertThat(settlement)
-                .extracting("paymentAmount", "fee", "settlementAmount")
-                .contains(100000L, new BigDecimal("10000.00"), new BigDecimal("90000.00"));
+                .isPresent()
+                .hasValueSatisfying(res -> {
+                    assertThat(res.getPaymentAmount()).isEqualTo(100000L);
+                    assertThat(res.getFee()).isEqualByComparingTo("10000.00");
+                    assertThat(res.getSettlementAmount()).isEqualByComparingTo("90000.00");
+                });
     }
 
     @DisplayName("환불 동기화: 이미 정산된 결제가 환불되면 정산 테이블의 환불 금액과 상태가 업데이트되어야 한다.")

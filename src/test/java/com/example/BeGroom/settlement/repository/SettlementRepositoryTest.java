@@ -24,10 +24,13 @@ import com.example.BeGroom.seller.dto.res.RecentSettlementResDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +58,7 @@ import static org.assertj.core.groups.Tuple.*;
 @Transactional
 public class SettlementRepositoryTest {
 
+    private static final Logger log = LoggerFactory.getLogger(SettlementRepositoryTest.class);
     @Autowired
     private MemberRepository memberRepository;
     @Autowired
@@ -73,17 +77,28 @@ public class SettlementRepositoryTest {
     private SettlementRepository settlementRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private EntityManager em;
 
     private Member member;
     private Seller seller;
     private ProductDetail productDetail;
 
-    @AfterEach
-    void tearDown(){
-//        memberRepository.deleteAllInBatch();
-//        orderRepository.deleteAllInBatch();
+//    @AfterEach
+//    void tearDown(){
+//        settlementRepository.deleteAllInBatch();
+//        orderProductRepository.deleteAllInBatch();
+//
 //        paymentRepository.deleteAllInBatch();
-    }
+//        productDetailRepository.deleteAllInBatch();
+//
+//        orderRepository.deleteAllInBatch();
+//        productRepository.deleteAllInBatch();
+//
+//        brandRepository.deleteAllInBatch();
+//        sellerRepository.deleteAllInBatch();
+//        memberRepository.deleteAllInBatch();
+//    }
 
     @BeforeEach
     void setUp(){
@@ -136,17 +151,21 @@ public class SettlementRepositoryTest {
     @Test
     void findLatestOrderBySeller() {
         // given
-        Payment oldOrder = createPayment(APPROVED, LocalDateTime.now().minusDays(3));
-        Payment latestOrder = createPayment(APPROVED, LocalDateTime.now().minusDays(1));
-        Payment cancleOrder = createPayment(CANCELED, LocalDateTime.now());
+        Payment oldOrder = createPayment(APPROVED, null);
+        Payment latestOrder = createPayment(APPROVED, null);
+        Payment cancleOrder = createPayment(CANCELED, null);
         paymentRepository.saveAll(List.of(oldOrder, latestOrder, cancleOrder));
+
+        ReflectionTestUtils.setField(oldOrder, "approvedAt", LocalDateTime.now().minusDays(3));
+        ReflectionTestUtils.setField(latestOrder, "approvedAt", LocalDateTime.now().minusDays(1));
+        ReflectionTestUtils.setField(cancleOrder, "approvedAt", LocalDateTime.now());
 
         // when
         List<RecentPaymentResDto> result = paymentRepository.findLatestOrderBySellerId(seller.getId(), PageRequest.of(0, 1));
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getPaymentId()).isEqualTo(latestOrder.getId());
+        assertThat(result.getFirst().getPaymentId()).isEqualTo(latestOrder.getId());
 
     }
 
