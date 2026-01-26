@@ -57,7 +57,7 @@ public class SettlementController {
         // startDate <= endDate 검증
         if(startDate != null && endDate != null){
             if(startDate.isAfter(endDate)){
-                throw new IllegalArgumentException("시작일은 종료일 이전이어야 합니다");
+                throw new IllegalArgumentException("시작일은 종료일 이전이어야 합니다.");
             }
         }
 
