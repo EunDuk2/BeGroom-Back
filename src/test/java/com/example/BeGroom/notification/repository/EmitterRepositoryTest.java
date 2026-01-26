@@ -6,13 +6,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class EmitterRepositoryTest extends IntegrationTestSupport {
 
@@ -44,6 +49,22 @@ class EmitterRepositoryTest extends IntegrationTestSupport {
         assertThat(emitters).containsOnlyKeys(emitterId);
     }
 
+    @DisplayName("맴버의 SSE Emitter 정보를 저장할 때, 중복된 EmitterId는 존재하지 않는다.")
+    @Test
+    void saveEmitterWithDuplicatedId() {
+        // given
+        Long memberId = 1L;
+        String currentTimeMillis = "1768993200123";
+        String emitterId = memberId + "_" + currentTimeMillis;
+        SseEmitter emitter1 = new SseEmitter(defaultTimeout);
+        SseEmitter emitter2 = new SseEmitter(defaultTimeout);
+        emitterRepository.save(emitterId, emitter1);
+        emitterRepository.save(emitterId, emitter2);
+
+        // when, then
+        assertThat(emitterRepository.findAll()).containsOnlyKeys(emitterId);
+    }
+
     @DisplayName("멤버의 SSE Emitter 정보를 모두 저장한다.")
     @Test
     void saveAllEmitters() {
@@ -67,6 +88,44 @@ class EmitterRepositoryTest extends IntegrationTestSupport {
         // then
         Map<String, SseEmitter> result = emitterRepository.findAll();
         assertThat(result).containsOnlyKeys(emitter1Id, emitter2Id);
+    }
+
+    @DisplayName("동시에 100명이 Emitter 저장을 요청해도 데이터가 유실되지 않는다.")
+    @Test
+    void saveEmitterWith100Request() throws InterruptedException {
+        // given
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger();
+
+        // when
+        for (int i = 0; i < threadCount; i++) {
+            long memberId = i;
+
+            executorService.submit(() -> {
+                try {
+                    String emitterId = memberId + "_" + System.currentTimeMillis();
+                    SseEmitter emitter = new SseEmitter(60L * 1000L); // 1분 타임아웃
+
+                    emitterRepository.save(emitterId, emitter);
+
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    System.out.println("에러 발생: " + e.getMessage());
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+
+        // then
+        Map<String, SseEmitter> emitters = emitterRepository.findAll();
+        assertThat(successCount.get()).isEqualTo(threadCount);
+        assertThat(emitters).hasSize(threadCount);
     }
 
     @DisplayName("멤버의 SSE Emitter 정보를 삭제한다.")

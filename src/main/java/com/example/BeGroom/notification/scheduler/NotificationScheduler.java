@@ -18,10 +18,9 @@ public class NotificationScheduler {
     private final NotificationService notificationService;
 
     /**
-     * 15분마다 실행
-     * 실행 시점: 매시 0분, 15분, 30분, 45분
+     * 2시간마다 실행
      */
-    @Scheduled(cron = "0 0/15 * * * *")
+    @Scheduled(cron = "0 0 */2 * * *")
     public void sendPeriodicNotifications() {
         try {
             Map<String, String> eventData = new HashMap<>();

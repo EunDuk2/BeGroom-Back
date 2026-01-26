@@ -9,6 +9,7 @@ import com.example.BeGroom.notification.dto.CreateNotificationResDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.service.NotificationService;
 import com.example.BeGroom.notification.service.network.NotificationNetworkService;
+import com.example.BeGroom.notification.service.network.SseNotificationNetworkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ import java.util.Map;
 public class NotificationController {
     private final NotificationService notificationService;
     private final NotificationNetworkService notificationNetworkService;
+    private final SseNotificationNetworkService sseNotificationNetworkService;
 
     /// TODO: PC코드에 swagger등 핵심 비즈니스 로직이 아닌 코드들이 있으면 코드가 비대해지거나 설명이 비대졌을떄 보기가 편할까요?
     @GetMapping
@@ -118,9 +120,11 @@ public class NotificationController {
     }
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "알림 구독 (SSE 연결)", description = "SSE와 연결합니다.")
-        public Object subscribe(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        return notificationNetworkService.connect(userPrincipal.getMemberId(), LocalDateTime.now());
+    @Operation(summary = "알림 구독", description = "SSE와 연결합니다.")
+    public Object subscribe(
+            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        return sseNotificationNetworkService.subscribeWithHistory(userPrincipal.getMemberId(), lastEventId, LocalDateTime.now());
     }
 }

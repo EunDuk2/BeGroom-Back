@@ -104,6 +104,56 @@ class MemberNotificationRepositoryTest extends IntegrationTestSupport {
         assertThat(result).hasSize(3).extracting("isRead").containsExactly(true, true, true);
     }
 
+    @DisplayName("마지막으로 받은 메시지의 id와 멤버의 id를 이용해서 몇 개를 유실했는지와 가장 최근 알림의 id 값을 조회한다.")
+    @Test
+    void findLostSummary(){
+        // given
+        Member member = creteMember();
+        memberRepository.save(member);
+        Notification notification = createNotification();
+        notificationRepository.save(notification);
+        MemberNotification memberNotification1 = createMemberNotification(member, notification, "notification 1", false);
+        MemberNotification memberNotification2 = createMemberNotification(member, notification, "notification 2", false);
+        MemberNotification memberNotification3 = createMemberNotification(member, notification, "notification 3", false);
+        memberNotificationRepository.saveAll(List.of(memberNotification1, memberNotification2, memberNotification3));
+
+        // when
+        Object[] table = memberNotificationRepository.findLostSummary(member.getId(), 2L);
+        Object[] result = (Object[]) table[0];
+
+        // then
+        long lostCount = ((Number) result[0]).longValue();
+        Long maxId = ((Number) result[1]).longValue();
+
+        assertThat(lostCount).isEqualTo(1L);
+        assertThat(maxId).isEqualTo(3L);
+    }
+
+    @DisplayName("마지막으로 받은 메시지의 id와 멤버의 id를 이용해서 몇 개를 읽지 않았는지와 가장 최근 알림의 id 값을 조회한다.")
+    @Test
+    void findUnreadSummary(){
+        // given
+        Member member = creteMember();
+        memberRepository.save(member);
+        Notification notification = createNotification();
+        notificationRepository.save(notification);
+        MemberNotification memberNotification1 = createMemberNotification(member, notification, "notification 1", false);
+        MemberNotification memberNotification2 = createMemberNotification(member, notification, "notification 2", false);
+        MemberNotification memberNotification3 = createMemberNotification(member, notification, "notification 3", false);
+        memberNotificationRepository.saveAll(List.of(memberNotification1, memberNotification2, memberNotification3));
+
+        // when
+        Object[] table = memberNotificationRepository.findUnreadSummary(member.getId());
+        Object[] result = (Object[]) table[0];
+
+        // then
+        long unreadCount = ((Number) result[0]).longValue();
+        Long maxId = ((Number) result[1]).longValue();
+
+        assertThat(unreadCount).isEqualTo(3L);
+        assertThat(maxId).isEqualTo(memberNotification3.getId());
+    }
+
     private Member creteMember(){
         return Member.builder()
                 .email("user")

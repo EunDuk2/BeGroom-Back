@@ -23,7 +23,6 @@ public class NotificationHistoryService {
     private final MemberRepository memberRepository;
     private final ObjectMapper objectMapper;
 
-    /** 알림 내역 생성 */
     public List<MemberNotification> createMemberNotification(List<Long> receiverIds, Long templateId, Map<String, String> variables) {
 
         Notification template = notificationRepository.findById(templateId)
@@ -42,12 +41,11 @@ public class NotificationHistoryService {
                 .toList();
     }
 
-    /** Map to JSON type */
     private String convertToJson(Map<String, String> variables) {
         try {
             return objectMapper.writeValueAsString(variables);
         } catch (Exception e) {
-            throw new RuntimeException("JSON 변환 실패", e);
+            throw new RuntimeException("Convert to json failed: ", e);
         }
     }
 }

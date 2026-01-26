@@ -40,6 +40,7 @@ class NotificationServiceTest extends IntegrationTestSupport {
 
     @MockitoSpyBean
     private MemberNotificationRepository memberNotificationRepository;
+
     @Autowired
     private MemberRepository memberRepository;
 
@@ -192,7 +193,7 @@ class NotificationServiceTest extends IntegrationTestSupport {
                 .hasMessage("해당 타입의 알림 템플릿이 없습니다.");
 
         verify(memberNotificationRepository, never()).saveAll(any());
-        verify(notificationNetworkService, never()).send(any(), any());
+        verify(notificationNetworkService, never()).send(any());
     }
 
     @DisplayName("모든 사용자에게 원하는 메시지를 담아서 DB에 기록하고 실시간 메시지를 전송한다.")
@@ -232,7 +233,7 @@ class NotificationServiceTest extends IntegrationTestSupport {
                 .hasMessage("해당 타입의 알림 템플릿이 없습니다.");
 
         verify(memberNotificationRepository, never()).saveAll(any());
-        verify(notificationNetworkService, never()).send(any(), any());
+        verify(notificationNetworkService, never()).send(any());
     }
 
     private Member creteMember(){

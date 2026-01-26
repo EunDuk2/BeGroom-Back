@@ -5,7 +5,6 @@ import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.notification.domain.MemberNotification;
 import com.example.BeGroom.notification.domain.Notification;
-import com.example.BeGroom.notification.domain.NotificationTemplate;
 import com.example.BeGroom.notification.domain.NotificationType;
 import com.example.BeGroom.notification.repository.NotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,19 +12,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.BDDAssertions.tuple;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
 class NotificationHistoryServiceTest extends IntegrationTestSupport {
     @Autowired
@@ -47,7 +41,7 @@ class NotificationHistoryServiceTest extends IntegrationTestSupport {
     @Test
     void createMemberNotification() {
         // given
-        Member member = creteMember();
+        Member member = createMember();
         memberRepository.save(member);
         Notification notification = createNotification();
         notificationRepository.save(notification);
@@ -75,16 +69,19 @@ class NotificationHistoryServiceTest extends IntegrationTestSupport {
     @Test
     void createMemberNotificationWithoutTemplate() {
         // given
-        Member member = creteMember();
+        Member member = createMember();
         memberRepository.save(member);
         Notification notification = createNotification();
+        notificationRepository.save(notification);
 
-        List<Long> receiverIds = List.of(1L);
+        List<Long> receiverIds = List.of(member.getId());
         Map<String, String> variables = new HashMap<>();
         variables.put("orderId", "1");
 
+        notificationRepository.deleteById(notification.getId());
+
         // when, then
-        assertThatThrownBy(() -> notificationHistoryService.createMemberNotification(receiverIds, 1L, variables))
+        assertThatThrownBy(() -> notificationHistoryService.createMemberNotification(receiverIds, notification.getId(), variables))
                 .isInstanceOf(EntityNotFoundException.class).hasMessage("해당 타입의 알림 템플릿이 없습니다.");
     }
 
@@ -92,20 +89,23 @@ class NotificationHistoryServiceTest extends IntegrationTestSupport {
     @Test
     void createMemberNotificationWithoutMember() {
         // given
-        Member member = creteMember();
+        Member member = createMember();
+        Member invalidMember = memberRepository.save(member);
         Notification notification = createNotification();
-        notificationRepository.save(notification);
+        Notification validNotification = notificationRepository.save(notification);
 
-        List<Long> receiverIds = List.of(1L);
+        List<Long> receiverIds = List.of(invalidMember.getId());
         Map<String, String> variables = new HashMap<>();
         variables.put("orderId", "1");
 
+        memberRepository.deleteById(invalidMember.getId());
+
         // when, then
-        assertThatThrownBy(() -> notificationHistoryService.createMemberNotification(receiverIds, 1L, variables))
+        assertThatThrownBy(() -> notificationHistoryService.createMemberNotification(receiverIds, validNotification.getId(), variables))
                 .isInstanceOf(EntityNotFoundException.class).hasMessage("해당하는 멤버가 없습니다.");
     }
 
-    private Member creteMember(){
+    private Member createMember(){
         return Member.builder()
                 .email("user")
                 .name("user")
