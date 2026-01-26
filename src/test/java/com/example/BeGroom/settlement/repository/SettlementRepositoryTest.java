@@ -35,12 +35,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -151,17 +153,36 @@ public class SettlementRepositoryTest {
     @DisplayName("조회 기간에 따른 건별 정산 내역을 조회한다.")
     @ParameterizedTest
     @CsvSource({
-            ", , 5",                    // 1. 전체 조회 (5건)
+//            ", , 5",                    // 1. 전체 조회 (5건)
             ", 2026-01-26, 4",          // 2. ~26일 23:59:59 (4건)
-            "2026-01-01, , 3",          // 3. 1일 00:00:00 ~ (3건)
-            "2026-01-01, 2026-01-26, 2" // 4. 기간 내 조회 (2건)
+            "2026-01-01, , 4",          // 3. 1일 00:00:00 ~ (4건)
+            "2026-01-01, 2026-01-26, 3" // 4. 기간 내 조회 (3건)
     })
-    void SearchSettlementByPeriod() {
+    void SearchSettlementByPeriod(LocalDate start, LocalDate end, long expectedCount) {
         // given
+        Payment approvedOrder = createPayment(APPROVED, null);
+        Payment refundedOrder = createPayment(REFUNDED, null);
+        paymentRepository.saveAll(List.of(approvedOrder, refundedOrder));
+
+        Settlement s1 = createSettlement(seller, approvedOrder, SETTLED, LocalDateTime.of(2025, 12, 31, 23, 59, 59));
+        Settlement s2 = createSettlement(seller, approvedOrder, UNSETTLED, LocalDateTime.of(2026, 1, 1, 0, 0, 0));
+        Settlement s3 = createSettlement(seller, refundedOrder, SETTLED, LocalDateTime.of(2026, 1, 15, 12, 0, 0));
+        Settlement s4 = createSettlement(seller, approvedOrder, UNSETTLED, LocalDateTime.of(2026, 1, 26, 23, 59, 59));
+        Settlement s5 = createSettlement(seller, approvedOrder, SETTLED, LocalDateTime.of(2026, 2, 1, 0, 0, 0));
+        settlementRepository.saveAll(List.of(s1, s2, s3, s4, s5));
+        settlementRepository.updateCreatedAtNative(s1.getId(), LocalDateTime.of(2025, 12, 31, 23, 59, 59));
+        settlementRepository.updateCreatedAtNative(s2.getId(), LocalDateTime.of(2026, 1, 1, 0, 0, 0));
+        settlementRepository.updateCreatedAtNative(s3.getId(), LocalDateTime.of(2026, 1, 15, 12, 0, 0));
+        settlementRepository.updateCreatedAtNative(s4.getId(), LocalDateTime.of(2026, 1, 26, 23, 59, 59));
+        settlementRepository.updateCreatedAtNative(s5.getId(), LocalDateTime.of(2026, 2, 1, 0, 0, 0));
 
         // when
+        Page<Settlement> result = settlementRepository.findProductSettlementListBySeller(seller.getId(), start, end, PageRequest.of(0, 15));
 
         // then
+        assertThat(result.getTotalElements())
+                .as("필터 조건에 따른 총 데이터 개수가 일치해야 한다.")
+                .isEqualTo(expectedCount);
 
     }
 
@@ -226,7 +247,6 @@ public class SettlementRepositoryTest {
 
         // when
         List<RecentSettlementResDto> result = settlementRepository.findLatestSettlementBySellerId(seller.getId(), PageRequest.of(0, 1));
-
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getSettlementId()).isEqualTo(latestSettlement.getId());

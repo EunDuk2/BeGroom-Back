@@ -10,11 +10,15 @@ import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -127,4 +131,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     Optional<Settlement> findByPayment(Payment payment);
 
     List<Settlement> findByStatusAndIsAggregatedFalse(SettlementStatus settlementStatus);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update settlement set created_at = :createdAt where id = :id", nativeQuery = true)
+    void updateCreatedAtNative(@Param("id") Long id, @Param("createdAt")LocalDateTime createdAt);
 }
