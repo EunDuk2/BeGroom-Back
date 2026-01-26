@@ -33,6 +33,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -75,20 +76,6 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     private PaymentRepository paymentRepository;
     @Autowired
     private EntityManager em;
-
-//    @AfterEach
-//    void tearDown() {
-//        paymentRepository.deleteAllInBatch();
-//        orderProductRepository.deleteAllInBatch();
-//        orderRepository.deleteAllInBatch();
-//        walletTransactionRepository.deleteAllInBatch();
-//        walletRepository.deleteAllInBatch();
-//        memberRepository.deleteAllInBatch();
-//        productDetailRepository.deleteAllInBatch();
-//        productRepository.deleteAllInBatch();
-//        brandRepository.deleteAllInBatch();
-//        sellerRepository.deleteAllInBatch();
-//    }
 
 
     /* =========================
@@ -285,7 +272,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
 
 
-
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @DisplayName("동시에 주문 체크아웃을 시도하면 어떤 결과가 나오는지 확인한다")
     @Test
     void checkout_concurrent_observe() throws InterruptedException {
