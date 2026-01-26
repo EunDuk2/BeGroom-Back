@@ -1,5 +1,6 @@
 package com.example.BeGroom.settlement.repository;
 
+import com.example.BeGroom.common.util.QuerydslUtils;
 import com.example.BeGroom.settlement.domain.QDailySettlement;
 import com.example.BeGroom.settlement.domain.QSettlement;
 import com.example.BeGroom.settlement.domain.Settlement;
@@ -32,7 +33,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
                 .selectFrom(s)
                 .where(
                         s.seller.id.eq(sellerId),
-                        dateBetween(startDate, endDate)
+                        QuerydslUtils.dateBetween(s.createdAt, startDate, endDate)
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -43,7 +44,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
                 .from(s)
                 .where(
                         s.seller.id.eq(sellerId),
-                        dateBetween(startDate, endDate)
+                        QuerydslUtils.dateBetween(s.createdAt, startDate, endDate)
                 )
                 .fetchOne();
 
@@ -74,17 +75,5 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
         // 한번에 가져오는 fetch() 대신 stream(),
         // chunk 단위 조회(limit/offset),
         // 비동기 csv 생성 후 다운로드 링크 제공
-    }
-
-    // 동적 날짜 정규화 메서드
-    private BooleanExpression dateBetween(LocalDate start, LocalDate end){
-        if(start == null && end == null) return null;
-        if(start != null && end != null){
-            return QSettlement.settlement.createdAt.between(start.atStartOfDay(), end.atTime(23, 59, 59));
-        }
-        if(start != null){
-            return QSettlement.settlement.createdAt.goe(start.atStartOfDay());
-        }
-        return QSettlement.settlement.createdAt.loe(end.atTime(23, 59, 59));
     }
 }

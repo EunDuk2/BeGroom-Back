@@ -148,6 +148,23 @@ public class SettlementRepositoryTest {
         productDetailRepository.save(productDetail);
     }
 
+    @DisplayName("조회 기간에 따른 건별 정산 내역을 조회한다.")
+    @ParameterizedTest
+    @CsvSource({
+            ", , 5",                    // 1. 전체 조회 (5건)
+            ", 2026-01-26, 4",          // 2. ~26일 23:59:59 (4건)
+            "2026-01-01, , 3",          // 3. 1일 00:00:00 ~ (3건)
+            "2026-01-01, 2026-01-26, 2" // 4. 기간 내 조회 (2건)
+    })
+    void SearchSettlementByPeriod() {
+        // given
+
+        // when
+
+        // then
+
+    }
+
     @DisplayName("특정 셀러의 주문건 중 가장 최근 데이터 1건을 조회한다.")
     @Test
     void findLatestOrderBySeller() {
