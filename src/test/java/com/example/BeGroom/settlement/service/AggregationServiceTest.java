@@ -21,6 +21,10 @@ import com.example.BeGroom.settlement.domain.id.DailySettlementId;
 import com.example.BeGroom.settlement.domain.id.MonthlySettlementId;
 import com.example.BeGroom.settlement.domain.id.WeeklySettlementId;
 import com.example.BeGroom.settlement.domain.id.YearlySettlementId;
+import com.example.BeGroom.settlement.dto.res.DailySettlementResDto;
+import com.example.BeGroom.settlement.dto.res.MonthlySettlementResDto;
+import com.example.BeGroom.settlement.dto.res.WeeklySettlementResDto;
+import com.example.BeGroom.settlement.dto.res.YearlySettlementResDto;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository;
 import com.example.BeGroom.settlement.repository.monthly.MonthlySettlementRepository;
@@ -34,10 +38,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,6 +60,7 @@ import static com.example.BeGroom.product.domain.ProductStatus.SALE;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.REFUND;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.SETTLED;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
@@ -319,6 +327,105 @@ public class AggregationServiceTest {
 
     }
 
+    @DisplayName("일간 정산 합계 정합성: 특정 날짜의 정산 원천 데이터 합계가 일간 집계 테이블의 금액과 일치해야 한다.")
+    @Test
+    void dailySettlementIntegrity() {
+        // given : 여러 건의 2026-01-19 날짜 정산 데이터
+        LocalDateTime localDate1 = LocalDateTime.of(2026, 1, 19, 00, 00, 00);
+        LocalDateTime localDate2 = LocalDateTime.of(2026, 1, 19, 23, 59, 59);
+        Settlement settlement1 = createSettlementWithAmount(localDate1, 10000L);
+        Settlement settlement2 = createSettlementWithAmount(localDate2, 20000L);
+        settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+        PageRequest pageable = PageRequest.of(0, 15);
+
+        // when
+        aggregationService.aggregate();
+
+        // then
+        DailySettlementResDto result = dailySettlementRepository.findDailySettlement(seller.getId(), pageable).getContent().get(0);
+        assertThat(result.getPeriod()).isEqualTo(LocalDate.of(2026, 1, 19));
+        assertThat(result.getSettlementAmount())
+                .as("일간 총 정산 금액이 일치해야합니다.")
+                .isEqualByComparingTo(BigDecimal.valueOf(27000.00));
+
+    }
+
+    @DisplayName("주간 정산 합계 정합성: 특정 주차의 정산 원천 데이터 합계가 주간 집계 테이블의 금액과 일치해야 한다.")
+    @Test
+    void weeklySettlementIntegrity() {
+        // given : 여러 건의 2026-01 4주차 날짜 정산 데이터
+        LocalDateTime localDate1 = LocalDateTime.of(2026, 1, 19, 00, 00, 00);
+        LocalDateTime localDate2 = LocalDateTime.of(2026, 1, 25, 23, 59, 59);
+        Settlement settlement1 = createSettlementWithAmount(localDate1, 10000L);
+        Settlement settlement2 = createSettlementWithAmount(localDate2, 20000L);
+        settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+        PageRequest pageable = PageRequest.of(0, 15);
+
+        // when
+        aggregationService.aggregate();
+
+        // then
+        WeeklySettlementResDto result = weeklySettlementRepository.findWeeklySettlement(seller.getId(), pageable).getContent().get(0);
+        assertThat(result.getYear()).isEqualTo(2026);
+        assertThat(result.getMonth()).isEqualTo(1);
+        assertThat(result.getWeek()).isEqualTo(4);
+        assertThat(result.getSettlementAmount())
+                .as("주간 총 정산 금액이 일치해야합니다.")
+                .isEqualByComparingTo(BigDecimal.valueOf(27000.00));
+
+    }
+
+    @DisplayName("월간 정산 합계 정합성: 특정 달의 정산 원천 데이터 합계가 월간 집계 테이블의 금액과 일치해야 한다.")
+    @Test
+    void monthlySettlementIntegrity() {
+        // given : 여러 건의 2026-01 날짜 정산 데이터
+        LocalDateTime localDate1 = LocalDateTime.of(2026, 1, 1, 00, 00, 00);
+        LocalDateTime localDate2 = LocalDateTime.of(2026, 1, 31, 23, 59, 59);
+        Settlement settlement1 = createSettlementWithAmount(localDate1, 10000L);
+        Settlement settlement2 = createSettlementWithAmount(localDate2, 20000L);
+        settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+        PageRequest pageable = PageRequest.of(0, 15);
+
+        // when
+        aggregationService.aggregate();
+
+        // then
+        MonthlySettlementResDto result = monthlySettlementRepository.findMonthlySettlement(seller.getId(), pageable).getContent().get(0);
+        assertThat(result.getYear()).isEqualTo(2026);
+        assertThat(result.getMonth()).isEqualTo(1);
+        assertThat(result.getSettlementAmount())
+                .as("월간 총 정산 금액이 일치해야합니다.")
+                .isEqualByComparingTo(BigDecimal.valueOf(27000.00));
+
+    }
+
+    @DisplayName("연간 정산 합계 정합성: 특정 연도의 정산 원천 데이터 합계가 연간 집계 테이블의 금액과 일치해야 한다.")
+    @Test
+    void yearlySettlementIntegrity() {
+        // given : 여러 건의 2026 날짜 정산 데이터
+        LocalDateTime localDate1 = LocalDateTime.of(2026, 1, 1, 00, 00, 00);
+        LocalDateTime localDate2 = LocalDateTime.of(2026, 12, 31, 23, 59, 59);
+        Settlement settlement1 = createSettlementWithAmount(localDate1, 10000L);
+        Settlement settlement2 = createSettlementWithAmount(localDate2, 20000L);
+        settlementRepository.saveAll(List.of(settlement1, settlement2));
+
+        PageRequest pageable = PageRequest.of(0, 15);
+
+        // when
+        aggregationService.aggregate();
+
+        // then
+        YearlySettlementResDto result = yearlySettlementRepository.findYearlySettlement(seller.getId(), pageable).getContent().get(0);
+        assertThat(result.getYear()).isEqualTo(2026);
+        assertThat(result.getSettlementAmount())
+                .as("연간 총 정산 금액이 일치해야합니다.")
+                .isEqualByComparingTo(BigDecimal.valueOf(27000.00));
+
+    }
+
 
     private void verifyAllPeriods(LocalDate date, Long expectedSettle, Long expectedRefund){
         WeeklyPeriod wp = WeeklyPeriod.calc(date);
@@ -355,6 +462,40 @@ public class AggregationServiceTest {
                     assertThat(yearly.getRefundAmount()).as("Yearly 환불액 불일치").isEqualByComparingTo(refundAmount);
                 }
         );
+    }
+
+    private Settlement createSettlementWithAmount(LocalDateTime date, Long paymentAmount){
+        Payment payment = Payment.builder()
+                .order(order)
+                .amount(paymentAmount)
+                .paymentMethod(POINT)
+                .paymentStatus(APPROVED)
+                .isSettled(true)
+                .build();
+
+        paymentRepository.save(payment);
+
+        BigDecimal feeRate = BigDecimal.valueOf(10.00);
+        BigDecimal fee = BigDecimal.valueOf(paymentAmount).multiply(feeRate).divide(new BigDecimal("100"));
+        BigDecimal amount = BigDecimal.valueOf(paymentAmount).subtract(fee);
+
+        Settlement settlement = Settlement.builder()
+                .seller(seller)
+                .payment(payment)
+                .paymentAmount(paymentAmount)
+                .feeRate(feeRate)
+                .fee(fee)
+                .settlementAmount(amount)
+                .status(SETTLED)
+                .settlementPaymentStatus(PAYMENT)
+                .refundAmount(BigDecimal.ZERO)
+                .payoutDate(date)
+                .isAggregated(false)
+                .build();
+
+        ReflectionTestUtils.setField(settlement, "payoutDate", date);
+
+        return settlement;
     }
 
     private Settlement createSettlementWithPayoutDate(

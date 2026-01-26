@@ -39,9 +39,9 @@ public class DailySettlement extends BaseEntity {
 //    }
 
     @Builder
-    public DailySettlement(LocalDate date, Long sellerId,
-                           BigDecimal paymentAmount, BigDecimal fee, BigDecimal settlementAmount, BigDecimal refundAmount) {
-        this.id = new DailySettlementId(date, sellerId);
+    public DailySettlement(DailySettlementId id, BigDecimal paymentAmount, BigDecimal fee,
+                           BigDecimal settlementAmount, BigDecimal refundAmount) {
+        this.id = id;
         this.paymentAmount = paymentAmount;
         this.fee = fee;
         this.settlementAmount = settlementAmount;

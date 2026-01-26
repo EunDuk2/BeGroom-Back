@@ -22,8 +22,19 @@ import com.example.BeGroom.seller.dto.res.RecentPaymentResDto;
 import com.example.BeGroom.seller.dto.res.RecentRefundResDto;
 import com.example.BeGroom.seller.dto.res.RecentSettlementResDto;
 import com.example.BeGroom.seller.repository.SellerRepository;
-import com.example.BeGroom.settlement.domain.Settlement;
-import com.example.BeGroom.settlement.domain.SettlementStatus;
+import com.example.BeGroom.settlement.domain.*;
+import com.example.BeGroom.settlement.domain.id.DailySettlementId;
+import com.example.BeGroom.settlement.domain.id.MonthlySettlementId;
+import com.example.BeGroom.settlement.domain.id.WeeklySettlementId;
+import com.example.BeGroom.settlement.domain.id.YearlySettlementId;
+import com.example.BeGroom.settlement.dto.res.DailySettlementResDto;
+import com.example.BeGroom.settlement.dto.res.MonthlySettlementResDto;
+import com.example.BeGroom.settlement.dto.res.WeeklySettlementResDto;
+import com.example.BeGroom.settlement.dto.res.YearlySettlementResDto;
+import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository;
+import com.example.BeGroom.settlement.repository.monthly.MonthlySettlementRepository;
+import com.example.BeGroom.settlement.repository.weekly.WeeklySettlementRepository;
+import com.example.BeGroom.settlement.repository.yearly.YearlySettlementRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,6 +92,14 @@ public class SettlementRepositoryTest {
     private SettlementRepository settlementRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private DailySettlementRepository dailySettlementRepository;
+    @Autowired
+    private WeeklySettlementRepository weeklySettlementRepository;
+    @Autowired
+    private MonthlySettlementRepository monthlySettlementRepository;
+    @Autowired
+    private YearlySettlementRepository yearlySettlementRepository;
     @Autowired
     private EntityManager em;
 
@@ -251,6 +271,151 @@ public class SettlementRepositoryTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getSettlementId()).isEqualTo(latestSettlement.getId());
 
+    }
+
+    @DisplayName("일간 정산 데이터를 조회한다.")
+    @Test
+    void findDailySettlement() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        DailySettlement dailySettlement = createDailySettlement(LocalDate.of(2026, 1, 26), BigDecimal.valueOf(9000.00));
+        dailySettlementRepository.save(dailySettlement);
+
+        // when
+        Page<DailySettlementResDto> result = dailySettlementRepository.findDailySettlement(seller.getId(), pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getPeriod()).isEqualTo(LocalDate.of(2026, 1, 26));
+        assertThat(result.getContent().get(0).getSettlementAmount()).isEqualByComparingTo(BigDecimal.valueOf(9000.00));
+
+    }
+
+    @DisplayName("주간 정산 데이터를 조회한다.")
+    @Test
+    void findWeeklySettlement() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        WeeklySettlement weeklySettlement = createWeeklySettlement(2026, 1, 4, BigDecimal.valueOf(9000.00));
+        weeklySettlementRepository.save(weeklySettlement);
+
+        // when
+        Page<WeeklySettlementResDto> result = weeklySettlementRepository.findWeeklySettlement(seller.getId(), pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getYear()).isEqualTo(2026);
+        assertThat(result.getContent().get(0).getMonth()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getWeek()).isEqualTo(4);
+        assertThat(result.getContent().get(0).getSettlementAmount()).isEqualByComparingTo(BigDecimal.valueOf(9000.00));
+
+    }
+
+    @DisplayName("월간 정산 데이터를 조회한다.")
+    @Test
+    void findMonthlySettlement() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        MonthlySettlement monthlySettlement = createMonthlySettlement(2026, 1, BigDecimal.valueOf(9000.00));
+        monthlySettlementRepository.save(monthlySettlement);
+
+        // when
+        Page<MonthlySettlementResDto> result = monthlySettlementRepository.findMonthlySettlement(seller.getId(), pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getYear()).isEqualTo(2026);
+        assertThat(result.getContent().get(0).getMonth()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getSettlementAmount()).isEqualByComparingTo(BigDecimal.valueOf(9000.00));
+
+    }
+
+    @DisplayName("연간 정산 데이터를 조회한다.")
+    @Test
+    void findYearlySettlement() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        YearlySettlement yearlySettlement = createYearlySettlement(2026, BigDecimal.valueOf(9000.00));
+        yearlySettlementRepository.save(yearlySettlement);
+
+        // when
+        Page<YearlySettlementResDto> result = yearlySettlementRepository.findYearlySettlement(seller.getId(), pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getYear()).isEqualTo(2026);
+        assertThat(result.getContent().get(0).getSettlementAmount()).isEqualByComparingTo(BigDecimal.valueOf(9000.00));
+
+    }
+
+
+    private DailySettlement createDailySettlement(LocalDate date, BigDecimal amount){
+        DailySettlementId id = DailySettlementId.builder()
+                .date(date)
+                .sellerId(seller.getId())
+                .build();
+
+        return DailySettlement.builder()
+                .id(id)
+                .paymentAmount(BigDecimal.valueOf(10000.00))
+                .fee(BigDecimal.valueOf(1000.00))
+                .settlementAmount(amount)
+                .refundAmount(BigDecimal.ZERO)
+                .build();
+    }
+
+    private WeeklySettlement createWeeklySettlement(int year, int month, int week, BigDecimal amount){
+        WeeklySettlementId id = WeeklySettlementId.builder()
+                .year(year)
+                .month(month)
+                .week(week)
+                .sellerId(seller.getId())
+                .build();
+
+        return WeeklySettlement.builder()
+                .id(id)
+                .paymentAmount(BigDecimal.valueOf(10000.00))
+                .fee(BigDecimal.valueOf(1000.00))
+                .settlementAmount(amount)
+                .refundAmount(BigDecimal.ZERO)
+                .startDate(LocalDate.of(2026, 1, 19))
+                .endDate(LocalDate.of(2026, 1, 25))
+                .build();
+    }
+
+    private MonthlySettlement createMonthlySettlement(int year, int month, BigDecimal amount){
+        MonthlySettlementId id = MonthlySettlementId.builder()
+                .year(year)
+                .month(month)
+                .sellerId(seller.getId())
+                .build();
+
+        return MonthlySettlement.builder()
+                .id(id)
+                .paymentAmount(BigDecimal.valueOf(10000.00))
+                .fee(BigDecimal.valueOf(1000.00))
+                .settlementAmount(amount)
+                .refundAmount(BigDecimal.ZERO)
+                .startDate(LocalDate.of(2026, 1, 1))
+                .endDate(LocalDate.of(2026, 1, 31))
+                .build();
+    }
+
+    private YearlySettlement createYearlySettlement(int year, BigDecimal amount){
+        YearlySettlementId id = YearlySettlementId.builder()
+                .year(year)
+                .sellerId(seller.getId())
+                .build();
+
+        return YearlySettlement.builder()
+                .id(id)
+                .paymentAmount(BigDecimal.valueOf(10000.00))
+                .fee(BigDecimal.valueOf(1000.00))
+                .settlementAmount(amount)
+                .refundAmount(BigDecimal.ZERO)
+                .startDate(LocalDate.of(2026, 1, 1))
+                .endDate(LocalDate.of(2026, 12, 31))
+                .build();
     }
 
     private Payment createPayment(PaymentStatus status, LocalDateTime pastDate){
