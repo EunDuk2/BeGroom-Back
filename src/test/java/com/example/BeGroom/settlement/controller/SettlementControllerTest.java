@@ -1,9 +1,12 @@
 package com.example.BeGroom.settlement.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
+import com.example.BeGroom.settlement.domain.DailySettlement;
 import com.example.BeGroom.settlement.service.SettlementService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -70,6 +74,32 @@ public class SettlementControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException))
                 .andExpect(result -> assertEquals("시작일은 종료일 이전이어야 합니다.", result.getResolvedException().getMessage()));
+    }
+
+    @DisplayName("page 정합성 검증: 페이지 번호가 음수면 400 에러를 반환한다.")
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/settlement/product",
+            "/settlement/period/daily",
+            "/settlement/period/weekly",
+            "/settlement/period/monthly",
+            "/settlement/period/yearly"
+    })
+    void pageNumberWith(String url) throws Exception {
+        // given
+        UserPrincipal userPrincipal = new UserPrincipal(1L, "goorm@test.com");
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(userPrincipal, null, Collections.emptyList());
+
+        // when // then
+        mockMvc.perform(
+                        get(url)
+                                .param("page", "-1")
+                                .with(authentication(auth)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status_code").value("400"));
+
     }
 
 }

@@ -8,11 +8,14 @@ import com.example.BeGroom.settlement.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -21,6 +24,7 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/settlement")
 @RequiredArgsConstructor
+@Validated
 @Tag(name = "Settlements API", description = "정산 관련 API")
 public class SettlementController {
 
@@ -51,7 +55,7 @@ public class SettlementController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
-            @RequestParam(defaultValue = "0") int page
+            @Valid @RequestParam(defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다.") int page
     ){
 
         // startDate <= endDate 검증
@@ -80,7 +84,7 @@ public class SettlementController {
     @Operation(summary = "일별 정산 집계", description = "일별 정산을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<Page<DailySettlementResDto>>> getDailySettlement(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page
+            @Valid @RequestParam(defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다.") int page
             ){
         Page<DailySettlementResDto> dailySettlementResDtos =
                 settlementService.getDailySettlement(userPrincipal.getMemberId(), page);
@@ -100,7 +104,7 @@ public class SettlementController {
     @Operation(summary = "주차별 정산 집계", description = "주차별 정산을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<Page<WeeklySettlementResDto>>> getWeeklySettlement(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page
+            @Valid @RequestParam(defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다.") int page
     ){
         Page<WeeklySettlementResDto> weeklySettlementResDtos =
                 settlementService.getWeeklySettlement(userPrincipal.getMemberId(), page);
@@ -120,7 +124,7 @@ public class SettlementController {
     @Operation(summary = "월별 정산 집계", description = "월별 정산을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<Page<MonthlySettlementResDto>>> getMonthlySettlement(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page
+            @Valid @RequestParam(defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다.") int page
     ){
         Page<MonthlySettlementResDto> monthlySettlementResDtos =
                 settlementService.getMonthlySettlement(userPrincipal.getMemberId(), page);
@@ -140,7 +144,7 @@ public class SettlementController {
     @Operation(summary = "연도별 정산 집계", description = "연도별 정산을 조회합니다.")
     public ResponseEntity<CommonSuccessDto<Page<YearlySettlementResDto>>> getYearlySettlement(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page
+            @Valid @RequestParam(defaultValue = "0") @Min(value = 0, message = "페이지는 0 이상이어야 합니다.") int page
     ){
         Page<YearlySettlementResDto> yearlySettlementResDtos =
                 settlementService.getYearlySettlement(userPrincipal.getMemberId(), page);
