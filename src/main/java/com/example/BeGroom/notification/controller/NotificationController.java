@@ -19,8 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -104,7 +102,7 @@ public class NotificationController {
 
     @PostMapping("/send/inspect")
     @Operation(summary = "관리자 서비스 점검 알림 송신", description = "관리자가 사용자들에게 점검 알림을 보낸다.")
-    public ResponseEntity<CommonSuccessDto<Boolean>> sendInspectNotiByAdmin(
+    public ResponseEntity<CommonSuccessDto<Boolean>> sendInspectNotificationByAdmin(
             @RequestBody Map<String, String> requestMap
     ) {
         notificationService.sendToAllMembers(NotificationTemplate.NOTICE_SERVICE_INSPECTION.getId(), requestMap);
