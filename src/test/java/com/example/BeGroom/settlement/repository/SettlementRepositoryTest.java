@@ -29,6 +29,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +60,6 @@ import static org.assertj.core.groups.Tuple.*;
 @Transactional
 public class SettlementRepositoryTest {
 
-    private static final Logger log = LoggerFactory.getLogger(SettlementRepositoryTest.class);
     @Autowired
     private MemberRepository memberRepository;
     @Autowired
