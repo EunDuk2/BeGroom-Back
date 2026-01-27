@@ -6,6 +6,7 @@ import com.example.BeGroom.product.dto.ProductSearchCondition;
 import com.example.BeGroom.product.repository.*;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.repository.SellerRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,15 @@ class ProductSpecificationTest extends IntegrationTestSupport {
     @Autowired
     private ProductOptionRepository productOptionRepository;
 
+    private Seller seller;
+
     @BeforeEach
     void setUp() {
+        seller = createSeller();
+    }
+
+    @AfterEach
+    void tearDown() {
         stockRepository.deleteAllInBatch();
         productPriceRepository.deleteAllInBatch();
         productOptionMappingRepository.deleteAllInBatch();
@@ -239,7 +247,7 @@ class ProductSpecificationTest extends IntegrationTestSupport {
 
     private Brand createBrand(String name, Long code) {
         return brandRepository.save(Brand.builder()
-            .seller(createSeller())
+            .seller(seller)
             .name(name)
             .brandCode(code)
             .build()
