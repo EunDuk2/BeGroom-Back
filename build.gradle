@@ -121,4 +121,53 @@ tasks.withType(JavaCompile){
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+
+jacoco {
+	toolVersion = "0.8.13"
+}
+
+jacocoTestReport {
+	dependsOn test
+
+	reports {
+		html.required = true
+		xml.required = true
+		csv.required = false
+	}
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+			        '**/config/**',
+					'**/dto/**',
+					'**/entity/**',
+					'**/domain/**',
+					'**/*Application*',
+					'**/exception/**'
+			])
+		}))
+	}
+}
+
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			enabled = true
+			element = 'CLASS'
+
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				minimum = 0.70
+			}
+
+			limit {
+				counter = 'BRANCH'
+				value = 'COVEREDRATIO'
+				minimum = 0.70
+			}
+		}
+	}
 }
