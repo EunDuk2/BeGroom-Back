@@ -1,23 +1,34 @@
 package com.example.BeGroom.settlement.repository;
 
+import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.domain.PaymentStatus;
+import com.example.BeGroom.seller.dto.res.RecentActivityResDto;
+import com.example.BeGroom.seller.dto.res.RecentSettlementResDto;
 import com.example.BeGroom.seller.repository.projection.RecentSettlementProjection;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
+import static com.example.BeGroom.seller.dto.res.RecentActivityResDto.*;
 
 @Repository
 public interface SettlementRepository extends JpaRepository<Settlement, Long>, SettlementRepositoryCustom {
-//    List<Settlement> findByAggregatedFalse();
-    List<Settlement> findByStatus(SettlementStatus unsettled);
+
+    // 미정산건
+    List<Settlement> findByStatus(SettlementStatus settlementStatus);
 
     // 총 주문 수(환불 제외)
     @Query("select coalesce(sum(s.paymentAmount - s.refundAmount), 0) " +
@@ -26,32 +37,31 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
             "and s.settlementPaymentStatus = 'PAYMENT'")
     long sumSalesAmountBySeller(@Param("sellerId") Long sellerId);
 
-    // 판매자의 최근 환불
-//    @Query("""
-//        select new com.example.BeGroom.seller.dto.res.RecentActivityResDto.RecentSettlementDto(
-//            s.id,
-//            s.settlementAmount,
-//            s.createdAt
-//        )
-//        from Settlement s
-//        where s.seller.id = :sellerId
-//            and s.status = 'SETTLED'
-//        order by s.createdAt desc
-//    """)
-//    List<RecentActivityResDto.RecentSettlementDto> findLatestSettledBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
-    @Query(value = """
-    select
-        s.id as settlementId,
-        s.settlement_amount as settlementAmount,
-        s.created_at as createdAt
-    from settlement s
-    where s.seller_id = :sellerId
-      and s.status = 'SETTLED'
-    order by s.created_at desc
-    limit 1
-""", nativeQuery = true)
-    List<RecentSettlementProjection> findLatestSettledBySeller(@Param("sellerId") Long sellerId);
-
+    // 판매자의 최근 정산
+    @Query("""
+        select new com.example.BeGroom.seller.dto.res.RecentSettlementResDto(
+            s.id,
+            s.settlementAmount,
+            s.createdAt
+        )
+        from Settlement s
+        where s.seller.id = :sellerId
+            and s.status = 'SETTLED'
+        order by s.createdAt desc
+    """)
+    List<RecentSettlementResDto> findLatestSettlementBySellerId(@Param("sellerId") Long sellerId, Pageable pageable);
+//    @Query(value = """
+//    select
+//        s.id as settlementId,
+//        s.settlement_amount as settlementAmount,
+//        s.created_at as createdAt
+//    from settlement s
+//    where s.seller_id = :sellerId
+//      and s.status = 'SETTLED'
+//    order by s.created_at desc
+//    limit 1
+//""", nativeQuery = true)
+//    List<RecentSettlementProjection> findLatestSettledBySeller(@Param("sellerId") Long sellerId);
 
 
     // 판매자의 총 환불 건수
@@ -118,11 +128,12 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     """)
     List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") SettlementPaymentStatus settlementPaymentStatus);
 
-    // 미정산 지급 실행
-    @Query("""
-        select s
-        from Settlement s
-        where s.status = :status
-""")
-    List<Settlement> findUnsettledTargets(@Param("status") SettlementStatus settlementStatus);
+    Optional<Settlement> findByPayment(Payment payment);
+
+    List<Settlement> findByStatusAndIsAggregatedFalse(SettlementStatus settlementStatus);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update settlement set created_at = :createdAt where id = :id", nativeQuery = true)
+    void updateCreatedAtNative(@Param("id") Long id, @Param("createdAt")LocalDateTime createdAt);
 }

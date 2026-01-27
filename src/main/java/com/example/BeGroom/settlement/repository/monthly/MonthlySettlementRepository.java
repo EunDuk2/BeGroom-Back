@@ -1,6 +1,7 @@
 package com.example.BeGroom.settlement.repository.monthly;
 
 import com.example.BeGroom.settlement.domain.MonthlySettlement;
+import com.example.BeGroom.settlement.domain.WeeklySettlement;
 import com.example.BeGroom.settlement.domain.id.MonthlySettlementId;
 import com.example.BeGroom.settlement.dto.res.MonthlySettlementResDto;
 import org.springframework.data.domain.Page;
@@ -10,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 @Repository
 public interface MonthlySettlementRepository extends JpaRepository<MonthlySettlement, MonthlySettlementId>, MonthlySettlementRepositoryCustom {
@@ -31,4 +34,7 @@ public interface MonthlySettlementRepository extends JpaRepository<MonthlySettle
                 ms.id.month desc
     """)
     Page<MonthlySettlementResDto> findMonthlySettlement(@Param("sellerId") Long sellerId, Pageable pageable);
+
+
+    Optional<MonthlySettlement> findById(MonthlySettlementId monthlySettlementId);
 }

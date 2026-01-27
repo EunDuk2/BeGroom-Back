@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.REFUND;
+import static com.example.BeGroom.settlement.domain.SettlementStatus.SETTLED;
+
 @Service
 @RequiredArgsConstructor
 public class AggregationService {
@@ -23,10 +26,10 @@ public class AggregationService {
     @Transactional
     public void aggregate() {
         // 미집계 데이터 조회
-        List<Settlement> unaggregated = settlementRepository.findByStatus(SettlementStatus.UNSETTLED);
+        List<Settlement> unaggregated = settlementRepository.findByStatusAndIsAggregatedFalse(SETTLED);
 
         for(Settlement settlement : unaggregated){
-            if(settlement.getSettlementPaymentStatus() == SettlementPaymentStatus.REFUND){
+            if(settlement.getSettlementPaymentStatus() == REFUND){
                 updateRefund(settlement);
             }else {
                 insertPayment(settlement);

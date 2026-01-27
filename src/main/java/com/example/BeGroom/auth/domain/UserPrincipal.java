@@ -1,5 +1,7 @@
 package com.example.BeGroom.auth.domain;
 
+import lombok.Builder;
+
 public class UserPrincipal {
     private final Long memberId;
     private final String email;

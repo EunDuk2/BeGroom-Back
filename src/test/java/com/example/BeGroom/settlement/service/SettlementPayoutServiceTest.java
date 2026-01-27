@@ -1,5 +1,6 @@
 package com.example.BeGroom.settlement.service;
 
+
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.order.domain.Order;
@@ -7,7 +8,6 @@ import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
-import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.product.domain.Product;
@@ -18,34 +18,34 @@ import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 
 import static com.example.BeGroom.order.domain.OrderStatus.COMPLETED;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
 import static com.example.BeGroom.payment.domain.PaymentStatus.*;
-import static com.example.BeGroom.product.domain.ProductStatus.*;
+import static com.example.BeGroom.product.domain.ProductStatus.SALE;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT;
-import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.REFUND;
+import static com.example.BeGroom.settlement.domain.SettlementStatus.SETTLED;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.UNSETTLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @Transactional
-public class SettlementServiceTest {
+public class SettlementPayoutServiceTest {
 
     @Autowired
     private SettlementService settlementService;
@@ -124,86 +124,52 @@ public class SettlementServiceTest {
         productDetailRepository.save(productDetail);
     }
 
-    @DisplayName("결제 상태와 정산 여부에 따라 정산 데이터 생성 여부를 결정한다.")
-    @ParameterizedTest
-    @CsvSource({
-            "APPROVED, false, 1",   // 승인 완료, 미정산 (O)
-            "READY, false, 0",      // 승인 전, 미정산 (X)
-            "APPROVED, true, 0",    // 승인 완료, 정산 (X)
-            "REFUNDED, false, 0",   // 환불, 미정산 (X)
-    })
-    void createSettlementWithApprovedAndNoSettledPayments(PaymentStatus status, boolean isSettled, int expectedCount) {
-        // given
-        Payment payment = createPayment(status, isSettled);
-        paymentRepository.save(payment);
+    // todo : 정산 건이 1000건인데, 500번째에서 에러가 나면? 롤백 or 성공 건까지 저장
+    // todo : settled 변경 시, 환불이 발생한다면? payment 상태 체크 고민
 
-        // when
-        settlementService.aggregateApprovedPayments();
-
-        // then
-        assertThat(settlementRepository.count()).isEqualTo(expectedCount);
-
-    }
-
-    @DisplayName("정산 테이블로 적재된 원본 결제 데이터는 정산 완료 상태로 업데이트 된다.")
+    @DisplayName("미정산 건들을 모두 지급 완료 상태로 변경한다.")
     @Test
-    void updateOriginPaymentIsSettledToTrue() {
+    void executeSettlementPayout() {
         // given
-        Payment payment = createPayment(APPROVED, false);
-        paymentRepository.save(payment);
-
-        // when
-        settlementService.aggregateApprovedPayments();
-
-        // then
-        Payment updatedPayment = paymentRepository.findById(payment.getId()).orElseThrow();
-        assertThat(updatedPayment.isSettled()).isTrue();
-
-    }
-
-    @DisplayName("정합성: 정산 데이터 생성 시 수수료와 최종 정산 금액이 정확히 계산되어야 한다.")
-    @Test
-    void calculateFeeAndSettlementAmount() {
-        // given
-        Payment payment = createPayment(APPROVED, false);
-        paymentRepository.save(payment);
-
-        // when
-        settlementService.aggregateApprovedPayments();
-
-        // then
-        Optional<Settlement> settlement = settlementRepository.findByPayment(payment);
-        assertThat(settlement)
-                .isPresent()
-                .hasValueSatisfying(res -> {
-                    assertThat(res.getPaymentAmount()).isEqualTo(100000L);
-                    assertThat(res.getFee()).isEqualByComparingTo("10000.00");
-                    assertThat(res.getSettlementAmount()).isEqualByComparingTo("90000.00");
-                });
-    }
-
-    @DisplayName("환불 동기화: 이미 정산된 결제가 환불되면 정산 테이블의 환불 금액과 상태가 업데이트되어야 한다.")
-    @Test
-    void updateRefundAmountWhenPaymentRefunded() {
-        // given
-        Payment payment = createPayment(REFUNDED, true);
-        paymentRepository.save(payment);
-        Settlement settlement = createSettlement(payment);
+        Settlement settlement = createSettlement(UNSETTLED, null);
         settlementRepository.save(settlement);
 
         // when
-        settlementService.syncRefundedPayments();
+        settlementService.executeSettlementPayout();
 
         // then
-        Settlement result = settlementRepository.findById(settlement.getId()).orElseThrow();
-        assertThat(result)
-                .extracting("refundAmount", "settlementPaymentStatus", "settlementAmount")
-                .contains(new BigDecimal("100000"), REFUND, new BigDecimal("90000.0"));
+        List<Settlement> result = settlementRepository.findAll();
+        assertThat(result).hasSize(1)
+                .allSatisfy(res -> {
+                    assertThat(res.getStatus()).isEqualTo(SETTLED);
+                    assertThat(res.getPayoutDate()).isNotNull();
+                });
+
+    }
+
+    @DisplayName("이미 지급 완료된 건은 다시 처리하지 않는다.")
+    @Test
+    void executeSettlementPayoutWithOnlyUnsettled() {
+        // given
+        LocalDateTime localDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        Settlement unsettled = createSettlement(UNSETTLED, null);
+        Settlement settled = createSettlement(SETTLED, localDateTime);
+        settlementRepository.saveAll(List.of(settled, unsettled));
+
+        // when
+        settlementService.executeSettlementPayout();
+
+        // then
+        Settlement result1 = settlementRepository.findById(unsettled.getId()).get();
+        Settlement result2 = settlementRepository.findById(settled.getId()).get();
+
+        assertThat(result1.getStatus()).isEqualTo(SETTLED);
+        assertThat(result2.getPayoutDate()).isEqualTo(localDateTime);
 
     }
 
 
-    private Payment createPayment(PaymentStatus status, boolean isSettled){
+    private Settlement createSettlement(SettlementStatus status, LocalDateTime localDateTime){
 
         Order order = Order.builder()
                 .member(member)
@@ -223,16 +189,16 @@ public class SettlementServiceTest {
         // order에 orderProduct 추가
         order.addOrderProduct(orderProduct);
 
-        return Payment.builder()
+        Payment payment = Payment.builder()
                 .order(order)
                 .amount(100000L)
                 .paymentMethod(POINT)
-                .paymentStatus(status)
-                .isSettled(isSettled)
+                .paymentStatus(APPROVED)
+                .isSettled(true)
                 .build();
-    }
 
-    private Settlement createSettlement(Payment payment){
+        paymentRepository.save(payment);
+
         Long paymentAmount = payment.getAmount();
         BigDecimal feeRate = BigDecimal.valueOf(10.00);
         BigDecimal fee = BigDecimal.valueOf(paymentAmount).multiply(feeRate).divide(new BigDecimal("100"));
@@ -243,9 +209,10 @@ public class SettlementServiceTest {
                 .feeRate(feeRate)
                 .fee(fee)
                 .settlementAmount(BigDecimal.valueOf(paymentAmount).subtract(fee))
-                .status(UNSETTLED)
+                .status(status)
                 .settlementPaymentStatus(PAYMENT)
                 .refundAmount(BigDecimal.ZERO)
+                .payoutDate(localDateTime)
                 .build();
     }
 

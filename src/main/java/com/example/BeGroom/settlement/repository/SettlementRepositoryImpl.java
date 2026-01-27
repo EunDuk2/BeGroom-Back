@@ -1,10 +1,12 @@
 package com.example.BeGroom.settlement.repository;
 
+import com.example.BeGroom.common.util.QuerydslUtils;
 import com.example.BeGroom.settlement.domain.QDailySettlement;
 import com.example.BeGroom.settlement.domain.QSettlement;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.dto.res.DailySettlementCsvDto;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,15 +29,11 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
     ){
         QSettlement s = QSettlement.settlement;
 
-        // 동적 날짜 조건
-        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : null;
-        LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : null;
-
         List<Settlement> content = queryFactory
                 .selectFrom(s)
                 .where(
                         s.seller.id.eq(sellerId),
-                        start != null && end != null ? s.createdAt.between(start, end) : null
+                        QuerydslUtils.dateBetween(s.createdAt, startDate, endDate)
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -46,7 +44,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom{
                 .from(s)
                 .where(
                         s.seller.id.eq(sellerId),
-                        start != null && end != null ? s.createdAt.between(start, end) : null
+                        QuerydslUtils.dateBetween(s.createdAt, startDate, endDate)
                 )
                 .fetchOne();
 

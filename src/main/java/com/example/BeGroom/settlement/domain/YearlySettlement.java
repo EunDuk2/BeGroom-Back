@@ -50,10 +50,9 @@ public class YearlySettlement extends BaseEntity {
 //    }
 
     @Builder
-    public YearlySettlement(int year, Long sellerId,
-                            BigDecimal paymentAmount, BigDecimal fee, BigDecimal settlementAmount,
-                            BigDecimal refundAmount, LocalDate startDate, LocalDate endDate){
-        this.id = new YearlySettlementId(year, sellerId);
+    public YearlySettlement(YearlySettlementId id, BigDecimal paymentAmount, BigDecimal fee,
+                            BigDecimal settlementAmount, BigDecimal refundAmount, LocalDate startDate, LocalDate endDate){
+        this.id = id;
         this.paymentAmount = paymentAmount;
         this.fee = fee;
         this.settlementAmount = settlementAmount;

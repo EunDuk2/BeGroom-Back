@@ -12,7 +12,11 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+
+import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.*;
+import static com.example.BeGroom.settlement.domain.SettlementStatus.*;
 
 @Entity
 @Getter
@@ -53,11 +57,11 @@ public class Settlement extends BaseEntity {
     // 정산상태
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private SettlementStatus status = SettlementStatus.UNSETTLED;
+    private SettlementStatus status = UNSETTLED;
     // 결제상태
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private SettlementPaymentStatus settlementPaymentStatus = SettlementPaymentStatus.PAYMENT;
+    private SettlementPaymentStatus settlementPaymentStatus = PAYMENT;
     // 환불금액
     @Column(precision = 12, scale = 2)
     private BigDecimal refundAmount = BigDecimal.ZERO;
@@ -72,19 +76,18 @@ public class Settlement extends BaseEntity {
     private Boolean isAggregated;
 
     public void markAggregated(){
-//        this.status = SettlementStatus.SETTLED;
         this.isAggregated = true;
     }
 
     public void markRefunded(BigDecimal refundAmount) {
-        this.settlementPaymentStatus = SettlementPaymentStatus.REFUND;
+        this.settlementPaymentStatus = REFUND;
         this.refundAmount = refundAmount;
     }
 
     // 미정산 지급 실행
     public void markSettled() {
-        this.status = SettlementStatus.SETTLED;
-        this.payoutDate = LocalDateTime.now();
+        this.status = SETTLED;
+        this.payoutDate = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
     }
 
     @Builder
@@ -97,7 +100,9 @@ public class Settlement extends BaseEntity {
             BigDecimal settlementAmount,
             SettlementStatus status,
             SettlementPaymentStatus settlementPaymentStatus,
-            BigDecimal refundAmount
+            BigDecimal refundAmount,
+            LocalDateTime payoutDate,
+            boolean isAggregated
     ) {
         this.seller = seller;
         this.payment = payment;
@@ -108,6 +113,7 @@ public class Settlement extends BaseEntity {
         this.status = status;
         this.settlementPaymentStatus = settlementPaymentStatus;
         this.refundAmount = refundAmount != null ? refundAmount : BigDecimal.ZERO;
+        this.isAggregated = false;
         this.payoutDate = payoutDate;
     }
 
@@ -135,8 +141,8 @@ public class Settlement extends BaseEntity {
                 .fee(fee)
                 .feeRate(feeRate)
                 .settlementAmount(settlementAmount)
-                .status(SettlementStatus.UNSETTLED)
-                .settlementPaymentStatus(SettlementPaymentStatus.PAYMENT)
+                .status(UNSETTLED)
+                .settlementPaymentStatus(PAYMENT)
                 .refundAmount(BigDecimal.ZERO)
                 .build();
     }
