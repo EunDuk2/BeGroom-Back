@@ -4,6 +4,7 @@ import com.example.BeGroom.IntegrationTestSupport;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.domain.Role;
 import com.example.BeGroom.member.repository.MemberRepository;
+import com.example.BeGroom.notification.repository.MemberNotificationRepository;
 import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductStatus;
@@ -55,24 +56,18 @@ class ProductServiceTest extends IntegrationTestSupport {
     private MemberRepository memberRepository;
     @Autowired
     private WishlistRepository wishlistRepository;
+    @Autowired
+    private MemberNotificationRepository memberNotificationRepository;
+
+    private Seller seller;
 
     @BeforeEach
     void setUp() {
-        stockRepository.deleteAllInBatch();
-        productPriceRepository.deleteAllInBatch();
-        wishlistRepository.deleteAllInBatch();
-        productOptionMappingRepository.deleteAllInBatch();
-        productCategoryRepository.deleteAllInBatch();
-        productDetailRepository.deleteAllInBatch();
-        productImageRepository.deleteAllInBatch();
-        productRepository.deleteAllInBatch();
-        brandRepository.deleteAllInBatch();
-        sellerRepository.deleteAllInBatch();
-        memberRepository.deleteAllInBatch();
+        seller = createSeller();
     }
 
     @AfterEach
-    void setUp2() {
+    void tearDown() {
         stockRepository.deleteAllInBatch();
         productPriceRepository.deleteAllInBatch();
         wishlistRepository.deleteAllInBatch();
@@ -82,6 +77,7 @@ class ProductServiceTest extends IntegrationTestSupport {
         productImageRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
         brandRepository.deleteAllInBatch();
+        memberNotificationRepository.deleteAllInBatch();
         sellerRepository.deleteAllInBatch();
         memberRepository.deleteAllInBatch();
     }
@@ -349,7 +345,7 @@ class ProductServiceTest extends IntegrationTestSupport {
 
     private Brand createBrand(String name, Long code) {
         return brandRepository.save(Brand.builder()
-            .seller(createSeller())
+            .seller(seller)
             .name(name)
             .brandCode(code)
             .build()
