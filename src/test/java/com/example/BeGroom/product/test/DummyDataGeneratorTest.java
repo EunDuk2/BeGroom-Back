@@ -22,10 +22,10 @@ class DummyDataGeneratorTest {
     void seedData() {
         // given
         int productCount = 50;
-        
+
         // when
         dummyDataGenerator.seedAll(productCount);
-        
+
         // then
         System.out.println("✅ " + productCount + "개의 데이터 시딩 완료!");
         

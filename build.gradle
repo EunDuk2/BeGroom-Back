@@ -36,16 +36,23 @@ jacocoTestCoverageVerification {
 			}
 
 			excludes = [
-					"**.*Application*",    // 메인 애플리케이션 클래스
-					"**.domain.**",		   // 도메인 클래스
-					"**.*Request*",        // DTO성 클래스
-					"**.*Response*",       // DTO성 클래스
-					"**.dto.**",           // DTO 패키지
-					"**.*Config*",         // Spring Batch 등 각종 설정 파일
-					"**.*Condition*",      // 조건부 설정 파일
-					"**.*Q*",              // QueryDSL 생성 클래스
-					"**/Q*.class",         // QueryDSL 생성 클래스
-					"**.Q**"               // QueryDSL 클래스
+//					"**.*Application*",    // 메인 애플리케이션 클래스
+//					"**.domain.**",		   // 도메인 클래스
+//					"**.*Request*",        // DTO성 클래스
+//					"**.*Response*",       // DTO성 클래스
+//					"**.dto.**",           // DTO 패키지
+//					"**.*Config*",         // Spring Batch 등 각종 설정 파일
+//					"**.*Condition*",      // 조건부 설정 파일
+//					"**.*Q*",              // QueryDSL 생성 클래스
+//					"**/Q*.class",         // QueryDSL 생성 클래스
+//					"**.Q**"               // QueryDSL 클래스
+					"*.Application",
+					"*.domain.*",
+					"*.*ReqDto",
+					"*.*ResDto",
+					"*.dto.*",
+					"*.*Config",
+					"*.Q*"
 			]
 		}
 	}
@@ -57,13 +64,27 @@ jacocoTestReport {
 		xml.required = true
 	}
 
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					"**/Q*",
+					"**/*Application*",
+					"**/dto/**",
+					"**/domain/**",
+					"**/*ReqDto*",
+					"**/*ResDto*",
+					"**/*Config*"
+			])
+		}))
+	}
+
 	finalizedBy 'jacocoTestCoverageVerification'
 }
 
 test {
 	useJUnitPlatform()
 
-	finalizedBy jacocoTestReport
+	finalizedBy 'jacocoTestReport'
 }
 
 dependencies {
