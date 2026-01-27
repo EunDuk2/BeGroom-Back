@@ -2,6 +2,7 @@ package com.example.BeGroom.product.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
+import com.example.BeGroom.product.dto.BrandFilterResponse;
 import com.example.BeGroom.product.dto.ProductDetailResponse;
 import com.example.BeGroom.product.dto.ProductListResponse;
 import com.example.BeGroom.product.dto.ProductSearchCondition;
@@ -17,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -60,6 +63,19 @@ public class ProductController {
                         HttpStatus.OK,
                         "상품 검색 성공"
                 )
+        );
+    }
+
+    @GetMapping("/search/brands")
+    @Operation(summary = "상품 브랜드 목록", description = "카테고리/키워드 검색 시 해당하는 상품들의 브랜드 목록 조회")
+    public ResponseEntity<CommonSuccessDto<List<BrandFilterResponse>>> getBrandFilters(@ModelAttribute ProductSearchCondition condition) {
+        List<BrandFilterResponse> brands = productService.getBrandFilters(condition);
+        return ResponseEntity.ok(
+            CommonSuccessDto.of(
+                brands,
+                HttpStatus.OK,
+                "브랜드 필터 조회 성공"
+            )
         );
     }
 }
