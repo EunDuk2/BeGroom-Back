@@ -1,7 +1,6 @@
 package com.example.BeGroom.settlement.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
-import com.example.BeGroom.settlement.domain.DailySettlement;
 import com.example.BeGroom.settlement.service.SettlementService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 @WebMvcTest(SettlementController.class)
 public class SettlementControllerTest {

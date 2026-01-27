@@ -38,29 +38,24 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.print.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Set;
 
 import static com.example.BeGroom.order.domain.OrderStatus.COMPLETED;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
 import static com.example.BeGroom.payment.domain.PaymentStatus.APPROVED;
-import static com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED;
 import static com.example.BeGroom.product.domain.ProductStatus.SALE;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.REFUND;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.SETTLED;
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 

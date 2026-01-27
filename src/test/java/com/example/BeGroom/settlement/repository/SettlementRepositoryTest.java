@@ -1,11 +1,9 @@
 package com.example.BeGroom.settlement.repository;
 
-import com.example.BeGroom.IntegrationTestSupport;
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
-import com.example.BeGroom.order.domain.OrderStatus;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
@@ -36,14 +34,11 @@ import com.example.BeGroom.settlement.repository.monthly.MonthlySettlementReposi
 import com.example.BeGroom.settlement.repository.weekly.WeeklySettlementRepository;
 import com.example.BeGroom.settlement.repository.yearly.YearlySettlementRepository;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
@@ -57,17 +52,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static com.example.BeGroom.order.domain.OrderStatus.COMPLETED;
 import static com.example.BeGroom.payment.domain.PaymentMethod.POINT;
 import static com.example.BeGroom.payment.domain.PaymentStatus.*;
 import static com.example.BeGroom.product.domain.ProductStatus.SALE;
-import static com.example.BeGroom.seller.dto.res.RecentActivityResDto.*;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.*;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.groups.Tuple.*;
 
 @ActiveProfiles("test")
 @SpringBootTest

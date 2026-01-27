@@ -8,7 +8,6 @@ import com.example.BeGroom.order.domain.OrderProduct;
 import com.example.BeGroom.order.repository.OrderProductRepository;
 import com.example.BeGroom.order.repository.OrderRepository;
 import com.example.BeGroom.payment.domain.Payment;
-import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.product.domain.Product;
@@ -19,10 +18,8 @@ import com.example.BeGroom.product.repository.ProductRepository;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.settlement.domain.Settlement;
-import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
-import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +41,6 @@ import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYM
 import static com.example.BeGroom.settlement.domain.SettlementStatus.SETTLED;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.UNSETTLED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.groups.Tuple.*;
 
 @ActiveProfiles("test")
 @SpringBootTest
