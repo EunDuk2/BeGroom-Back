@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -341,6 +342,100 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         System.out.println("=== test === 상품1 남은 재고: " + reloaded1.getStock().getQuantity());
         System.out.println("=== test === 상품2 남은 재고: " + reloaded2.getStock().getQuantity());
     }
+
+    @DisplayName("동시에 (각자) 주문 생성 -> 체크아웃까지 시도하면 어떤 결과가 나오는지 관찰한다")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @Test
+    void checkout_concurrent_each_thread_create_order_then_checkout_observe() throws InterruptedException {
+        // given (공통 리소스)
+        Member member = createAndSaveMember();
+        createAndSaveWallet(member);
+
+        Product product = createAndSaveProductHierarchy(1L, "1");
+
+        // 재고 충분히 줌 (동시 체크아웃이 두 번 일어나도 충분한 재고)
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 50);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 50);
+
+        OrderCreateReqDto orderCreateReqDto =
+                createOrderCreateReqDto(
+                        productDetail1, 1,
+                        productDetail2, 2
+                );
+
+        int threadCount = 2;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failCount = new AtomicInteger();
+
+        // 각 스레드에서 만든 orderId를 모아두기 (관찰용)
+        List<Long> createdOrderIds = Collections.synchronizedList(new ArrayList<>());
+
+        // when
+        for (int i = 0; i < threadCount; i++) {
+            final int idx = i;
+            executorService.submit(() -> {
+                try {
+                    startLatch.await(); // 동시에 출발
+
+                    // 1) 각자 주문 생성
+                    Order order = orderService.create(member.getId(), orderCreateReqDto);
+                    createdOrderIds.add(order.getId());
+
+                    System.out.println("=== test === [T" + idx + "] order 생성 완료. orderId=" + order.getId());
+
+                    // 2) 각자 체크아웃(결제)
+                    CheckoutResDto resDto = orderService.checkout(member.getId(), order.getId(), POINT);
+
+                    System.out.println("=== test === [T" + idx + "] checkout 성공. orderId=" + resDto.getOrderId()
+                            + ", paymentId=" + resDto.getPaymentId());
+
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    System.out.println("=== test === [T" + idx + "] checkout 실패: " + e.getClass().getSimpleName()
+                            + " - " + e.getMessage());
+                    failCount.incrementAndGet();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown(); // 동시에 시작
+        doneLatch.await();      // 모두 종료 대기
+        executorService.shutdown();
+
+        // then (관찰 위주 출력)
+        System.out.println("=== test === 성공한 결제 수: " + successCount.get());
+        System.out.println("=== test === 실패한 결제 수: " + failCount.get());
+        System.out.println("=== test === 생성된 주문 IDs: " + createdOrderIds);
+
+        // 전체 Payment, Order 상태 출력 (단순 관찰)
+        List<Payment> payments = paymentRepository.findAll();
+        System.out.println("=== test === 전체 결제 개수: " + payments.size());
+        for (Payment p : payments) {
+            System.out.println("=== test === payment.id: " + p.getId() + ", status=" + p.getPaymentStatus());
+        }
+
+        // 방금 생성한 주문들만 상태 출력
+        for (Long orderId : createdOrderIds) {
+            Order reloadedOrder = orderRepository.findById(orderId).orElseThrow();
+            System.out.println("=== test === order.id: " + reloadedOrder.getId()
+                    + ", orderStatus=" + reloadedOrder.getOrderStatus());
+        }
+
+        // 재고도 확인
+        ProductDetail reloaded1 = productDetailRepository.findById(productDetail1.getId()).orElseThrow();
+        ProductDetail reloaded2 = productDetailRepository.findById(productDetail2.getId()).orElseThrow();
+
+        System.out.println("=== test === 상품1 남은 재고: " + reloaded1.getStock().getQuantity());
+        System.out.println("=== test === 상품2 남은 재고: " + reloaded2.getStock().getQuantity());
+    }
+
 
     @DisplayName("동시에 요청하지 않아도 오래된 상태로 Lost Update가 발생하는지 확인한다")
     @Test
