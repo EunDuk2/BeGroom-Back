@@ -7,10 +7,20 @@ import com.example.BeGroom.order.dto.checkout.CheckoutResDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.concurrent.CountDownLatch;
+
 public interface OrderService {
     Order create(Long memberId, OrderCreateReqDto reqDto);
     CheckoutResDto checkout(Long memberId, Long orderId, PaymentMethod paymentMethod);
     Page<OrderSummaryDto> getOrders(Pageable pageable, Long memberId);
     OrderDetailResDto getOrderDetail(Long orderId);
     OrderInfoResDto getOrderInfo(Long memberId, Long orderId);
+
+
+    void checkoutWithDelay(
+            Long memberId,
+            Long orderId,
+            CountDownLatch readDone,
+            CountDownLatch waitForCommit
+    );
 }
