@@ -32,12 +32,8 @@ class NotificationHistoryServiceTest extends IntegrationTestSupport {
     @Autowired
     private MemberRepository memberRepository;
 
-    @Autowired
-    private MemberNotificationRepository memberNotificationRepository;
-
     @AfterEach
     void tearDown() {
-        memberNotificationRepository.deleteAllInBatch();
         memberRepository.deleteAllInBatch();
         notificationRepository.deleteAllInBatch();
     }

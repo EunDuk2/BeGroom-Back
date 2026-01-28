@@ -24,6 +24,12 @@ public class DummyDataGenerator {
 
     private final JdbcTemplate jdbcTemplate;
     private final Faker faker = new Faker(new Locale("ko"));
+
+    private PerformanceMonitor monitor;
+    public void setPerformanceMonitor(PerformanceMonitor monitor) {
+        this.monitor = monitor;
+    }
+
     private record CategoryInfo(Long id, String name, Long parentId) {}
     private record ProductDetailBatch(Long productId, Long detailNo, int optionNum) {}
 
@@ -155,9 +161,11 @@ public class DummyDataGenerator {
         long startTime = System.currentTimeMillis();
 
         ensureSellerExists();
+        if (monitor != null) monitor.recordStep("Seller 확인");
 
         // 브랜드 생성
         seedBrands();
+        if (monitor != null) monitor.recordStep("Brand 생성");
 
         List<Long> brandIds = jdbcTemplate.queryForList("SELECT id FROM brand WHERE seller_id = 1", Long.class);
 
@@ -170,6 +178,7 @@ public class DummyDataGenerator {
                 rs.getLong("parent_id")
             )
         );
+        if (monitor != null) monitor.recordStep("Category 조회");
 
         int chunkSize = 1000;
         int totalChunks = (int) Math.ceil((double) productCount / chunkSize);
@@ -185,13 +194,20 @@ public class DummyDataGenerator {
             log.info("청크 {}/{} 처리 중 ({}~{}번째 상품)",
                 chunk + 1, totalChunks, startIdx + 1, endIdx);
 
+            long chunkStart = System.currentTimeMillis();
+
             processChunkWithTransaction(startIdx, currentChunkSize, brandIds, categories);
 
+            long chunkDuration = System.currentTimeMillis() - chunkStart;
+            if (monitor != null) {
+                monitor.recordChunk(chunk + 1, currentChunkSize, chunkDuration);
+            }
             if (chunk > 0 && chunk % 10 == 0) {
                 System.gc();
                 log.info("메모리 정리 실행 ({}개 청크 완료)", chunk);
             }
         }
+        if (monitor != null) monitor.recordStep("전체 Product 생성 완료");
 
         long duration = (System.currentTimeMillis() - startTime) / 1000;
         log.info("=== 대량 데이터 시딩 완료 (소요시간: {}초) ===", duration);
