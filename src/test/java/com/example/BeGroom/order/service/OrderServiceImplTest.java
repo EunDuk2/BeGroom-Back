@@ -274,7 +274,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    @DisplayName("동시에 주문 체크아웃을 시도하면 어떤 결과가 나오는지 확인한다")
+    @DisplayName("동시에 하나의 주문 체크아웃을 시도하면 어떤 결과가 나오는지 확인한다")
     @Test
     void checkout_concurrent_observe() throws InterruptedException {
         // given
@@ -332,6 +332,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         Order completedOrder = orderRepository.findById(order.getId()).get();
 
         System.out.println("=== test === 결제 개수: " + payments.size());
+        System.out.println("=== test === 결제 상태: " + payments.get(0).getPaymentStatus());
         System.out.println("=== test === 주문 상태: " + completedOrder.getOrderStatus());
 
         ProductDetail reloaded1 =
@@ -427,6 +428,9 @@ class OrderServiceImplTest extends IntegrationTestSupport {
             System.out.println("=== test === order.id: " + reloadedOrder.getId()
                     + ", orderStatus=" + reloadedOrder.getOrderStatus());
         }
+
+        Wallet reloadedWallet = walletRepository.findById(wallet.getId()).orElseThrow();
+        System.out.println("=== test === wallet 잔액(DB): " + reloadedWallet.getBalance());
 
         // 재고도 확인
         ProductDetail reloaded1 = productDetailRepository.findById(productDetail1.getId()).orElseThrow();
