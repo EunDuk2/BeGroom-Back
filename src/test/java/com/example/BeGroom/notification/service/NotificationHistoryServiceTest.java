@@ -6,6 +6,7 @@ import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.notification.domain.MemberNotification;
 import com.example.BeGroom.notification.domain.Notification;
 import com.example.BeGroom.notification.domain.NotificationType;
+import com.example.BeGroom.notification.repository.MemberNotificationRepository;
 import com.example.BeGroom.notification.repository.NotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
@@ -31,10 +32,14 @@ class NotificationHistoryServiceTest extends IntegrationTestSupport {
     @Autowired
     private MemberRepository memberRepository;
 
+    @Autowired
+    private MemberNotificationRepository memberNotificationRepository;
+
     @AfterEach
     void tearDown() {
-        notificationRepository.deleteAllInBatch();
+        memberNotificationRepository.deleteAllInBatch();
         memberRepository.deleteAllInBatch();
+        notificationRepository.deleteAllInBatch();
     }
 
     @DisplayName("알림 템플릿을 찾아서 특정 사용자에 대한 알림을 생성할 수 있다.")
