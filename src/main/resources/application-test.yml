@@ -8,7 +8,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3307/begroom
+    url: jdbc:mysql://localhost:3307/begroom?useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Seoul
     username: root
     password: 1234
 
@@ -19,7 +19,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    defer-datasource-initialization: true
 
   sql:
     init:
-      mode: never
+      mode: always
