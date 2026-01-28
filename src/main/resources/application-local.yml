@@ -24,43 +24,14 @@ spring:
           batch_versioned_data: true
         order_updates: true
 
-sse:
-  timeout: 3600000
-
-jwt:
-  expirationAt: 1000 # 1000
-  secretKeyAt: YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5
-
----
-# ==========================================
-# 테스트 환경 (profile: test) - H2 (Memory)
-# ==========================================
-spring:
-  config:
-    activate:
-      on-profile: test
-
-  datasource:
-    url: jdbc:h2:mem:~/begroomApplication
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  jpa:
-    hibernate:
-      ddl-auto: create
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-  sql:
-    init:
-      mode: never
-
-jwt:
-  expirationAt: 3600000
-  secretKeyAt: YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5
-
-sse:
-  timeout: 3600000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  influx:
+    metrics:
+      export:
+        uri: http://localhost:8086
+        db: k6
+        step: 10s

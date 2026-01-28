@@ -50,10 +50,9 @@ public class WeeklySettlement extends BaseEntity {
 //    }
 
     @Builder
-    public WeeklySettlement(int year, int month, int week, Long sellerId,
-                            BigDecimal paymentAmount, BigDecimal fee, BigDecimal settlementAmount,
-                            BigDecimal refundAmount, LocalDate startDate, LocalDate endDate){
-        this.id = new WeeklySettlementId(year, month, week, sellerId);
+    public WeeklySettlement(WeeklySettlementId id, BigDecimal paymentAmount, BigDecimal fee,
+                            BigDecimal settlementAmount, BigDecimal refundAmount, LocalDate startDate, LocalDate endDate){
+        this.id = id;
         this.paymentAmount = paymentAmount;
         this.fee = fee;
         this.settlementAmount = settlementAmount;

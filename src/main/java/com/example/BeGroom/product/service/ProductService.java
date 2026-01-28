@@ -1,6 +1,7 @@
 package com.example.BeGroom.product.service;
 
 import com.example.BeGroom.product.domain.*;
+import com.example.BeGroom.product.dto.BrandFilterResponse;
 import com.example.BeGroom.product.dto.ProductDetailResponse;
 import com.example.BeGroom.product.dto.ProductListResponse;
 import com.example.BeGroom.product.dto.ProductSearchCondition;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,7 +46,7 @@ public class ProductService {
      */
     public ProductDetailResponse getProductDetail(Long productId, Long memberId) {
         Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));
+            .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
         if (product.getDeletedAt() != null) {
             throw new IllegalStateException("삭제된 상품입니다.");
@@ -57,6 +59,13 @@ public class ProductService {
         boolean isWishlisted = checkWishlisted(productId, memberId);
 
         return ProductDetailResponse.of(product, isWishlisted);
+    }
+
+    /**
+     * 카테고리/키워드 검색 시 해당하는 상품들의 브랜드 목록
+     */
+    public List<BrandFilterResponse> getBrandFilters(ProductSearchCondition condition) {
+        return productRepository.findBrandsBySearchCondition(condition);
     }
 
     // ===== Private Helper Methods =====

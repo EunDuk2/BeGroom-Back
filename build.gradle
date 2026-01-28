@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.0.1'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.example'
@@ -16,6 +17,53 @@ java {
 
 repositories {
 	mavenCentral()
+}
+
+jacoco {
+	toolVersion = "0.8.14"
+	//  default directory: "$/jacoco"
+}
+
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			element = 'CLASS'
+
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				// minimum = 0.80
+			}
+
+			excludes = [
+					"**.*Application*",    // 메인 애플리케이션 클래스
+					"**.domain.**",		   // 도메인 클래스
+					"**.*Request*",        // DTO성 클래스
+					"**.*Response*",       // DTO성 클래스
+					"**.dto.**",           // DTO 패키지
+					"**.*Config*",         // Spring Batch 등 각종 설정 파일
+					"**.*Condition*",      // 조건부 설정 파일
+					"**.*Q*",              // QueryDSL 생성 클래스
+					"**/Q*.class",         // QueryDSL 생성 클래스
+					"**.Q**"               // QueryDSL 클래스
+			]
+		}
+	}
+}
+
+jacocoTestReport {
+	reports {
+		html.required = true
+		xml.required = true
+	}
+
+	finalizedBy 'jacocoTestCoverageVerification'
+}
+
+test {
+	useJUnitPlatform()
+
+	finalizedBy jacocoTestReport
 }
 
 dependencies {
@@ -41,14 +89,20 @@ dependencies {
 	// test
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
 
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	// load-test
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-influx'
 
 	//QueryDsl
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
 	implementation "com.querydsl:querydsl-core"
 	implementation "com.querydsl:querydsl-collections"
+
 	annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
 	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
 	annotationProcessor "jakarta.persistence:jakarta.persistence-api"

@@ -9,6 +9,7 @@ import com.example.BeGroom.notification.dto.CreateNotificationResDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.service.NotificationService;
 import com.example.BeGroom.notification.service.network.NotificationNetworkService;
+import com.example.BeGroom.notification.service.network.SseNotificationNetworkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,8 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -31,6 +30,7 @@ import java.util.Map;
 public class NotificationController {
     private final NotificationService notificationService;
     private final NotificationNetworkService notificationNetworkService;
+    private final SseNotificationNetworkService sseNotificationNetworkService;
 
     /// TODO: PC코드에 swagger등 핵심 비즈니스 로직이 아닌 코드들이 있으면 코드가 비대해지거나 설명이 비대졌을떄 보기가 편할까요?
     @GetMapping
@@ -102,7 +102,7 @@ public class NotificationController {
 
     @PostMapping("/send/inspect")
     @Operation(summary = "관리자 서비스 점검 알림 송신", description = "관리자가 사용자들에게 점검 알림을 보낸다.")
-    public ResponseEntity<CommonSuccessDto<Boolean>> sendInspectNotiByAdmin(
+    public ResponseEntity<CommonSuccessDto<Boolean>> sendInspectNotificationByAdmin(
             @RequestBody Map<String, String> requestMap
     ) {
         notificationService.sendToAllMembers(NotificationTemplate.NOTICE_SERVICE_INSPECTION.getId(), requestMap);
@@ -118,9 +118,11 @@ public class NotificationController {
     }
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "알림 구독 (SSE 연결)", description = "SSE와 연결합니다.")
-        public Object subscribe(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        return notificationNetworkService.connect(userPrincipal.getMemberId(), LocalDateTime.now());
+    @Operation(summary = "알림 구독", description = "SSE와 연결합니다.")
+    public Object subscribe(
+            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        return sseNotificationNetworkService.subscribeWithHistory(userPrincipal.getMemberId(), lastEventId, LocalDateTime.now());
     }
 }

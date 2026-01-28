@@ -48,7 +48,7 @@ public class Seller extends BaseEntity{
     private List<Brand> brands = new ArrayList<>();
 
     @Builder
-    public Seller(String email, String name, String password, String phoneNumber) {
+    private Seller(String email, String name, String password, String phoneNumber) {
         this.email = email;
         this.name = name;
         this.password = password;

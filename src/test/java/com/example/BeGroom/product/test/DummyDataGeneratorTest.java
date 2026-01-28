@@ -1,5 +1,6 @@
 package com.example.BeGroom.product.test;
 
+import com.example.BeGroom.IntegrationTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,17 +12,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
-class DummyDataGeneratorTest {
+class DummyDataGeneratorTest extends IntegrationTestSupport {
 
     @Autowired
     private DummyDataGenerator dummyDataGenerator;
     
-    @DisplayName("사용자는 테스트를 위해 100개의 상품 더미 데이터를 생성할 수 있다.")
+    @DisplayName("사용자는 테스트를 위해 10000개의 상품 더미 데이터를 생성할 수 있다.")
     @Test
     @Commit
     void seedData() {
         // given
-        int productCount = 50;
+        int productCount = 10000;
         
         // when
         dummyDataGenerator.seedAll(productCount);

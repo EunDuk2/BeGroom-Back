@@ -47,6 +47,12 @@ public class Order extends BaseEntity {
         this.member = member;
         this.totalAmount = totalAmount;
         this.orderStatus = orderStatus;
+
+    }
+
+    // 연관 관계 편의 메서드
+    public void addOrderProduct(OrderProduct orderProduct){
+        this.orderProductList.add(orderProduct);
     }
 
     public static Order create(Member member, List<OrderLineRequest> orderLineRequests) {

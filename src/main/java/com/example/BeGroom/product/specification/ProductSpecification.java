@@ -73,7 +73,7 @@ public class ProductSpecification {
         if (values != null && !values.isEmpty()) {
             // 다중 조인 경로 설정
             Join<Object, Object> optionJoin = root.join("productDetails", JoinType.LEFT)
-                .join("productOptionMappings", JoinType.LEFT)
+                .join("optionMappings", JoinType.LEFT)
                 .join("productOption", JoinType.LEFT);
 
             // 해당 옵션 타입과 값들이 일치하는지 확인

@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface WeeklySettlementRepository extends JpaRepository<WeeklySettlement, WeeklySettlementId>, WeeklySettlementRepositoryCustom {
 
@@ -32,4 +34,6 @@ public interface WeeklySettlementRepository extends JpaRepository<WeeklySettleme
                 ws.id.week desc
     """)
     Page<WeeklySettlementResDto> findWeeklySettlement(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    Optional<WeeklySettlement> findById(WeeklySettlementId weeklySettlementId);
 }

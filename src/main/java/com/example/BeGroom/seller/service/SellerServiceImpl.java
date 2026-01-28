@@ -24,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import static com.example.BeGroom.payment.domain.PaymentStatus.*;
+import static com.example.BeGroom.seller.dto.res.RecentActivityResDto.*;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -122,7 +125,7 @@ public class SellerServiceImpl implements SellerService{
                 p.getSettlementStatus() != null
                         ? SettlementStatus.valueOf(p.getSettlementStatus())
                         : null,
-                PaymentStatus.valueOf(p.getPaymentStatus())
+                valueOf(p.getPaymentStatus())
         ));
     }
 
@@ -130,61 +133,28 @@ public class SellerServiceImpl implements SellerService{
     @Override
     public RecentActivityResDto getRecentActivities(Long sellerId){
         // 판매자의 최근 주문
-//        RecentActivityResDto.RecentOrderDto recentOrderDto =
-//                orderRepository.findLatestOrderBySeller(sellerId, PageRequest.of(0, 1))
-//                        .stream()
-//                        .findFirst()
-//                        .orElse(null);
-        RecentActivityResDto.RecentOrderDto recentOrderDto =
-                orderRepository.findLatestOrderBySeller(sellerId, PageRequest.of(0, 1))
+        RecentPaymentResDto recentPaymentDto =
+                paymentRepository.findLatestOrderBySellerId(sellerId, PageRequest.of(0, 1))
                         .stream()
                         .findFirst()
-                        .map(r -> new RecentActivityResDto.RecentOrderDto(
-                                r.getOrderId(),
-                                r.getTotalAmount(),
-                                r.getApprovedAt()
-                        ))
                         .orElse(null);
-
 
         // 판매자의 최근 환불
-//        RecentActivityResDto.RecentRefundDto recentRefundDto =
-//                paymentRepository.findLatestRefundBySeller(sellerId, PageRequest.of(0, 1))
-//                        .stream()
-//                        .findFirst()
-//                        .orElse(null);
-        RecentActivityResDto.RecentRefundDto recentRefundDto =
-                paymentRepository.findLatestRefundBySeller(sellerId)
+        RecentRefundResDto recentRefundDto =
+                paymentRepository.findLatestRefundBySellerId(sellerId, REFUNDED, PageRequest.of(0, 1))
                         .stream()
                         .findFirst()
-                        .map(r -> new RecentActivityResDto.RecentRefundDto(
-                                r.getPaymentId(),
-                                r.getRefundAmount(),
-                                r.getCreatedAt()
-                        ))
                         .orElse(null);
-
 
         // 판매자의 최근 정산
-//        RecentActivityResDto.RecentSettlementDto recentSettlementDto =
-//                settlementRepository.findLatestSettledBySeller(sellerId, PageRequest.of(0, 1))
-//                        .stream()
-//                        .findFirst()
-//                        .orElse(null);
-        RecentActivityResDto.RecentSettlementDto recentSettlementDto =
-                settlementRepository.findLatestSettledBySeller(sellerId)
+        RecentSettlementResDto recentSettlementDto =
+                settlementRepository.findLatestSettlementBySellerId(sellerId, PageRequest.of(0, 1))
                         .stream()
                         .findFirst()
-                        .map(r -> new RecentActivityResDto.RecentSettlementDto(
-                                r.getSettlementId(),
-                                r.getSettlementAmount(),
-                                r.getCreatedAt()
-                        ))
                         .orElse(null);
 
-
         return new RecentActivityResDto(
-                recentOrderDto,
+                recentPaymentDto,
                 recentRefundDto,
                 recentSettlementDto
         );
