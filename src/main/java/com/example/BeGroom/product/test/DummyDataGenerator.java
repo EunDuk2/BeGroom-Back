@@ -1,5 +1,7 @@
 package com.example.BeGroom.product.test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -9,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -38,12 +42,16 @@ public class DummyDataGenerator {
     private static final List<String> KOREAN_BRAND_SUFFIXES = new ArrayList<>();
     private static final List<String> ENGLISH_BRAND_PREFIXES = new ArrayList<>();
     private static final List<String> ENGLISH_BRAND_SUFFIXES = new ArrayList<>();
+    private static final Map<Long, List<String>> CATEGORY_IMAGE_URLS = new HashMap<>();
 
     private final AtomicLong brandCodeCounter = new AtomicLong(1000000L);
     private final AtomicLong productNoCounter = new AtomicLong(30000000L);
     private final AtomicLong detailNoCounter = new AtomicLong(50000000L);
 
     static {
+
+        loadCategoryImages();
+
         KOREAN_BRAND_PREFIXES.addAll(Arrays.asList(
             "가온", "그린", "건강", "고품격", "나눔", "네이처", "다올", "달콤", "동원",
             "라이프", "러블리", "맘스", "모던", "미소", "바른", "베스트", "비타",
@@ -163,7 +171,6 @@ public class DummyDataGenerator {
         ensureSellerExists();
         if (monitor != null) monitor.recordStep("Seller 확인");
 
-        // 브랜드 생성
         seedBrands();
         if (monitor != null) monitor.recordStep("Brand 생성");
 
@@ -185,7 +192,6 @@ public class DummyDataGenerator {
 
         log.info("총 {}개 청크로 분할하여 처리 (청크 크기: {})", totalChunks, chunkSize);
 
-//        List<Long> assignedCategoryIds = new ArrayList<>();
         for (int chunk = 0; chunk < totalChunks; chunk++) {
             int startIdx = chunk * chunkSize;
             int endIdx = Math.min(startIdx + chunkSize, productCount);
@@ -346,7 +352,8 @@ public class DummyDataGenerator {
         }
 
         // 4. 연관 데이터 생성
-        seedProductImages(productIds);
+        seedProductCategoryMappings(productIds, assignedCategoryIds);
+        seedProductImages(productIds, assignedCategoryIds);
         seedProductDetails(productIds);
 
         // 5. ProductDetail ID를 범위로 조회
@@ -368,7 +375,6 @@ public class DummyDataGenerator {
         seedPrices(detailIds);
         seedStocks(detailIds);
         seedOptionMappings(detailIds);
-        seedProductCategoryMappings(productIds, assignedCategoryIds);
 
         log.info("청크 처리 완료 ({}개 상품, {}개 상세)", productIds.size(), detailIds.size());
     }
@@ -460,10 +466,43 @@ public class DummyDataGenerator {
         }
     }
 
+    private static void loadCategoryImages() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            InputStream is = DummyDataGenerator.class.getResourceAsStream("/category_images.json");
+
+            if (is == null) return;
+
+            TypeReference<Map<String, List<String>>> typeRef = new TypeReference<>() {};
+            Map<String, List<String>> stringKeyMap = mapper.readValue(is, typeRef);
+
+            for (Map.Entry<String, List<String>> entry : stringKeyMap.entrySet()) {
+                try {
+                    Long categoryId = Long.parseLong(entry.getKey());
+                    CATEGORY_IMAGE_URLS.put(categoryId, entry.getValue());
+                } catch (NumberFormatException e) {
+                    log.error("카테고리 ID 파싱 실패");
+                }
+            }
+        } catch (IOException e) {
+            log.error("카테고리 이미지 로드 실패");
+        }
+    }
+
+    private String getImageUrlForCategory(Long categoryId) {
+        List<String> categoryImages = CATEGORY_IMAGE_URLS.get(categoryId);
+
+        if (categoryImages != null && !categoryImages.isEmpty()) {
+            return categoryImages.get(faker.random().nextInt(categoryImages.size()));
+        } else {
+            return "https://picsum.photos/seed/" + UUID.randomUUID() + "/600/600";
+        }
+    }
+
     /**
      * Product 이미지 생성 (500개씩 분할)
      */
-    private void seedProductImages(List<Long> productIds) {
+    private void seedProductImages(List<Long> productIds, List<Long> assignedCategoryIds) {
         String sql = "INSERT INTO product_image (product_id, image_url, image_type, sort_order, created_at, updated_at) " +
             "VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -476,8 +515,11 @@ public class DummyDataGenerator {
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
                     Long productId = productIds.get(finalOffset + i);
+                    Long categoryId = assignedCategoryIds.get(finalOffset + i);
+                    String imageUrl = getImageUrlForCategory(categoryId);
+
                     ps.setLong(1, productId);
-                    ps.setString(2, "https://picsum.photos/seed/" + UUID.randomUUID() + "/600/600");
+                    ps.setString(2, imageUrl);
                     ps.setString(3, "MAIN");
                     ps.setInt(4, 1);
                     ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
