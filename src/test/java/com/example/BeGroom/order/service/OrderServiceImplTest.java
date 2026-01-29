@@ -21,9 +21,7 @@ import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductDetail;
 import com.example.BeGroom.product.domain.ProductStatus;
-import com.example.BeGroom.product.repository.BrandRepository;
-import com.example.BeGroom.product.repository.ProductDetailRepository;
-import com.example.BeGroom.product.repository.ProductRepository;
+import com.example.BeGroom.product.repository.*;
 import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.seller.repository.SellerRepository;
 import com.example.BeGroom.wallet.domain.Wallet;
@@ -50,7 +48,6 @@ import static com.example.BeGroom.payment.domain.PaymentStatus.APPROVED;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Transactional
 class OrderServiceImplTest extends IntegrationTestSupport {
 
     @Autowired
@@ -68,15 +65,36 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private OrderProductRepository orderProductRepository;
-    @Autowired
     private WalletRepository walletRepository;
-    @Autowired
-    private WalletTransactionRepository walletTransactionRepository;
     @Autowired
     private PaymentRepository paymentRepository;
     @Autowired
+    OrderProductRepository orderProductRepository;
+    @Autowired
+    StockRepository stockRepository;
+    @Autowired
+    ProductPriceRepository productPriceRepository;
+    @Autowired
+    WalletTransactionRepository walletTransactionRepository;
+    @Autowired
     private EntityManager em;
+
+
+    @AfterEach
+    void tearDown() {
+        paymentRepository.deleteAllInBatch();
+        orderProductRepository.deleteAllInBatch();
+        orderRepository.deleteAllInBatch();
+        stockRepository.deleteAllInBatch();
+        productPriceRepository.deleteAllInBatch();
+        productDetailRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        brandRepository.deleteAllInBatch();
+        sellerRepository.deleteAllInBatch();
+        walletTransactionRepository.deleteAllInBatch();
+        walletRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
+    }
 
 
     /* =========================
@@ -273,7 +291,6 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
 
 
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @DisplayName("동시에 하나의 주문 체크아웃을 시도하면 어떤 결과가 나오는지 확인한다")
     @Test
     void checkout_concurrent_observe() throws InterruptedException {
@@ -357,7 +374,6 @@ class OrderServiceImplTest extends IntegrationTestSupport {
     }
 
     @DisplayName("동시에 (각자) 주문 생성 -> 체크아웃까지 시도하면 어떤 결과가 나오는지 관찰한다")
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @Test
     void checkout_concurrent_each_thread_create_order_then_checkout_observe() throws InterruptedException {
         // given
