@@ -99,6 +99,7 @@ dependencies {
 	// load-test
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'io.micrometer:micrometer-registry-influx'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	//QueryDsl
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'

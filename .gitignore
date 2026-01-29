@@ -44,3 +44,6 @@ docker-compose.yml
 
 #yml
 src/main/resources/application-prod.yml
+
+#influxdb
+scripts/load-test/influxdb/
