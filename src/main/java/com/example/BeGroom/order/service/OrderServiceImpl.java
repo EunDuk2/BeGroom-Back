@@ -72,40 +72,13 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    // 로스트 업데이트 테스트를 위함
-    @Transactional
-    public void checkoutWithDelay(
-            Long memberId,
-            Long orderId,
-            CountDownLatch readDone,
-            CountDownLatch waitForCommit
-    ) {
-        Order order = orderRepository.findById(orderId).get();
-        ProductDetail detail = order.getOrderProductList().get(0).getProductDetail();
-
-        // 조회 완료 알림
-        readDone.countDown();
-
-        try {
-            // 여기서 B 트랜잭션이 커밋할 때까지 대기
-            waitForCommit.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        // 이미 DB는 바뀌었을 수도 있음
-//        checkout(memberId, orderId, PaymentMethod.POINT);
-        detail.decreaseStock(1);
-    }
-
-
     // todo : 트랜잭션 분리 추후
     @Override
     @Transactional
     public CheckoutResDto checkout(Long memberId, Long orderId, PaymentMethod paymentMethod) {
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
-        Wallet wallet = walletRepository.findByMemberForUpdate(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+        Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        Order order = orderRepository.findByIdForUpdate(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
 
         //TODO: 트랜잭션 범위가 너무 크다.. 트랜잭션을 분리해서 관리해볼 필요가 있다.
         // 협력을 조율
