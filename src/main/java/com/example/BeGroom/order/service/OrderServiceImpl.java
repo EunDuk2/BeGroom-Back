@@ -72,33 +72,6 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    // 로스트 업데이트 테스트를 위함
-    @Transactional
-    public void checkoutWithDelay(
-            Long memberId,
-            Long orderId,
-            CountDownLatch readDone,
-            CountDownLatch waitForCommit
-    ) {
-        Order order = orderRepository.findById(orderId).get();
-        ProductDetail detail = order.getOrderProductList().get(0).getProductDetail();
-
-        // 조회 완료 알림
-        readDone.countDown();
-
-        try {
-            // 여기서 B 트랜잭션이 커밋할 때까지 대기
-            waitForCommit.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        // 이미 DB는 바뀌었을 수도 있음
-//        checkout(memberId, orderId, PaymentMethod.POINT);
-        detail.decreaseStock(1);
-    }
-
-
     // todo : 트랜잭션 분리 추후
     @Override
     @Transactional
