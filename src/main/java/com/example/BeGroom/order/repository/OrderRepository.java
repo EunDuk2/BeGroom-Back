@@ -1,10 +1,14 @@
 package com.example.BeGroom.order.repository;
 
+import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.seller.repository.projection.OrderListProjection;
+import com.example.BeGroom.wallet.domain.Wallet;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +20,10 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findByMemberId(Pageable pageable, Long memberId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from Order o where o.id = :id")
+    Optional<Order> findByIdForUpdate(@Param("id") Long id);
   
     public List<Order> findAllByMemberIdOrderByCreatedAtDesc(Long memberId);
 

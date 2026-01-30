@@ -7,6 +7,7 @@ import com.example.BeGroom.product.dto.admin.ProductPriceUpdateRequest;
 import com.example.BeGroom.product.dto.admin.ProductUpdateRequest;
 import com.example.BeGroom.product.dto.admin.StockUpdateRequest;
 import com.example.BeGroom.product.service.AdminProductService;
+import com.example.BeGroom.product.test.DummyDataGenerator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,9 +18,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/admin/products")
@@ -28,6 +31,7 @@ import java.util.List;
 public class AdminProductController {
 
     private final AdminProductService adminProductService;
+    private final DummyDataGenerator dummyDataGenerator;
 
     @PostMapping
     @Operation(summary = "신규 상품 등록", description = "새로운 상품 정보와 초기 재고/옵션을 등록합니다.")
@@ -146,6 +150,26 @@ public class AdminProductController {
                 null,
                 HttpStatus.OK,
                 "상품 상태가 " + status + "(으)로 변경되었습니다."
+            )
+        );
+    }
+
+    @PostMapping("/seed")
+    @Operation(summary = "대량 더미 데이터 생성", description = "지정한 개수만큼 상품 데이터를 비동기적으로 생성")
+    public ResponseEntity<CommonSuccessDto<String>> seedDummyData(@RequestParam(defaultValue = "100000") int count) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                dummyDataGenerator.seedAll(count);
+            } catch (Exception e) {
+                System.err.println("비동기 데이터 생성 중 에러 발생: " + e.getMessage());
+            }
+        });
+
+        return ResponseEntity.ok(
+            CommonSuccessDto.of(
+                "데이터 생성이 시작되었습니다.",
+                HttpStatus.OK,
+                count + "개의 상품 생성을 시작했습니다."
             )
         );
     }
