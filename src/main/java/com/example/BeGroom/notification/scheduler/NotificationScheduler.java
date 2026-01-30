@@ -26,7 +26,7 @@ public class NotificationScheduler {
             Map<String, String> eventData = new HashMap<>();
             notificationService.sendToAllMembers(NotificationTemplate.AD_FREE_CASH_EVENT.getId(), eventData);
         } catch (Exception e) {
-            log.error("스케줄러 실행 중 에러 발생", e);
+            log.error("[NotificationScheduler] 정기 알림 스케줄러 실패", e);
         }
     }
 }

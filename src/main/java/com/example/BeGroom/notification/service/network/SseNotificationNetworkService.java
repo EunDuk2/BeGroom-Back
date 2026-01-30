@@ -42,17 +42,9 @@ public class SseNotificationNetworkService implements NotificationNetworkService
         String emitterId = memberId + "_" + timestamp;
         SseEmitter emitter = new SseEmitter(defaultTimeout);
 
-        emitter.onCompletion(() -> {
-            log.info("SSE Connection Completed: {}", emitterId);
-            emitterRepository.deleteById(emitterId);
-        });
-        emitter.onTimeout(() -> {
-            emitter.complete();
-            log.info("SSE Connection Timed Out: {}", emitterId);
-        });
-        emitter.onError((_) -> {
-            emitter.complete();
-        });
+        emitter.onCompletion(() -> this.completeEmitter(emitterId));
+        emitter.onTimeout(() -> this.timeoutEmitter(emitterId));
+        emitter.onError((e)-> this.errorEmitter(emitterId, e));
 
         emitterRepository.save(emitterId, emitter);
 
@@ -116,7 +108,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
                 Long maxId = summary[1] != null ? ((Number) summary[1]).longValue() : 0L;
 
                 if (lostCount > 0) {
-                    sendBySse(emitter, emitterId, String.valueOf(maxId), "notification", RETRY_RECEIVE_NOTIFICATION_SUCCESS.format(lostCount));
+                    sendBySse(emitter, emitterId, String.valueOf(maxId), "recovered-notification", RETRY_RECEIVE_NOTIFICATION_SUCCESS.format(lostCount));
                     return NotificationSendResult.success(emitterId, String.valueOf(maxId));
                 }
 
@@ -133,7 +125,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
             Long maxId = summary[1] != null ? ((Number) summary[1]).longValue() : 0L;
 
             if (unreadCount > 0) {
-                sendBySse(emitter, emitterId, String.valueOf(maxId), "notification", FIRST_CONNECT_UNREAD.format(unreadCount));
+                sendBySse(emitter, emitterId, String.valueOf(maxId), "unread-notification", FIRST_CONNECT_UNREAD.format(unreadCount));
                 return NotificationSendResult.success(emitterId, String.valueOf(maxId));
             } else {
                 sendHeartBeat(emitter, emitterId);
@@ -166,4 +158,17 @@ public class SseNotificationNetworkService implements NotificationNetworkService
         }
     }
 
+    public void completeEmitter(String emitterId) {
+        emitterRepository.deleteById(emitterId);
+    }
+
+    public void timeoutEmitter(String emitterId) {
+        emitterRepository.deleteById(emitterId);
+        log.info("SSE Connection Timed Out: {}", emitterId);
+    }
+
+    public void errorEmitter(String emitterId, Throwable error) {
+        emitterRepository.deleteById(emitterId);
+        log.info("SSE Connection Error: ", error);
+    }
 }
