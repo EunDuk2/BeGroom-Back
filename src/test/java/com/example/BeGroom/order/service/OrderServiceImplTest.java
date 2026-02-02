@@ -214,15 +214,15 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         CheckoutResDto resDto = orderService.checkout(member.getId(), order.getId(), POINT);
 
         // then
-        assertThat(resDto.getOrderId()).isEqualTo(1L);
-        assertThat(resDto.getPaymentId()).isEqualTo(1L);
+        assertThat(resDto.getOrderId()).isEqualTo(order.getId());
+        assertThat(resDto.getPaymentId()).isNotNull();
         assertThat(resDto.getCheckoutStatus()).isEqualTo(COMPLETED);
 
-        Payment payment = paymentRepository.findById(1L).get();
+        Payment payment = paymentRepository.findById(resDto.getPaymentId()).get();
         assertThat(payment.getPaymentStatus()).isEqualTo(APPROVED);
         assertThat(payment.getAmount()).isEqualTo(13000);
 
-        Order completedOrder = orderRepository.findById(1L).get();
+        Order completedOrder = orderRepository.findById(resDto.getOrderId()).get();
         assertThat(completedOrder.getOrderStatus()).isEqualTo(OrderStatus.COMPLETED);
         assertThat(completedOrder.getTotalAmount()).isEqualTo(13000);
     }
