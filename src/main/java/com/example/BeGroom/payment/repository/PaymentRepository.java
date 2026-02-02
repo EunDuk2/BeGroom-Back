@@ -18,6 +18,8 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderIdAndPaymentStatus(Long orderId, PaymentStatus paymentStatus);
+    List<Payment> findByOrderId(Long orderId);
+
 
     // 판매자의 최근 주문
     @Query("""
