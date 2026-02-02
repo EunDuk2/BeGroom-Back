@@ -14,8 +14,10 @@ import com.example.BeGroom.payment.domain.PaymentMethod;
 import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.product.domain.ProductDetail;
+import com.example.BeGroom.product.domain.Stock;
 import com.example.BeGroom.product.repository.ProductDetailRepository;
 import com.example.BeGroom.order.dto.checkout.CheckoutResDto;
+import com.example.BeGroom.product.repository.StockRepository;
 import com.example.BeGroom.wallet.domain.Wallet;
 import com.example.BeGroom.wallet.repository.WalletRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -43,6 +45,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderProductRepository orderProductRepository;
     private final PaymentRepository paymentRepository;
     private final WalletRepository walletRepository;
+    private final StockRepository stockRepository;
 
 
     @Override
@@ -79,6 +82,12 @@ public class OrderServiceImpl implements OrderService {
         Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
         Order order = orderRepository.findByIdForUpdate(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
         Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+
+
+        List<Stock> stocks = stockRepository.findAllByProductDetailIdsForUpdate(
+                order.getOrderProductList().stream().map(OrderProduct::getId).toList()
+        );
+
 
         //TODO: 트랜잭션 범위가 너무 크다.. 트랜잭션을 분리해서 관리해볼 필요가 있다.
         // 협력을 조율

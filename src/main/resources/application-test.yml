@@ -22,7 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -35,3 +35,9 @@ spring:
   sql:
     init:
       mode: always
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace     # ✅ ?에 들어가는 값
+    org.hibernate.orm.jdbc.extract: trace
