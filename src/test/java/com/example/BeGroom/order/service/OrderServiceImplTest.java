@@ -291,9 +291,9 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
 
 
-    @DisplayName("동시에 하나의 주문 체크아웃을 시도하면 어떤 결과가 나오는지 확인한다")
+    @DisplayName("두개의 스레드가(같은 멤버) 동시에 하나의 주문 체크아웃을 시도하면 하나만 성공해야 한다.")
     @Test
-    void checkout_concurrent_observe() throws InterruptedException {
+    void checkout_concurrent_singleSuccess() throws InterruptedException {
         // given
         Member member = createAndSaveMember();
         createAndSaveWallet(member);
@@ -328,7 +328,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
                     orderService.checkout(member.getId(), order.getId(), POINT);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    System.out.println("=== checkout_concurrent_observe() - checkout 실패: " + e.getClass().getSimpleName()
+                    System.out.println("=== checkout_concurrent_singleSuccess() - checkout 실패: " + e.getClass().getSimpleName()
                             + " - " + e.getMessage());
                     failCount.incrementAndGet();
                 } finally {
@@ -342,7 +342,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
         // then
         System.out.println(
-                "=== checkout_concurrent_observe() - 성공한 결제 수: " + successCount.get()
+                "=== checkout_concurrent_singleSuccess() - 성공한 결제 수: " + successCount.get()
                 + ", 실패한 결제 수: " + failCount.get()
         );
         assertThat(successCount.get()).isOne();
@@ -351,7 +351,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         List<Payment> payments = paymentRepository.findAll();
         Order completedOrder = orderRepository.findById(order.getId()).get();
         System.out.println(
-                "=== checkout_concurrent_observe() - 결제 상태: " + payments.get(0).getPaymentStatus()
+                "=== checkout_concurrent_singleSuccess() - 결제 상태: " + payments.get(0).getPaymentStatus()
                 + ", 주문 상태: " + completedOrder.getOrderStatus()
         );
         assertThat(payments.get(0).getPaymentStatus())
@@ -364,7 +364,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         ProductDetail reloaded2 =
                 productDetailRepository.findById(productDetail2.getId()).get();
         System.out.println(
-                "=== checkout_concurrent_observe() - 상품1 남은 재고: " + reloaded1.getStock().getQuantity()
+                "=== checkout_concurrent_singleSuccess() - 상품1 남은 재고: " + reloaded1.getStock().getQuantity()
                 + ", 상품2 남은 재고: " + reloaded2.getStock().getQuantity()
         );
         assertThat(reloaded1.getStock().getQuantity())
@@ -373,9 +373,9 @@ class OrderServiceImplTest extends IntegrationTestSupport {
                 .isEqualTo(3);
     }
 
-    @DisplayName("동시에 (각자) 주문 생성 -> 체크아웃까지 시도하면 어떤 결과가 나오는지 관찰한다")
+    @DisplayName("두 개의 스레드가(같은 멤버) 다른 주문으로 동시에 같은 상품 체크아웃을 시도하면 모두 성공하고 재고와 포인트가 정상 차감된다.")
     @Test
-    void checkout_concurrent_each_thread_create_order_then_checkout_observe() throws InterruptedException {
+    void checkout_concurrent_differentOrders_bothSuccess() throws InterruptedException {
         // given
         Member member = createAndSaveMember();
         Wallet wallet = createAndSaveWallet(member);
@@ -414,17 +414,17 @@ class OrderServiceImplTest extends IntegrationTestSupport {
                     Order order = orderService.create(member.getId(), orderCreateReqDto);
                     createdOrderIds.add(order.getId());
 
-                    System.out.println("=== each_thread_create() - [T" + idx + "] order 생성 완료. orderId=" + order.getId());
+                    System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - [T" + idx + "] order 생성 완료. orderId=" + order.getId());
 
                     // 2) 각자 체크아웃(결제)
                     CheckoutResDto resDto = orderService.checkout(member.getId(), order.getId(), POINT);
 
-                    System.out.println("=== each_thread_create() - [T" + idx + "] checkout 성공. orderId=" + resDto.getOrderId()
+                    System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - [T" + idx + "] checkout 성공. orderId=" + resDto.getOrderId()
                             + ", paymentId=" + resDto.getPaymentId());
 
                     successCount.incrementAndGet();
                 } catch (Exception e) {
-                    System.out.println("=== each_thread_create() - [T" + idx + "] checkout 실패: " + e.getClass().getSimpleName()
+                    System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - [T" + idx + "] checkout 실패: " + e.getClass().getSimpleName()
                             + " - " + e.getMessage());
                     failCount.incrementAndGet();
                 } finally {
@@ -439,7 +439,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
         // then
         System.out.println(
-                "=== each_thread_create() - 성공한 결제 수: " + successCount.get()
+                "=== checkout_concurrent_differentOrders_bothSuccess() - 성공한 결제 수: " + successCount.get()
                 + ", 실패한 결제 수: " + failCount.get()
         );
         assertThat(successCount.get())
@@ -449,13 +449,13 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         // 전체 Payment, Order 상태 검증
         List<Payment> payments = paymentRepository.findAll();
         for (Payment p : payments) {
-            System.out.println("=== each_thread_create() - payment.id: " + p.getId() + ", status=" + p.getPaymentStatus());
+            System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - payment.id: " + p.getId() + ", status=" + p.getPaymentStatus());
             assertThat(p.getPaymentStatus())
                     .isEqualTo(APPROVED);
         }
         for (Long orderId : createdOrderIds) {
             Order reloadedOrder = orderRepository.findById(orderId).orElseThrow();
-            System.out.println("=== each_thread_create() - order.id: " + reloadedOrder.getId()
+            System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - order.id: " + reloadedOrder.getId()
                     + ", orderStatus=" + reloadedOrder.getOrderStatus());
             assertThat(reloadedOrder.getOrderStatus())
                     .isEqualTo(OrderStatus.COMPLETED);
@@ -463,7 +463,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
 
         // 잔액 검증
         Wallet reloadedWallet = walletRepository.findById(wallet.getId()).orElseThrow();
-        System.out.println("=== each_thread_create() - wallet 잔액(DB): " + reloadedWallet.getBalance());
+        System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - wallet 잔액(DB): " + reloadedWallet.getBalance());
         assertThat(reloadedWallet.getBalance())
                 .isEqualTo(24000);
 
@@ -472,7 +472,7 @@ class OrderServiceImplTest extends IntegrationTestSupport {
         ProductDetail reloaded2 = productDetailRepository.findById(productDetail2.getId()).orElseThrow();
 
         System.out.println(
-                "=== each_thread_create() - 상품1 남은 재고: " + reloaded1.getStock().getQuantity()
+                "=== checkout_concurrent_differentOrders_bothSuccess() - 상품1 남은 재고: " + reloaded1.getStock().getQuantity()
                 + ", 상품2 남은 재고: " + reloaded2.getStock().getQuantity()
         );
         assertThat(reloaded1.getStock().getQuantity())
@@ -481,7 +481,117 @@ class OrderServiceImplTest extends IntegrationTestSupport {
                 .isEqualTo(1);
     }
 
+    @DisplayName("두 개의 스레드가(다른 멤버) 다른 주문으로 동시에 같은 상품 체크아웃을 시도하면 모두 성공하고 재고와 포인트가 정상 차감된다.")
+    @Test
+    void checkout_concurrent_differentMembers_differentOrders_bothSuccess() throws InterruptedException {
+        // given
+        List<Member> members = new ArrayList<>(List.of(createAndSaveMember(), createAndSaveMember()));
+        List<Wallet> wallets = new ArrayList<>(List.of(createAndSaveWallet(members.getFirst()), createAndSaveWallet(members.get(1))));
 
+        Product product = createAndSaveProductHierarchy(1L, "1");
+
+        ProductDetail productDetail1 = createAndSaveProductDetail(product, 1L, 3000, 5);
+        ProductDetail productDetail2 = createAndSaveProductDetail(product, 2L, 5000, 5);
+
+        OrderCreateReqDto orderCreateReqDto =
+                createOrderCreateReqDto(
+                        productDetail1, 1,
+                        productDetail2, 2
+                );
+
+        int threadCount = 2;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failCount = new AtomicInteger();
+
+        // 각 스레드에서 만든 orderId를 모아두기 (관찰용)
+        List<Long> createdOrderIds = Collections.synchronizedList(new ArrayList<>());
+
+        // when
+        for (int i = 0; i < threadCount; i++) {
+            final int idx = i;
+            executorService.submit(() -> {
+                try {
+                    startLatch.await(); // 동시에 출발
+
+                    // 1) 각자 주문 생성
+                    Order order = orderService.create(members.get(idx).getId(), orderCreateReqDto);
+                    createdOrderIds.add(order.getId());
+
+                    System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - [T" + idx + "] order 생성 완료. orderId=" + order.getId());
+
+                    // 2) 각자 체크아웃(결제)
+                    CheckoutResDto resDto = orderService.checkout(members.get(idx).getId(), order.getId(), POINT);
+
+                    System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - [T" + idx + "] checkout 성공. orderId=" + resDto.getOrderId()
+                            + ", paymentId=" + resDto.getPaymentId());
+
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - [T" + idx + "] checkout 실패: " + e.getClass().getSimpleName()
+                            + " - " + e.getMessage());
+                    failCount.incrementAndGet();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown(); // 동시에 시작
+        doneLatch.await();      // 모두 종료 대기
+        executorService.shutdown();
+
+        // then
+
+        System.out.println(
+                "=== checkout_concurrent_differentOrders_bothSuccess() - 성공한 결제 수: " + successCount.get()
+                        + ", 실패한 결제 수: " + failCount.get()
+        );
+        assertThat(successCount.get())
+                .isEqualTo(2);
+
+
+        // 전체 Payment, Order 상태 검증
+        List<Payment> payments = paymentRepository.findAll();
+        for(Payment p : payments) {
+            System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - payment.id: " + p.getId() + ", status=" + p.getPaymentStatus());
+            assertThat(p.getPaymentStatus())
+                    .isEqualTo(APPROVED);
+        }
+        for(Long orderId : createdOrderIds) {
+            Order reloadedOrder = orderRepository.findById(orderId).orElseThrow();
+            System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - order.id: " + reloadedOrder.getId()
+                    + ", orderStatus=" + reloadedOrder.getOrderStatus());
+            assertThat(reloadedOrder.getOrderStatus())
+                    .isEqualTo(OrderStatus.COMPLETED);
+        }
+
+        // 잔액 검증
+        for(Wallet wallet : wallets) {
+            Wallet reloadedWallet = walletRepository.findById(wallet.getId()).orElseThrow();
+            System.out.println("=== checkout_concurrent_differentOrders_bothSuccess() - wallet.id: " + reloadedWallet.getId()
+                    + ", wallet 잔액(DB): " + reloadedWallet.getBalance());
+            assertThat(reloadedWallet.getBalance())
+                    .isEqualTo(37000);
+        }
+
+        // 재고 검증
+        ProductDetail reloaded1 = productDetailRepository.findById(productDetail1.getId()).orElseThrow();
+        ProductDetail reloaded2 = productDetailRepository.findById(productDetail2.getId()).orElseThrow();
+
+        System.out.println(
+                "=== checkout_concurrent_differentOrders_bothSuccess() - 상품1 남은 재고: " + reloaded1.getStock().getQuantity()
+                        + ", 상품2 남은 재고: " + reloaded2.getStock().getQuantity()
+        );
+        assertThat(reloaded1.getStock().getQuantity())
+                .isEqualTo(3);
+        assertThat(reloaded2.getStock().getQuantity())
+                .isEqualTo(1);
+    }
 
     /* =========================
      *  테스트 내부 공용 메서드 (Given)
