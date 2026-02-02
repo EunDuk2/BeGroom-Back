@@ -82,12 +82,12 @@ public class OrderServiceImpl implements OrderService {
         Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
         Order order = orderRepository.findByIdForUpdate(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
         Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
-
-
-        List<Stock> stocks = stockRepository.findAllByProductDetailIdsForUpdate(
-                order.getOrderProductList().stream().map(OrderProduct::getId).toList()
+        // 재고 X Lock 걸어두기
+        stockRepository.findAllByProductDetailIdsForUpdate(
+                order.getOrderProductList().stream().map(
+                        orderProduct -> orderProduct.getProductDetail().getId()
+                ).toList()
         );
-
 
         //TODO: 트랜잭션 범위가 너무 크다.. 트랜잭션을 분리해서 관리해볼 필요가 있다.
         // 협력을 조율
