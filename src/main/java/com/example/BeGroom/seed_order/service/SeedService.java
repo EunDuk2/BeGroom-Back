@@ -143,6 +143,10 @@ public class SeedService {
         for (Long id : res.orderIds()) {
             sb.append(id).append("\n");
         }
+        sb.append("productDetailIds\n");
+        for (Long id : res.productDetailIds()) {
+            sb.append(id).append("\n");
+        }
         return sb.toString();
     }
 
