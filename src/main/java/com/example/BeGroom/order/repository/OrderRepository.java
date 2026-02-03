@@ -19,6 +19,10 @@ import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+
+    void deleteAllByIdInBatch(Iterable<Long> ids);
+
     Page<Order> findByMemberId(Pageable pageable, Long memberId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

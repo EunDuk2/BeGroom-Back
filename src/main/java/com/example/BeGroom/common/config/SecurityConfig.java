@@ -59,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth").permitAll()
                         .requestMatchers("/admin/crawling/**").permitAll()
                         .requestMatchers("/products/**").permitAll()
+                        .requestMatchers("/seed/**").permitAll()
                         .requestMatchers("/admin/products").permitAll()
                         .requestMatchers("/cart/**").authenticated()
                         .requestMatchers("/wishlist/**").authenticated()

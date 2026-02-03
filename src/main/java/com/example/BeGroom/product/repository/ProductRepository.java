@@ -1,5 +1,6 @@
 package com.example.BeGroom.product.repository;
 
+import com.example.BeGroom.product.domain.Brand;
 import com.example.BeGroom.product.domain.Product;
 import com.example.BeGroom.product.domain.ProductStatus;
 import com.example.BeGroom.product.dto.ProductSearchCondition;
@@ -23,6 +24,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
         return findAll(ProductSpecification.searchBy(condition), pageable);
     }
     Optional<Product> findByNo(Long productNo);
+
+    Optional<Product> findByBrandAndNo(Brand brand, Long no);
 
     // 판매자가 가진 총 상품 수
 //    int countBySellerIdAndDeletedAtIsNull(Long sellerId);
