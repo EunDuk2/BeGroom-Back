@@ -14,8 +14,4 @@ import java.util.Optional;
 @Repository
 public interface WalletRepository extends JpaRepository<Wallet, Long> {
     Optional<Wallet> findByMember(Member member);
-
-//    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select w from Wallet w where w.member = :member")
-    Optional<Wallet> findByMemberForUpdate(@Param("member") Member member);
 }

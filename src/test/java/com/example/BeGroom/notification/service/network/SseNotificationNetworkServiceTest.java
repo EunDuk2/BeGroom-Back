@@ -21,12 +21,14 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
@@ -42,7 +44,7 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
     @Autowired
     private NotificationRepository notificationRepository;
 
-    @Autowired
+    @MockitoSpyBean
     private MemberNotificationRepository memberNotificationRepository;
 
     @Value("${sse.timeout}")
@@ -144,27 +146,35 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
     void send() throws IOException {
         // given
         Long member1Id = 1L;
-        Long member2Id = 2L;
-        String emitterId1 = member1Id + "_" + "1000000000000";
-        String emitterId2 = member2Id + "_" + "1000000000000";
+
         SseEmitter emitter1 = mock(SseEmitter.class);
-        SseEmitter emitter2 = mock(SseEmitter.class);
+        Map<String, SseEmitter> savedEmitters = Map.of("1_1000000000000", emitter1);
 
-        Map<String, SseEmitter> emitters = new HashMap<>();
-        emitters.put(emitterId1, emitter1);
-        emitters.put(emitterId2, emitter2);
-        emitterRepository.saveAll(emitters);
+        doReturn(savedEmitters)
+                .when(emitterRepository).findAllStartWithById(member1Id);
 
-        NetworkMessageDto msg1 = createNetworkMessageDto(member1Id, "100");
-        NetworkMessageDto msg2 = createNetworkMessageDto(member2Id, "101");
-        List<NetworkMessageDto> message = List.of(msg1, msg2);
+        List<NetworkMessageDto> messages = List.of(createNetworkMessageDto(member1Id, "data"));
 
         // when
-        sseNotificationNetworkService.send(message);
+        sseNotificationNetworkService.send(messages);
 
         // then
         verify(emitter1, times(1)).send(any(SseEmitter.SseEventBuilder.class));
-        verify(emitter2, times(1)).send(any(SseEmitter.SseEventBuilder.class));
+    }
+
+    @DisplayName("구독 요청 시 연결을 맺고, 올바른 메시지를 보내고 해당 emitter를 반환한다.")
+    @Test
+    void subscribeWithHistory(){
+        // given
+        Long memberId = 1L;
+        String lastEventId = "100";
+        LocalDateTime connectTime = LocalDateTime.of(2026, Month.JANUARY, 1, 0, 0);
+
+        // when
+        SseEmitter result = sseNotificationNetworkService.subscribeWithHistory(memberId, lastEventId, connectTime);
+
+        // then
+        assertThat(result).isNotNull();
     }
 
     @DisplayName("SSE 구독에 성공했을 때, Last-Event-Id가 있고 읽지 않은 알림이 있으면 개수와 함께 메시지를 보낸다.")
@@ -176,8 +186,8 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
         notificationRepository.save(notification);
         memberRepository.save(member);
 
-        MemberNotification notification1 = createMemberNotification(member, notification);
-        MemberNotification notification2 = createMemberNotification(member, notification);
+        MemberNotification notification1 = createMemberNotification(member, notification, false);
+        MemberNotification notification2 = createMemberNotification(member, notification, false);
         memberNotificationRepository.saveAll(List.of(notification1, notification2));
 
         Long member1Id = 1L;
@@ -204,8 +214,8 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
         notificationRepository.save(notification);
         memberRepository.save(member);
 
-        MemberNotification notification1 = createMemberNotification(member, notification);
-        MemberNotification notification2 = createMemberNotification(member, notification);
+        MemberNotification notification1 = createMemberNotification(member, notification, false);
+        MemberNotification notification2 = createMemberNotification(member, notification, false);
         memberNotificationRepository.saveAll(List.of(notification1, notification2));
 
         Long member1Id = 1L;
@@ -232,8 +242,8 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
         notificationRepository.save(notification);
         memberRepository.save(member);
 
-        MemberNotification notification1 = createMemberNotification(member, notification);
-        MemberNotification notification2 = createMemberNotification(member, notification);
+        MemberNotification notification1 = createMemberNotification(member, notification, false);
+        MemberNotification notification2 = createMemberNotification(member, notification, false);
         memberNotificationRepository.saveAll(List.of(notification1, notification2));
 
         Long member1Id = 1L;
@@ -260,8 +270,8 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
         notificationRepository.save(notification);
         memberRepository.save(member);
 
-        MemberNotification notification1 = createMemberNotification(member, notification);
-        MemberNotification notification2 = createMemberNotification(member, notification);
+        MemberNotification notification1 = createMemberNotification(member, notification, true);
+        MemberNotification notification2 = createMemberNotification(member, notification, true);
         memberNotificationRepository.saveAll(List.of(notification1, notification2));
 
         Long member1Id = 1L;
@@ -269,14 +279,17 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
         String emitterId1 = member1Id + "_" + "1000000000000";
         SseEmitter emitter1 = new SseEmitter(defaultTimeout);
 
+        Object[] mockSummary = new Object[] { 0L, 0L };
+        Object[] mockTable = new Object[] { mockSummary };
+        given(memberNotificationRepository.findUnreadSummary(member1Id))
+                .willReturn(mockTable);
+
         // when
-        NotificationSendResult result = sseNotificationNetworkService.sseConnectionMessage(member1Id, lastEventId, emitterId1, emitter1);
+        sseNotificationNetworkService.sseConnectionMessage(member1Id, lastEventId, emitterId1, emitter1);
 
         // then
-        assertThat(result).extracting("emitterId", "eventId", "isSuccess")
-                .containsExactly("1_1000000000000", "2", true);
         verify(sseNotificationNetworkService, times(1))
-                .sendBySse(eq(emitter1), eq("1_1000000000000"), anyString(), any(), any());
+                .sendHeartBeat(eq(emitter1), eq("1_1000000000000"));
     }
 
     @DisplayName("Sse emitter에게 메시지를 보낸다.")
@@ -349,6 +362,52 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
         verify(emitterRepository).deleteById(emitterId);
     }
 
+    @DisplayName("completeEmitter가 호출되면 로그를 남기고 emitter 저장소에서 해당 emitter를 삭제한다.")
+    @Test
+    void completeEmitter(){
+        // given
+        String emitterId =  "1" + "_" + "1000000000000";
+        SseEmitter emitter =  new SseEmitter(defaultTimeout);
+        emitterRepository.save(emitterId, emitter);
+
+        // when
+        sseNotificationNetworkService.completeEmitter(emitterId);
+
+        // then
+        verify(emitterRepository).deleteById(emitterId);
+    }
+
+    @DisplayName("timeoutEmitter가 호출되면 로그를 남기고 emitter 저장소에서 해당 emitter를 삭제한다.")
+    @Test
+    void timeoutEmitter(){
+        // given
+        String emitterId =  "1" + "_" + "1000000000000";
+        SseEmitter emitter =  new SseEmitter(defaultTimeout);
+        emitterRepository.save(emitterId, emitter);
+
+        // when
+        sseNotificationNetworkService.timeoutEmitter(emitterId);
+
+        // then
+        verify(emitterRepository).deleteById(emitterId);
+    }
+
+    @DisplayName("errorEmitter가 호출되면 로그를 남기고 emitter 저장소에서 해당 emitter를 삭제한다.")
+    @Test
+    void errorEmitter(){
+        // given
+        String emitterId =  "1" + "_" + "1000000000000";
+        SseEmitter emitter =  new SseEmitter(defaultTimeout);
+        emitterRepository.save(emitterId, emitter);
+        Throwable throwable = new Throwable();
+
+        // when
+        sseNotificationNetworkService.errorEmitter(emitterId, throwable);
+
+        // then
+        verify(emitterRepository).deleteById(emitterId);
+    }
+
     private Member createMember(){
         return Member.builder()
                 .email("user")
@@ -367,12 +426,12 @@ class SseNotificationNetworkServiceTest extends IntegrationTestSupport {
                 .build();
     }
 
-    private MemberNotification createMemberNotification(Member member, Notification notification){
+    private MemberNotification createMemberNotification(Member member, Notification notification, boolean isRead){
         return MemberNotification.builder()
                 .member(member)
                 .notification(notification)
                 .metaData("테스트입니다.")
-                .isRead(false)
+                .isRead(isRead)
                 .build();
     }
 
