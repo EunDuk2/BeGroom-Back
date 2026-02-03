@@ -5,6 +5,10 @@ spring:
 server:
   servlet:
     context-path: /api
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    max-connections: 13000
 
 jwt:
   expirationAt: 3600000
