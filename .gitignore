@@ -40,7 +40,7 @@ out/
 .DS_Store
 
 #Docker
-docker-compose.yml
+scripts/load-test/docker-compose.yml
 
 #yml
 src/main/resources/application-prod.yml
