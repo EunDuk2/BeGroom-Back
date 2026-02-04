@@ -1,12 +1,18 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
+import { Trend, Rate } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080/api';
-const VUS = 200;
-
-// 너무 많은 로그 폭주 방지 (기본 20개)
 const MAX_FAIL_LOGS = Number(__ENV.MAX_FAIL_LOGS || 1);
+
+// 단계별 응답시간(각각 p95)
+const createOrderDuration = new Trend('create_order_duration'); // ms
+const checkoutDuration = new Trend('checkout_duration');        // ms
+
+// 단계별 실패율(원하면 threshold 걸기)
+const createOrderFailed = new Rate('create_order_failed');
+const checkoutFailed = new Rate('checkout_failed');
 
 const authData = new SharedArray('auth', function () {
     const text = open('./orders.csv');
@@ -34,18 +40,13 @@ const authData = new SharedArray('auth', function () {
         throw new Error('orders.csv parse error: productDetailIds not found');
     }
 
-    // productDetailIds는 다음 섹션 키(예: orderId) 나오기 전까지 숫자 줄들을 전부 읽음
     const productDetailIds = [];
     for (let i = pdIdx + 1; i < lines.length; i++) {
         const v = lines[i];
-
-        // 다음 섹션 헤더를 만나면 stop (memberId/token/orderId/productDetailIds 같은 키)
         if (v === 'memberId' || v === 'token' || v === 'orderId' || v === 'productDetailIds') break;
-
         const n = Number(v);
         if (Number.isFinite(n)) productDetailIds.push(n);
     }
-
     if (productDetailIds.length === 0) {
         throw new Error('orders.csv parse error: productDetailIds empty');
     }
@@ -53,8 +54,7 @@ const authData = new SharedArray('auth', function () {
     return [{ memberId, token, productDetailIds }];
 });
 
-// 실패 로그 카운터 (VU별)
-let __failLogCount = 0;
+let failLogCount = 0;
 
 function safeBody(res) {
     const b = res && res.body ? String(res.body) : '';
@@ -62,17 +62,12 @@ function safeBody(res) {
 }
 
 function logFail(step, res) {
-    if (__failLogCount >= MAX_FAIL_LOGS) return;
-    __failLogCount += 1;
-
-    console.error(
-        `FAIL[${step}] status=${res.status} body=${safeBody(res)}`
-    );
+    if (failLogCount >= MAX_FAIL_LOGS) return;
+    failLogCount += 1;
+    console.error(`FAIL[${step}] status=${res.status} body=${safeBody(res)}`);
 }
 
 function buildCreateOrderPayload(memberId, productDetailIds) {
-    // 지금 csv가 45,46 두 개라서 예시 수량을 1,2로 매칭
-    // 필요하면 수량도 csv로 빼도 됨
     return JSON.stringify({
         memberId,
         orderProductList: [
@@ -86,14 +81,26 @@ export const options = {
     scenarios: {
         burst_e2e_once: {
             executor: 'per-vu-iterations',
-            vus: VUS,
-            iterations: 1,
+            vus: Number(__ENV.VUS || 200),
+            iterations: 1, // VU당 1회 = 주문 수 == VU 수
             maxDuration: __ENV.MAX_DURATION || '1m',
         },
     },
+
     thresholds: {
+        // 전체(주문+sleep+결제) 플로우 p95: iteration_duration 기준
+        iteration_duration: ['p(95)<5000'],
+
+        // 주문 생성 p95
+        create_order_duration: ['p(95)<2000'],
+
+        // 결제 p95
+        checkout_duration: ['p(95)<3000'],
+
+        // (선택) 실패율도 같이 보면 좋음
         http_req_failed: ['rate<0.01'],
-        http_req_duration: ['p(95)<3000'],
+        create_order_failed: ['rate<0.01'],
+        checkout_failed: ['rate<0.01'],
     },
 };
 
@@ -112,22 +119,26 @@ export default function () {
         { headers, tags: { step: 'create_order' } }
     );
 
+    // 주문 생성 응답시간만 기록
+    createOrderDuration.add(createRes.timings.duration);
+
     const createOk = check(createRes, {
         'create 200/201': (r) => r.status === 200 || r.status === 201,
     });
+    createOrderFailed.add(!createOk);
 
     if (!createOk) {
         logFail('create_order', createRes);
         return;
     }
 
-    // 2) orderId 추출 (프로젝트 응답 포맷에 따라 둘 중 하나)
     const orderId = createRes.json('result.orderId') ?? createRes.json('orderId');
     if (!orderId) {
         logFail('create_order_no_orderId', createRes);
         return;
     }
 
+    // 2) 사용자 플로우 텀
     sleep(0.5);
 
     // 3) 결제(체크아웃)
@@ -137,9 +148,13 @@ export default function () {
         { headers, tags: { step: 'checkout' } }
     );
 
+    // 결제 응답시간만 기록
+    checkoutDuration.add(checkoutRes.timings.duration);
+
     const checkoutOk = check(checkoutRes, {
         'checkout 200': (r) => r.status === 200,
     });
+    checkoutFailed.add(!checkoutOk);
 
     if (!checkoutOk) {
         logFail('checkout', checkoutRes);
