@@ -1,6 +1,12 @@
 server:
   port: 8080
 
+logging:
+  level:
+    root: WARN
+    org.springframework.transaction: WARN #spring 트랜잭션 매니저 로그
+    org.springframework.orm.jpa.JpaTransactionManager: WARN #JPA 연동 트랜잭션 매니저 클래스의 로그
+
 spring:
   config:
     activate:

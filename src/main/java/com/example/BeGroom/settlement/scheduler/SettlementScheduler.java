@@ -13,7 +13,7 @@ public class SettlementScheduler {
     private final SettlementService settlementService;
     private final AggregationService aggregationService;
 
-    @Scheduled(fixedDelay = 10000)
+//    @Scheduled(fixedDelay = 10000)
     public void run() {
         aggregateSettlement();
         payoutSettlement();

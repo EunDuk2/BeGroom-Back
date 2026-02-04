@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/noti/**").authenticated()
                         .requestMatchers("/members/profile").authenticated()
                         .requestMatchers("/seller/**").authenticated()
+                        .requestMatchers("/test/settlement/**").permitAll() // 테스트 경로는 누구나 접근 가능
                         .requestMatchers(HttpMethod.POST, "/auth").permitAll()
                         .requestMatchers("/admin/crawling/**").permitAll()
                         .requestMatchers("/products/**").permitAll()
