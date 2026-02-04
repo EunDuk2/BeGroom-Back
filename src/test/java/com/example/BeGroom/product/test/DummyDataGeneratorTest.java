@@ -8,15 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.annotation.Commit;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@Transactional
 class DummyDataGeneratorTest extends IntegrationTestSupport {
 
     @Autowired
@@ -39,10 +36,9 @@ class DummyDataGeneratorTest extends IntegrationTestSupport {
 
     @DisplayName("사용자는 테스트를 위해 100만개의 상품 더미 데이터를 생성할 수 있다.")
     @Test
-    @Commit
     void seedData() {
         // given
-        int productCount = 1000000;
+        int productCount = 1_000_000;
 
         // when
         monitor.start();
