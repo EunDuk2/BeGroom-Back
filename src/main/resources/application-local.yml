@@ -8,14 +8,14 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/begroom?rewriteBatchedStatements=true
+    url: jdbc:mysql://localhost:3308/begroom?rewriteBatchedStatements=true
     username: root
     password: 1234
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
