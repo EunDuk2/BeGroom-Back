@@ -6,4 +6,3 @@ scrape_configs:
     metrics_path: '/api/actuator/prometheus'
     static_configs:
       - targets: ['host.docker.internal:8080']
-#      - targets: ['172.16.24.179:8080']

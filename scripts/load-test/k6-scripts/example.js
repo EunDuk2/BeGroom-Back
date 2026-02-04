@@ -14,7 +14,7 @@ export const options = {
     }
 }
 
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = 'http://host.docker.internal:8080/api';
 
 export default function (){
     // [STEP 1] Login
