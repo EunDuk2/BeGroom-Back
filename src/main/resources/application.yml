@@ -8,7 +8,10 @@ server:
   tomcat:
     mbeanregistry:
       enabled: true
-    max-connections: 13000
+    max-connections: 33000
+    accept-count: 10000
+    threads:
+      max: 400
 
 jwt:
   expirationAt: 3600000

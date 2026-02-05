@@ -13,9 +13,8 @@ export const options = {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
-                { duration: '1m', target: 10000 },
-                { duration: '5m', target: 10000 },
-                { duration: '30s', target: 0 },
+                { duration: '1m', target: 100 },
+                { duration: '1m', target: 1000 },
             ],
         },
     },
@@ -24,10 +23,9 @@ export const options = {
     },
 };
 
-const BASE_URL = 'http://172.16.24.179:8080/api';
+const BASE_URL = 'http://host.docker.internal:8080/api';
 
 export default function () {
-    // 2. 가상 유저(VU)별 고유 토큰 할당 [cite: 2026-01-05]
     const user = csvData[(__VU - 1) % csvData.length];
 
     const params = {
@@ -35,13 +33,14 @@ export default function () {
             'Authorization': `Bearer ${user.token}`,
             'Accept': 'text/event-stream',
         },
-        timeout: '120s',
+        timeout: '60s',
     };
 
     const sseRes = http.get(`${BASE_URL}/noti/subscribe`, params);
 
     check(sseRes, {
-        'is status 200': (r) => r.status === 200
+        'is status 200 (Success)': (r) => r.status === 200,
+        'is status 1050 (Timeout)': (r) => r.status === 1050,
     });
 
     sleep(300);

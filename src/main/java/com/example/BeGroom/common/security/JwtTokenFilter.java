@@ -29,8 +29,12 @@ public class JwtTokenFilter extends GenericFilter {
         try {
             HttpServletRequest req = (HttpServletRequest) request;
             String bearerToken = req.getHeader("Authorization");
+            String path = req.getRequestURI();
 
-            log.info("[DEBUG] Raw Authorization Header: '{}'", bearerToken);
+            if (path.startsWith("/api/actuator")) {
+                chain.doFilter(request, response);
+                return;
+            }
 
             if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
                 log.info("[JWT] No Token found in header");

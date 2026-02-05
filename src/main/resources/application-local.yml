@@ -7,15 +7,19 @@ spring:
       on-profile: local
 
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-cla ss-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/begroom?rewriteBatchedStatements=true
     username: root
     password: 1234
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 50
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
