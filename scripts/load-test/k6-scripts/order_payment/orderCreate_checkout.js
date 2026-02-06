@@ -81,9 +81,11 @@ export const options = {
     scenarios: {
         burst_e2e_once: {
             executor: 'per-vu-iterations',
-            vus: Number(__ENV.VUS || 200),
+            vus: Number(__ENV.VUS || 100),
             iterations: 1, // VU당 1회 = 주문 수 == VU 수
             maxDuration: __ENV.MAX_DURATION || '1m',
+            // executor: 'constant-vus',
+            // duration: '10s',
         },
     },
 
@@ -123,7 +125,7 @@ export default function () {
     createOrderDuration.add(createRes.timings.duration);
 
     const createOk = check(createRes, {
-        'create 200/201': (r) => r.status === 200 || r.status === 201,
+        'create 201': (r) => r.status === 201,
     });
     createOrderFailed.add(!createOk);
 

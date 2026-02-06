@@ -41,7 +41,7 @@ public class WeeklyPeriod {
         LocalDate monthWeekStart = monthStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         // 7일 단위(1주)가 몇번 지나갔는지
         int week = (int)ChronoUnit.WEEKS.between(monthWeekStart, originDate) + 1;
-        log.info(originDate + " : " + week);
+//        log.info(originDate + " : " + week);
 
         // 원래 주 시작일 (2025-12-28)
         LocalDate originWeekStart = originDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));

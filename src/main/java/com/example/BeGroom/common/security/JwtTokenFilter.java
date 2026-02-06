@@ -30,10 +30,10 @@ public class JwtTokenFilter extends GenericFilter {
             HttpServletRequest req = (HttpServletRequest) request;
             String bearerToken = req.getHeader("Authorization");
 
-            log.info("[DEBUG] Raw Authorization Header: '{}'", bearerToken);
+//            log.info("[DEBUG] Raw Authorization Header: '{}'", bearerToken);
 
             if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
-                log.info("[JWT] No Token found in header");
+//                log.info("[JWT] No Token found in header");
                 chain.doFilter(request, response);
                 return;
             }
@@ -61,11 +61,11 @@ public class JwtTokenFilter extends GenericFilter {
 
                 Authentication authentication = new UsernamePasswordAuthenticationToken(principal, "", authorityList);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("[JWT] Authentication success: memberId {}", memberId);
+//                log.info("[JWT] Authentication success: memberId {}", memberId);
             }
 
         } catch (Exception e) {
-            log.error("[JWT ERROR] Token validation failed: {}", e.getMessage());
+//            log.error("[JWT ERROR] Token validation failed: {}", e.getMessage());
         }
         chain.doFilter(request, response);
     }
