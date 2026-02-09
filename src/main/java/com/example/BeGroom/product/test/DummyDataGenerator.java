@@ -8,6 +8,7 @@ import net.datafaker.Faker;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +20,10 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -27,7 +31,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DummyDataGenerator {
 
     private final JdbcTemplate jdbcTemplate;
-    private final Faker faker = new Faker(new Locale("ko"));
+
+    // ThreadLocal Faker로 동시성 문제 해결
+    private static final ThreadLocal<Faker> FAKER_THREAD_LOCAL =
+        ThreadLocal.withInitial(() -> new Faker(new Locale("ko")));
 
     private PerformanceMonitor monitor;
     public void setPerformanceMonitor(PerformanceMonitor monitor) {
@@ -35,7 +42,15 @@ public class DummyDataGenerator {
     }
 
     private record CategoryInfo(Long id, String name, Long parentId) {}
-    private record ProductDetailBatch(Long productId, Long detailNo, int optionNum) {}
+    private record ProductDetailBatch(Long productId, Long detailNo, String detailName) {}
+    private record ProductInfo(Long id, String name, Long categoryId, Long brandId, String description) {}
+
+    // 청크별 처리 결과 추적
+    private record ChunkResult(int chunkIndex, int productsCreated, int detailsCreated, long durationMs, Throwable error) {
+        boolean isSuccess() {
+            return error == null;
+        }
+    }
 
     private static final Map<String, List<String>> ADJECTIVE_POOL = new HashMap<>();
     private static final List<String> KOREAN_BRAND_PREFIXES = new ArrayList<>();
@@ -44,13 +59,16 @@ public class DummyDataGenerator {
     private static final List<String> ENGLISH_BRAND_SUFFIXES = new ArrayList<>();
     private static final Map<Long, List<String>> CATEGORY_IMAGE_URLS = new HashMap<>();
 
-    private final AtomicLong brandCodeCounter = new AtomicLong(1000000L);
-    private final AtomicLong productNoCounter = new AtomicLong(30000000L);
-    private final AtomicLong detailNoCounter = new AtomicLong(50000000L);
+    private final AtomicLong brandCodeCounter = new AtomicLong(0);
+    private final AtomicLong productNoCounter = new AtomicLong(0);
+    private final AtomicLong detailNoCounter = new AtomicLong(0);
 
     static {
-
         loadCategoryImages();
+        initializePools();
+    }
+
+    private static void initializePools() {
 
         KOREAN_BRAND_PREFIXES.addAll(Arrays.asList(
             "가온", "그린", "건강", "고품격", "나눔", "네이처", "다올", "달콤", "동원",
@@ -140,6 +158,28 @@ public class DummyDataGenerator {
         ));
     }
 
+    private void initializeCounters() {
+        log.info("DB 현재 상태를 기반으로 카운터를 초기화합니다...");
+
+        Long maxBrandCode = jdbcTemplate.queryForObject("SELECT COALESCE(MAX(brand_code), 0) FROM brand", Long.class);
+        brandCodeCounter.set(maxBrandCode + 1);
+
+        Long maxProductNo = jdbcTemplate.queryForObject("SELECT COALESCE(MAX(no), 0) FROM product", Long.class);
+        productNoCounter.set(maxProductNo + 1);
+
+        Long maxDetailId = jdbcTemplate.queryForObject("SELECT COALESCE(MAX(id), 0) FROM product_detail", Long.class);
+        detailNoCounter.set(maxDetailId + 1);
+
+        log.info("카운터 초기화 완료 - BrandCode: {}, ProductNo: {}, DetailId: {}",
+            brandCodeCounter.get(), productNoCounter.get(), detailNoCounter.get());
+    }
+
+    private void syncAutoIncrement() {
+        log.info("DB AUTO_INCREMENT 값을 동기화합니다...");
+        jdbcTemplate.execute("ALTER TABLE product AUTO_INCREMENT = " + productNoCounter.get());
+        jdbcTemplate.execute("ALTER TABLE product_detail AUTO_INCREMENT = " + detailNoCounter.get());
+    }
+
     private static final Map<Long, String> CATEGORY_TO_ADJECTIVE_GROUP = Map.ofEntries(
         Map.entry(1L, "FOOD"), Map.entry(2L, "FRUIT"), Map.entry(3L, "FOOD"),
         Map.entry(4L, "FOOD"), Map.entry(5L, "FOOD"), Map.entry(6L, "CONVENIENCE"),
@@ -152,7 +192,6 @@ public class DummyDataGenerator {
         Map.entry(25L, "BEAUTY"), Map.entry(26L, "BEAUTY")
     );
 
-    // 중량/용량 옵션
     private static final List<String> WEIGHT_OPTIONS_FOOD = Arrays.asList(
         "300g", "500g", "1kg", "2kg", "3kg", "5kg"
     );
@@ -163,22 +202,28 @@ public class DummyDataGenerator {
         "1개", "2개", "3개", "1세트", "2세트"
     );
 
-    @Transactional
+    /**
+     * 멀티스레드 버전
+     */
     public void seedAll(int productCount) {
         log.info("=== 대량 데이터 시딩 시작 (상품 개수: {}) ===", productCount);
-        long startTime = System.currentTimeMillis();
 
+        initializeCounters();
         ensureSellerExists();
-        if (monitor != null) monitor.recordStep("Seller 확인");
-
         seedBrands();
         if (monitor != null) monitor.recordStep("Brand 생성");
 
-        List<Long> brandIds = jdbcTemplate.queryForList("SELECT id FROM brand WHERE seller_id = 1", Long.class);
+        Map<Long, String> brandNameMap = new HashMap<>();
+        jdbcTemplate.query(
+            "SELECT id, name FROM brand WHERE seller_id = 1",
+            rs -> {
+                brandNameMap.put(rs.getLong("id"), rs.getString("name"));
+            }
+        );
+        List<Long> brandIds = new ArrayList<>(brandNameMap.keySet());
 
-        // 카테고리 데이터 확보 (Level 2)
         List<CategoryInfo> categories = jdbcTemplate.query(
-            "SELECT c.id, c.category_name, c.parent_id FROM category c WHERE c.level = 2",
+            "SELECT id, category_name, parent_id FROM category WHERE level = 2",
             (rs, rowNum) -> new CategoryInfo(
                 rs.getLong("id"),
                 rs.getString("category_name"),
@@ -187,36 +232,76 @@ public class DummyDataGenerator {
         );
         if (monitor != null) monitor.recordStep("Category 조회");
 
+        Long baseProductId = jdbcTemplate.queryForObject(
+            "SELECT COALESCE(MAX(id), 0) FROM product",
+            Long.class
+        );
+        if (baseProductId == null) baseProductId = 0L;
+
         int chunkSize = 1000;
         int totalChunks = (int) Math.ceil((double) productCount / chunkSize);
+        int threadCount = Math.min(Runtime.getRuntime().availableProcessors(), 8);
 
-        log.info("총 {}개 청크로 분할하여 처리 (청크 크기: {})", totalChunks, chunkSize);
-
-        for (int chunk = 0; chunk < totalChunks; chunk++) {
-            int startIdx = chunk * chunkSize;
-            int endIdx = Math.min(startIdx + chunkSize, productCount);
-            int currentChunkSize = endIdx - startIdx;
-
-            log.info("청크 {}/{} 처리 중 ({}~{}번째 상품)",
-                chunk + 1, totalChunks, startIdx + 1, endIdx);
-
-            long chunkStart = System.currentTimeMillis();
-
-            processChunkWithTransaction(startIdx, currentChunkSize, brandIds, categories);
-
-            long chunkDuration = System.currentTimeMillis() - chunkStart;
-            if (monitor != null) {
-                monitor.recordChunk(chunk + 1, currentChunkSize, chunkDuration);
+        // 고정 크기 스레드 풀 생성
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount, new ThreadFactory() {
+            private final AtomicInteger counter = new AtomicInteger(0);
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("DataGenerator-" + counter.incrementAndGet());
+                return thread;
             }
-            if (chunk > 0 && chunk % 10 == 0) {
-                System.gc();
-                log.info("메모리 정리 실행 ({}개 청크 완료)", chunk);
+        });
+
+        try {
+            // 청크별 비동기 작업 생성
+            List<CompletableFuture<ChunkResult>> futures = new ArrayList<>();
+
+            for (int chunk = 0; chunk < totalChunks; chunk++) {
+                int finalChunk = chunk;
+                int startIdx = chunk * chunkSize;
+                int currentChunkSize = Math.min(chunkSize, productCount - startIdx);
+                // 청크별 독립적인 ID 범위 할당 (충돌 방지)
+                long chunkStartProductId = baseProductId + startIdx + 1;
+
+                futures.add(CompletableFuture.supplyAsync(() -> {
+                    long chunkStart = System.currentTimeMillis();
+                    try {
+                        int[] counts = processChunkWithTransaction(startIdx, currentChunkSize, chunkStartProductId, brandIds, brandNameMap, categories);
+                        return new ChunkResult(finalChunk, counts[0], counts[1], System.currentTimeMillis() - chunkStart, null);
+                    } catch (Exception e) {
+                        return new ChunkResult(finalChunk, 0, 0, System.currentTimeMillis() - chunkStart, e);
+                    }
+                }, executorService));
             }
+            // 모든 작업 완료까지 블로킹
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            // 결과 집계
+            List<ChunkResult> results = futures.stream()
+                .map(CompletableFuture::join).toList();
+
+            long successCount = results.stream().filter(ChunkResult::isSuccess).count();
+
+            int totalProducts = results.stream()
+                .mapToInt(ChunkResult::productsCreated)
+                .sum();
+
+            int totalDetails = results.stream()
+                .mapToInt(ChunkResult::detailsCreated)
+                .sum();
+
+            log.info("=== 대량 데이터 시딩 완료 (성공: {}/{}, 상품: {}개, 상세: {}개) ===", successCount, totalChunks, totalProducts, totalDetails);
+
+            syncAutoIncrement();
+
+        } finally {
+            // 리소스 정리
+            executorService.shutdown();
+
+            // ThreadLocal 정리
+            FAKER_THREAD_LOCAL.remove();
         }
-        if (monitor != null) monitor.recordStep("전체 Product 생성 완료");
-
-        long duration = (System.currentTimeMillis() - startTime) / 1000;
-        log.info("=== 대량 데이터 시딩 완료 (소요시간: {}초) ===", duration);
     }
 
     private void ensureSellerExists() {
@@ -233,22 +318,16 @@ public class DummyDataGenerator {
                     VALUES (1, 'BeGroom', 'admin@begroom.com', '\\$2a\\$10\\$dummyHash', '02-1234-5678', 5.00, 25, NOW(), NOW());
                     """
             );
-        } else {
-            log.info("seller_id = 1인 데이터가 이미 존재합니다.");
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void seedBrands() {
-
         ensureDefaultBrandExists();
 
         Long existingCount = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM brand WHERE seller_id = 1", Long.class);
-
         if (existingCount != null && existingCount > 1) return;
-
-        String sql = "INSERT INTO brand (seller_id, brand_code, name, description, created_at, updated_at) VALUES (1, ?, ?, ?, ?, ?)";
 
         Set<String> allBrands = new HashSet<>();
         for (String prefix : KOREAN_BRAND_PREFIXES) {
@@ -264,18 +343,19 @@ public class DummyDataGenerator {
 
         List<String> brandList = new ArrayList<>(allBrands);
         Collections.shuffle(brandList);
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
 
+        String sql = "INSERT INTO brand (seller_id, brand_code, name, description, created_at, updated_at) VALUES (1, ?, ?, ?, ?, ?)";
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 String brandName = brandList.get(i);
-                long uniqueBrandCode = brandCodeCounter.getAndIncrement();
 
-                ps.setLong(1, uniqueBrandCode);
+                ps.setLong(1, brandCodeCounter.getAndIncrement());
                 ps.setString(2, brandName);
-                ps.setString(3, brandName + "브랜드");
-                ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-                ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+                ps.setString(3, brandName + " 브랜드");
+                ps.setTimestamp(4, now);
+                ps.setTimestamp(5, now);
             }
 
             @Override
@@ -299,171 +379,203 @@ public class DummyDataGenerator {
                     VALUES (1, 1, 0, '비구름', NULL, '비구름 자체 브랜드', NOW(), NOW())
                     """
             );
-        } else {
-            log.info("기본 브랜드가 이미 존재합니다.");
         }
     }
 
     /**
      * 각 청크를 별도 트랜잭션으로 처리
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processChunkWithTransaction(int startIdx, int chunkSize,
-                                            List<Long> brandIds,
-                                            List<CategoryInfo> categories) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_UNCOMMITTED)
+    public int[] processChunkWithTransaction(int startIdx, int chunkSize, long startProductId,
+                                             List<Long> brandIds, Map<Long, String> brandNameMap,
+                                             List<CategoryInfo> categories) {
+        // 청크 내 병렬 처리용 Executor 생성
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+
         try {
-            processChunk(startIdx, chunkSize, brandIds, categories);
-        } catch (Exception e) {
-            log.error("청크 처리 실패 (시작: {}, 크기: {}): {}", startIdx, chunkSize, e.getMessage(), e);
-            throw e;
-        }
-    }
+            Faker faker = FAKER_THREAD_LOCAL.get();
 
-    /**
-     * 실제 데이터 생성 로직
-     */
-    private void processChunk(int startIdx, int chunkSize,
-                              List<Long> brandIds,
-                              List<CategoryInfo> categories) {
-
-        // 1. 카테고리 할당
-        List<Long> assignedCategoryIds = new ArrayList<>();
-        for (int i = 0; i < chunkSize; i++) {
-            assignedCategoryIds.add(
-                categories.get((startIdx + i) % categories.size()).id()
-            );
-        }
-
-        // 2. Product 생성
-        long startProductId = getNextProductId();
-        seedProductsCustomOptimized(startProductId, chunkSize, brandIds, categories, assignedCategoryIds);
-
-        // 3. ID 범위로 조회
-        List<Long> productIds = jdbcTemplate.queryForList(
-            "SELECT id FROM product WHERE id >= ? AND id < ? ORDER BY id",
-            Long.class,
-            startProductId,
-            startProductId + chunkSize + 100
-        );
-
-        if (productIds.isEmpty()) {
-            log.warn("생성된 Product가 없습니다. 스킵합니다.");
-            return;
-        }
-
-        // 4. 연관 데이터 생성
-        seedProductCategoryMappings(productIds, assignedCategoryIds);
-        seedProductImages(productIds, assignedCategoryIds);
-        seedProductDetails(productIds);
-
-        // 5. ProductDetail ID를 범위로 조회
-        Long minProductId = productIds.stream().min(Long::compare).orElse(0L);
-        Long maxProductId = productIds.stream().max(Long::compare).orElse(0L);
-
-        List<Long> detailIds = jdbcTemplate.queryForList(
-            "SELECT id FROM product_detail WHERE product_id BETWEEN ? AND ? ORDER BY id",
-            Long.class,
-            minProductId,
-            maxProductId
-        );
-
-        if (detailIds.isEmpty()) {
-            log.warn("생성된 ProductDetail이 없습니다.");
-            return;
-        }
-
-        seedPrices(detailIds);
-        seedStocks(detailIds);
-        seedOptionMappings(detailIds);
-
-        log.info("청크 처리 완료 ({}개 상품, {}개 상세)", productIds.size(), detailIds.size());
-    }
-
-    /**
-     * 다음 Product ID 조회
-     */
-    private long getNextProductId() {
-        Long maxId = jdbcTemplate.queryForObject(
-            "SELECT COALESCE(MAX(id), 0) FROM product",
-            Long.class
-        );
-        return maxId != null ? maxId + 1 : 1L;
-    }
-
-    /**
-     * Product 생성 최적화 (500개씩 분할)
-     */
-    private void seedProductsCustomOptimized(long startProductId, int count,
-                                             List<Long> brandIds,
-                                             List<CategoryInfo> categories,
-                                             List<Long> assignedIds) {
-        String sql = "INSERT INTO product (brand_id, no, name, short_description, " +
-            "product_status, wishlist_count, sales_count, created_at, updated_at) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        Map<Long, CategoryInfo> categoryMap = new HashMap<>();
-        for (CategoryInfo ci : categories) {
-            categoryMap.put(ci.id(), ci);
-        }
-
-        Map<Long, String> brandIdToNameMap = new HashMap<>();
-        String brandIdList = brandIds.stream()
-            .map(String::valueOf)
-            .reduce((a, b) -> a + "," + b)
-            .orElse("");
-
-        jdbcTemplate.query(
-            "SELECT id, name FROM brand WHERE id IN (" + brandIdList + ")",
-            rs -> {
-                brandIdToNameMap.put(rs.getLong("id"), rs.getString("name"));
+            // 카테고리 할당
+            List<Long> assignedCategoryIds = new ArrayList<>(chunkSize);
+            for (int i = 0; i < chunkSize; i++) {
+                assignedCategoryIds.add(
+                    categories.get((startIdx + i) % categories.size()).id()
+                );
             }
-        );
 
-        // 500개씩 분할하여 배치 삽입
-        int subBatchSize = 500;
-        for (int offset = 0; offset < count; offset += subBatchSize) {
-            int currentBatchSize = Math.min(subBatchSize, count - offset);
-            final int finalOffset = offset;
+            // Product 생성
+            List<ProductInfo> productInfos = seedProductsOptimized(
+                startProductId, chunkSize, brandIds, brandNameMap,
+                categories, assignedCategoryIds, faker
+            );
+            List<Long> productIds = productInfos.stream().map(ProductInfo::id).toList();
 
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    int actualIndex = finalOffset + i;
-                    Long categoryId = assignedIds.get(actualIndex);
-                    CategoryInfo category = categoryMap.get(categoryId);
+            // 2. Product 관련 병렬 실행
+            CompletableFuture<Void> categoryFuture = CompletableFuture.runAsync(() ->
+                seedProductCategoryMappings(productIds, assignedCategoryIds), executor
+            );
+            CompletableFuture<Void> imageFuture = CompletableFuture.runAsync(() ->
+                seedProductImages(productIds, assignedCategoryIds, faker), executor
+            );
 
-                    String fullCategoryName = category.name();
-                    String[] keywords = fullCategoryName.split("·");
-                    String keyword = keywords[faker.random().nextInt(keywords.length)].trim();
+            // 완료 대기
+            CompletableFuture.allOf(categoryFuture, imageFuture).join();
 
-                    Long parentId = category.parentId();
-                    String adjectiveGroup = CATEGORY_TO_ADJECTIVE_GROUP.getOrDefault(parentId, "FOOD");
-                    List<String> adjectivePool = ADJECTIVE_POOL.get(adjectiveGroup);
-                    String adjective = adjectivePool.get(faker.random().nextInt(adjectivePool.size()));
+            // 3. Detail 생성
+            List<Long> detailIds = seedProductDetailsOptimized(productInfos, faker);
 
-                    Long brandId = brandIds.get(faker.random().nextInt(brandIds.size()));
-                    String brandName = brandIdToNameMap.get(brandId);
+            // 4. Detail 관련 병렬 실행
+            CompletableFuture<Void> priceFuture = CompletableFuture.runAsync(() ->
+                seedPrices(detailIds, faker), executor
+            );
+            CompletableFuture<Void> stockFuture = CompletableFuture.runAsync(() ->
+                seedStocks(detailIds, faker), executor
+            );
+            CompletableFuture<Void> optionFuture = CompletableFuture.runAsync(() ->
+                seedOptionMappings(detailIds, faker), executor
+            );
 
-                    String productName = String.format("[%s] %s %s", brandName, adjective, keyword);
-                    long uniqueProductNo = productNoCounter.getAndIncrement();
+            // 완료 대기
+            CompletableFuture.allOf(priceFuture, stockFuture, optionFuture).join();
 
-                    ps.setLong(1, brandId);
-                    ps.setLong(2, uniqueProductNo);
-                    ps.setString(3, productName);
-                    ps.setString(4, adjective + " " + keyword + " 상품입니다.");
-                    ps.setString(5, "SALE");
-                    ps.setInt(6, 0);
-                    ps.setInt(7, 0);
-                    ps.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
-                    ps.setTimestamp(9, Timestamp.valueOf(LocalDateTime.now()));
+            return new int[]{productIds.size(), detailIds.size()};
+        } catch (Exception e) {
+            log.error("청크 처리 중 에러 발생 (startIdx: {}, chunkSize: {})", startIdx, chunkSize, e);
+            throw e;
+        } finally {
+            // Executor 정리
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                    log.warn("Executor 강제 종료 (청크: {})", startIdx);
                 }
-
-                @Override
-                public int getBatchSize() {
-                    return currentBatchSize;
-                }
-            });
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
+    }
+
+    /**
+     * Product 생성
+     */
+    private List<ProductInfo> seedProductsOptimized(long startProductId, int count,
+                                                    List<Long> brandIds,
+                                                    Map<Long, String> brandNameMap,
+                                                    List<CategoryInfo> categories,
+                                                    List<Long> assignedIds,
+                                                    Faker faker) {
+        String sql = "INSERT INTO product (id, brand_id, no, name, short_description, " +
+            "product_status, wishlist_count, sales_count, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        Map<Long, CategoryInfo> categoryMap = categories.stream().collect(Collectors.toMap(CategoryInfo::id, c -> c));
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        List<ProductInfo> createdProducts = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            long productId = startProductId + i;
+
+            CategoryInfo category = categoryMap.get(assignedIds.get(i));
+            String[] keywords = category.name().split("·");
+            String keyword = keywords[faker.random().nextInt(keywords.length)].trim();
+
+            Long parentId = category.parentId();
+            String adjectiveGroup = CATEGORY_TO_ADJECTIVE_GROUP.getOrDefault(parentId, "FOOD");
+            List<String> adjectivePool = ADJECTIVE_POOL.get(adjectiveGroup);
+            String adjective = adjectivePool.get(faker.random().nextInt(adjectivePool.size()));
+
+            Long brandId = brandIds.get(faker.random().nextInt(brandIds.size()));
+            String brandName = brandNameMap.get(brandId);
+
+            String productName = String.format("[%s] %s %s", brandName, adjective, keyword);
+            String description = adjective + " " + keyword + " 상품입니다.";
+
+            createdProducts.add(new ProductInfo(
+                productId,
+                productName,
+                assignedIds.get(i),
+                brandId,
+                description
+            ));
+        }
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ProductInfo p = createdProducts.get(i);
+
+                ps.setLong(1, p.id());
+                ps.setLong(2, p.brandId());
+                ps.setLong(3, productNoCounter.getAndIncrement());
+                ps.setString(4, p.name());
+                ps.setString(5, p.description());
+                ps.setString(6, "SALE");
+                ps.setInt(7, 0);
+                ps.setInt(8, 0);
+                ps.setTimestamp(9, now);
+                ps.setTimestamp(10, now);
+            }
+
+            @Override
+            public int getBatchSize() {
+                return createdProducts.size();
+            }
+        });
+        return createdProducts;
+    }
+
+    /**
+     * ProductDetail 생성
+     */
+    private List<Long> seedProductDetailsOptimized(List<ProductInfo> productInfos, Faker faker) {
+        String sql = "INSERT INTO product_detail (id, product_id, no, name, is_available, created_at, updated_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        List<ProductDetailBatch> batches = new ArrayList<>();
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+
+        for (ProductInfo p : productInfos) {
+            double random = faker.random().nextDouble();
+            int detailCount = random < 0.3 ? 1 : random < 0.7 ? 2 : 3;
+
+            String adjectiveGroup = CATEGORY_TO_ADJECTIVE_GROUP.getOrDefault(p.categoryId(), "FOOD");
+
+            List<String> options = switch (adjectiveGroup) {
+                case "BEVERAGE" -> WEIGHT_OPTIONS_BEVERAGE;
+                case "FOOD", "FRUIT" -> WEIGHT_OPTIONS_FOOD;
+                default -> WEIGHT_OPTIONS_DEFAULT;
+            };
+
+            for (int j = 0; j < detailCount; j++) {
+                long detailId = detailNoCounter.getAndIncrement();
+                String optionLabel = options.get(faker.random().nextInt(options.size()));
+                String detailName = (detailCount == 1) ? p.name() : p.name() + " - " + optionLabel;
+                batches.add(new ProductDetailBatch(p.id(), detailId, detailName));
+            }
+        }
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ProductDetailBatch b = batches.get(i);
+
+                ps.setLong(1, b.detailNo());
+                ps.setLong(2, b.productId());
+                ps.setLong(3, b.detailNo());
+                ps.setString(4, b.detailName());
+                ps.setBoolean(5, true);
+                ps.setTimestamp(6, now);
+                ps.setTimestamp(7, now);
+            }
+
+            @Override
+            public int getBatchSize() {
+                return batches.size();
+            }
+        });
+        return batches.stream().map(ProductDetailBatch::detailNo).toList();
     }
 
     private static void loadCategoryImages() {
@@ -481,15 +593,15 @@ public class DummyDataGenerator {
                     Long categoryId = Long.parseLong(entry.getKey());
                     CATEGORY_IMAGE_URLS.put(categoryId, entry.getValue());
                 } catch (NumberFormatException e) {
-                    log.error("카테고리 ID 파싱 실패");
+                    log.error("카테고리 ID 파싱 실패: {}", entry.getKey(), e);
                 }
             }
         } catch (IOException e) {
-            log.error("카테고리 이미지 로드 실패");
+            log.error("카테고리 이미지 로드 실패", e);
         }
     }
 
-    private String getImageUrlForCategory(Long categoryId) {
+    private String getImageUrlForCategory(Long categoryId, Faker faker) {
         List<String> categoryImages = CATEGORY_IMAGE_URLS.get(categoryId);
 
         if (categoryImages != null && !categoryImages.isEmpty()) {
@@ -500,250 +612,130 @@ public class DummyDataGenerator {
     }
 
     /**
-     * Product 이미지 생성 (500개씩 분할)
+     * Product 이미지 생성
      */
-    private void seedProductImages(List<Long> productIds, List<Long> assignedCategoryIds) {
+    private void seedProductImages(List<Long> productIds, List<Long> assignedCategoryIds, Faker faker) {
         String sql = "INSERT INTO product_image (product_id, image_url, image_type, sort_order, created_at, updated_at) " +
             "VALUES (?, ?, ?, ?, ?, ?)";
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, productIds.get(i));
+                ps.setString(2, getImageUrlForCategory(assignedCategoryIds.get(i), faker));
+                ps.setString(3, "MAIN");
+                ps.setInt(4, 1);
+                ps.setTimestamp(5, now);
+                ps.setTimestamp(6, now);
+            }
 
-        int subBatchSize = 500;
-        for (int offset = 0; offset < productIds.size(); offset += subBatchSize) {
-            int currentSize = Math.min(subBatchSize, productIds.size() - offset);
-            final int finalOffset = offset;
-
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    Long productId = productIds.get(finalOffset + i);
-                    Long categoryId = assignedCategoryIds.get(finalOffset + i);
-                    String imageUrl = getImageUrlForCategory(categoryId);
-
-                    ps.setLong(1, productId);
-                    ps.setString(2, imageUrl);
-                    ps.setString(3, "MAIN");
-                    ps.setInt(4, 1);
-                    ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-                    ps.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                @Override
-                public int getBatchSize() { return currentSize; }
-            });
-        }
+            @Override
+            public int getBatchSize() {
+                return productIds.size();
+            }
+        });
     }
 
     /**
-     * ProductDetail 생성 (500개씩 분할)
+     * 재고 생성
      */
-    private void seedProductDetails(List<Long> productIds) {
-        String sql = "INSERT INTO product_detail (product_id, no, name, is_available, created_at, updated_at) " +
-            "VALUES (?, ?, ?, ?, ?, ?)";
-
-        List<ProductDetailBatch> detailBatches = new ArrayList<>();
-//        long detailNoCounter = 2000000000L;
-        Map<Long, Integer> productDetailCountMap = new HashMap<>();
-
-        for (Long productId : productIds) {
-            int detailCount;
-            double random = faker.random().nextDouble();
-            if (random < 0.3) {
-                detailCount = 1;
-            } else if (random < 0.7) {
-                detailCount = 2;
-            } else {
-                detailCount = 3;
-            }
-
-            productDetailCountMap.put(productId, detailCount);
-
-            for (int j = 0; j < detailCount; j++) {
-                detailBatches.add(new ProductDetailBatch(
-                    productId,
-                    detailNoCounter.getAndIncrement(),
-                    j + 1
-                ));
-            }
-        }
-
-        Map<Long, String> productNameMap = new HashMap<>();
-        Long minId = productIds.stream().min(Long::compare).orElse(0L);
-        Long maxId = productIds.stream().max(Long::compare).orElse(0L);
-
-        jdbcTemplate.query(
-            "SELECT id, name FROM product WHERE id BETWEEN ? AND ?",
-            new Object[]{minId, maxId},
-            rs -> {
-                productNameMap.put(rs.getLong("id"), rs.getString("name"));
-            }
-        );
-
-        // 500개씩 분할하여 배치 삽입
-        int subBatchSize = 500;
-        for (int offset = 0; offset < detailBatches.size(); offset += subBatchSize) {
-            int currentSize = Math.min(subBatchSize, detailBatches.size() - offset);
-            final int finalOffset = offset;
-
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    ProductDetailBatch batch = detailBatches.get(finalOffset + i);
-                    int totalDetailCount = productDetailCountMap.get(batch.productId);
-
-                    String detailName;
-                    if (totalDetailCount == 1) {
-                        detailName = productNameMap.get(batch.productId);
-                    } else {
-                        List<String> weightOptions;
-                        int randomCategory = faker.random().nextInt(10);
-                        if (randomCategory < 5) {
-                            weightOptions = WEIGHT_OPTIONS_FOOD;
-                        } else if (randomCategory < 7) {
-                            weightOptions = WEIGHT_OPTIONS_BEVERAGE;
-                        } else {
-                            weightOptions = WEIGHT_OPTIONS_DEFAULT;
-                        }
-
-                        String weight = weightOptions.get(faker.random().nextInt(weightOptions.size()));
-                        detailName = String.format("옵션%d - %s", batch.optionNum, weight);
-                    }
-
-                    ps.setLong(1, batch.productId);
-                    ps.setLong(2, batch.detailNo);
-                    ps.setString(3, detailName);
-                    ps.setBoolean(4, true);
-                    ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-                    ps.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                @Override
-                public int getBatchSize() { return currentSize; }
-            });
-        }
-    }
-
-    /**
-     * 재고 생성 (500개씩 분할)
-     */
-    private void seedStocks(List<Long> detailIds) {
+    private void seedStocks(List<Long> detailIds, Faker faker) {
         String sql = "INSERT INTO stock (product_detail_id, quantity, created_at, updated_at) " +
             "VALUES (?, ?, ?, ?)";
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, detailIds.get(i));
+                ps.setInt(2, faker.number().numberBetween(1, 100));
+                ps.setTimestamp(3, now);
+                ps.setTimestamp(4, now);
+            }
 
-        int subBatchSize = 500;
-        for (int offset = 0; offset < detailIds.size(); offset += subBatchSize) {
-            int currentSize = Math.min(subBatchSize, detailIds.size() - offset);
-            final int finalOffset = offset;
-
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    ps.setLong(1, detailIds.get(finalOffset + i));
-                    ps.setInt(2, faker.number().numberBetween(0, 500));
-                    ps.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
-                    ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                @Override
-                public int getBatchSize() { return currentSize; }
-            });
-        }
+            @Override
+            public int getBatchSize() {
+                return detailIds.size();
+            }
+        });
     }
 
     /**
-     * 가격 생성 (500개씩 분할)
+     * 가격 생성
      */
-    private void seedPrices(List<Long> detailIds) {
+    private void seedPrices(List<Long> detailIds, Faker faker) {
         String sql = "INSERT INTO product_price (product_detail_id, original_price, discounted_price, created_at, updated_at) " +
             "VALUES (?, ?, ?, ?, ?)";
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                int originalPrice = (faker.number().numberBetween(10, 100)) * 1000;
 
-        int subBatchSize = 500;
-        for (int offset = 0; offset < detailIds.size(); offset += subBatchSize) {
-            int currentSize = Math.min(subBatchSize, detailIds.size() - offset);
-            final int finalOffset = offset;
-
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    int originalPrice = (faker.number().numberBetween(10, 100)) * 1000;
-
-                    Integer discountedPrice = null;
-                    if (faker.random().nextDouble() < 0.3) {
-                        discountedPrice = (int) (originalPrice * 0.8);
-                    }
-
-                    ps.setLong(1, detailIds.get(finalOffset + i));
-                    ps.setInt(2, originalPrice);
-                    if (discountedPrice != null) {
-                        ps.setInt(3, discountedPrice);
-                    } else {
-                        ps.setNull(3, Types.INTEGER);
-                    }
-                    ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-                    ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+                Integer discountedPrice = null;
+                if (faker.random().nextDouble() < 0.3) {
+                    discountedPrice = (int) (originalPrice * 0.8);
                 }
-                @Override
-                public int getBatchSize() { return currentSize; }
-            });
-        }
+
+                ps.setLong(1, detailIds.get(i));
+                ps.setInt(2, originalPrice);
+                if (discountedPrice != null) {
+                    ps.setInt(3, discountedPrice);
+                } else {
+                    ps.setNull(3, Types.INTEGER);
+                }
+                ps.setTimestamp(4, now);
+                ps.setTimestamp(5, now);
+            }
+
+            @Override
+            public int getBatchSize() {
+                return detailIds.size();
+            }
+        });
     }
 
     /**
-     * 옵션 매핑 생성 (500개씩 분할)
+     * 옵션 매핑 생성
      */
-    private void seedOptionMappings(List<Long> detailIds) {
+    private void seedOptionMappings(List<Long> detailIds, Faker faker) {
         String sql = "INSERT INTO product_option_mapping (product_detail_id, option_id, created_at) " +
             "VALUES (?, ?, ?)";
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, detailIds.get(i / 2));
+                ps.setLong(2, (i % 2 == 0) ? faker.random().nextInt(1, 3) : faker.random().nextInt(4, 5));
+                ps.setTimestamp(3, now);
+            }
 
-        int totalMappings = detailIds.size() * 2;
-        int subBatchSize = 500;
-
-        for (int offset = 0; offset < totalMappings; offset += subBatchSize) {
-            int currentSize = Math.min(subBatchSize, totalMappings - offset);
-            final int finalOffset = offset;
-
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    int actualIndex = finalOffset + i;
-                    Long detailId = detailIds.get(actualIndex / 2);
-                    ps.setLong(1, detailId);
-
-                    if (actualIndex % 2 == 0) {
-                        ps.setLong(2, faker.random().nextInt(1, 3));
-                    } else {
-                        ps.setLong(2, faker.random().nextInt(4, 5));
-                    }
-
-                    ps.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
-                }
-
-                @Override
-                public int getBatchSize() {
-                    return currentSize;
-                }
-            });
-        }
+            @Override
+            public int getBatchSize() {
+                return detailIds.size() * 2;
+            }
+        });
     }
 
     /**
-     * 카테고리 매핑 생성 (500개씩 분할)
+     * 카테고리 매핑 생성
      */
     private void seedProductCategoryMappings(List<Long> productIds, List<Long> assignedCategoryIds) {
         String sql = "INSERT INTO product_category (product_id, category_id, is_primary, created_at) " +
             "VALUES (?, ?, ?, ?)";
+        Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                ps.setLong(1, productIds.get(i));
+                ps.setLong(2, assignedCategoryIds.get(i));
+                ps.setBoolean(3, true);
+                ps.setTimestamp(4, now);
+            }
 
-        int subBatchSize = 500;
-        for (int offset = 0; offset < productIds.size(); offset += subBatchSize) {
-            int currentSize = Math.min(subBatchSize, productIds.size() - offset);
-            final int finalOffset = offset;
-
-            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    ps.setLong(1, productIds.get(finalOffset + i));
-                    ps.setLong(2, assignedCategoryIds.get(finalOffset + i));
-                    ps.setBoolean(3, true);
-                    ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                @Override
-                public int getBatchSize() { return currentSize; }
-            });
-        }
+            @Override
+            public int getBatchSize() {
+                return productIds.size();
+            }
+        });
     }
 }
