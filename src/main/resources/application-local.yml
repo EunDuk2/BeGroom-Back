@@ -1,7 +1,7 @@
 server:
   port: 8080
-#  tomcat:
-#    accept-count: 1000
+  tomcat:
+    accept-count: 1000
 
 
 spring:

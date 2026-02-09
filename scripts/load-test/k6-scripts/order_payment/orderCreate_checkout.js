@@ -81,7 +81,7 @@ export const options = {
     scenarios: {
         burst_e2e_once: {
             executor: 'per-vu-iterations',
-            vus: Number(__ENV.VUS || 100),
+            vus: Number(__ENV.VUS || 500),
             iterations: 1, // VU당 1회 = 주문 수 == VU 수
             maxDuration: __ENV.MAX_DURATION || '1m',
             // executor: 'constant-vus',
@@ -91,7 +91,7 @@ export const options = {
 
     thresholds: {
         // 전체(주문+sleep+결제) 플로우 p95: iteration_duration 기준
-        iteration_duration: ['p(95)<5000'],
+        iteration_duration: ['p(95)<5500'],
 
         // 주문 생성 p95
         create_order_duration: ['p(95)<2000'],
