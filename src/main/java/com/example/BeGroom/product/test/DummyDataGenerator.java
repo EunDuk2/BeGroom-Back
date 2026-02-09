@@ -211,6 +211,7 @@ public class DummyDataGenerator {
         initializeCounters();
         ensureSellerExists();
         seedBrands();
+        if (monitor != null) monitor.recordStep("Brand 생성");
 
         Map<Long, String> brandNameMap = new HashMap<>();
         jdbcTemplate.query(
@@ -229,6 +230,7 @@ public class DummyDataGenerator {
                 rs.getLong("parent_id")
             )
         );
+        if (monitor != null) monitor.recordStep("Category 조회");
 
         Long baseProductId = jdbcTemplate.queryForObject(
             "SELECT COALESCE(MAX(id), 0) FROM product",

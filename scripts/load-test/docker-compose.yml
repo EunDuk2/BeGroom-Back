@@ -1,0 +1,48 @@
+networks:
+  monitoring:
+
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    networks:
+      - monitoring
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=k6
+    volumes:
+      - ./influxdb:/var/lib/influxdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:9.3.8
+    container_name: grafana
+    networks:
+      - monitoring
+    ports:
+      - "4000:4000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_BASIC_ENABLED=false
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/
+
+  k6:
+    image: grafana/k6:latest
+    container_name: k6
+    networks:
+      - monitoring
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    volumes:
+      - ./k6:/scripts
+    environment:
+      - K6_OUT=influxdb=http://influxdb:8086/k6
+    entrypoint: ["k6", "run", "/scripts/example.js"]

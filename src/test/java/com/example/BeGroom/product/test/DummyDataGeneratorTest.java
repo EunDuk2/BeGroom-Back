@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 
+import javax.sql.DataSource;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest

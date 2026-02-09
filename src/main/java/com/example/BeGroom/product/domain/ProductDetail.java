@@ -17,6 +17,9 @@ public class ProductDetail extends BaseEntity {
 
     private static final int LOW_STOCK_THRESHOLD = 10;
 
+//    @Version
+//    private Long version;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
