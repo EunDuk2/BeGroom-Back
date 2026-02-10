@@ -79,9 +79,9 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public CheckoutResDto checkout(Long memberId, Long orderId, PaymentMethod paymentMethod) {
-        Member member = memberRepository.findByIdForUpdate(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
         Order order = orderRepository.findByIdForUpdate(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
-        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+        Wallet wallet = walletRepository.findByMemberForUpdate(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
         // 재고 X Lock 걸어두기
         stockRepository.findAllByProductDetailIdsForUpdate(
                 order.getOrderProductList().stream().map(
@@ -98,6 +98,15 @@ public class OrderServiceImpl implements OrderService {
         paymentRepository.save(payment);
 
         return CheckoutResDto.completed(orderId, payment.getId());
+    }
+
+    // 추후 트랜잭션 분리
+    @Transactional
+    public Payment createPayment(Long memberId, Long orderId, PaymentMethod paymentMethod) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("없는 사용자입니다."));
+        Order order = orderRepository.findByIdForUpdate(orderId).orElseThrow(() -> new EntityNotFoundException("없는 주문입니다."));
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new EntityNotFoundException("없는 지갑입니다."));
+        return order.checkout(paymentMethod, wallet);
     }
 
     @Override
