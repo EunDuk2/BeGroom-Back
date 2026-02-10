@@ -22,4 +22,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select m from Member m where m.id = :id")
     Optional<Member> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT MIN(m.id), MAX(m.id) FROM Member m")
+    List<Object[]> findMinMaxId();
 }

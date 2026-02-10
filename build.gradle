@@ -112,6 +112,9 @@ dependencies {
 	annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jpa"
 
 	implementation 'net.datafaker:datafaker:2.4.0'
+
+	// Guava
+	implementation 'com.google.guava:guava:33.0.0-jre'
 }
 
 // Querydsl 설정부

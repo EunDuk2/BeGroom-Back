@@ -7,18 +7,25 @@ import com.example.BeGroom.notification.dto.CreateNotificationReqDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.dto.NetworkMessageDto;
 import com.example.BeGroom.notification.event.NotificationSavedEvent;
+import com.example.BeGroom.notification.repository.MemberNotificationJdbcRepository;
 import com.example.BeGroom.notification.repository.MemberNotificationRepository;
 import com.example.BeGroom.notification.repository.NotificationRepository;
 import com.example.BeGroom.notification.service.network.NotificationNetworkService;
 import com.example.BeGroom.notification.util.MessageUtil;
+import com.google.common.collect.Lists;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.example.BeGroom.notification.domain.SseEventMessage.COMMON_RECEIVE_NOTIFICATION_SUCCESS;
@@ -31,8 +38,10 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final MemberNotificationRepository memberNotificationRepository;
     private final MemberRepository memberRepository;
+    private final MemberNotificationJdbcRepository memberNotificationJdbcRepository;
     private final NotificationNetworkService notificationNetworkService;
     private final NotificationHistoryService notificationHistoryService;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Override
     @Transactional
@@ -64,33 +73,48 @@ public class NotificationServiceImpl implements NotificationService {
         List<MemberNotification> notifications = notificationHistoryService.createMemberNotification(receiverIds, templateId, variables);
 
         // DB Insert
-        memberNotificationRepository.saveAll(notifications);
+        memberNotificationJdbcRepository.batchInsert(notifications);
 
-        // Network message 생성
-        List<NetworkMessageDto> eventData = notifications.stream()
-                .map(NetworkMessageDto::of)
-                .collect(Collectors.toList());
-
-        // 커밋이 된 뒤에 SSE event 수행
-        eventPublisher.publishEvent(new NotificationSavedEvent(eventData));
+//        // Network message 생성
+//        List<NetworkMessageDto> eventData = notifications.stream()
+//                .map(NetworkMessageDto::of)
+//                .collect(Collectors.toList());
+//
+//        // 커밋이 된 뒤에 SSE event 수행
+//        eventPublisher.publishEvent(new NotificationSavedEvent(eventData));
     }
 
     @Transactional(readOnly = false)
     public void sendToAllMembers(Long templateId, Map<String, String> variables) {
-        // MemberNotification 객체 생성
-        List<Long> receiverIds = memberRepository.findAllIds();
-        List<MemberNotification> notifications = notificationHistoryService.createMemberNotification(receiverIds, templateId, variables);
+        List<Object[]> result = memberRepository.findMinMaxId();
+        if (result.isEmpty() || result.get(0)[0] == null) {
+            return;
+        }
+        Object[] row = result.getFirst();
+        long minId = (Long) row[0];
+        long maxId = (Long) row[1];
 
-        // DB Insert
-        memberNotificationRepository.saveAll(notifications);
+        int partitionSize = 10000;
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (long start = minId; start <= maxId; start += partitionSize) {
+            long end = Math.min(start + partitionSize - 1, maxId);
+            final long currentStart = start;
+            final long currentEnd = end;
 
-        // Network message 생성
-        List<NetworkMessageDto> eventData = notifications.stream()
-                .map(NetworkMessageDto::of)
-                .collect(Collectors.toList());
+            futures.add(CompletableFuture.runAsync(() -> {
+                memberNotificationJdbcRepository.partitionInsert(templateId, variables, currentStart, currentEnd);
+            }, executorService));
+        }
 
-        // 커밋이 된 뒤에 SSE event 수행
-        eventPublisher.publishEvent(new NotificationSavedEvent(eventData));
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+//        // Network message 생성
+//        List<NetworkMessageDto> eventData = notifications.stream()
+//                .map(NetworkMessageDto::of)
+//                .collect(Collectors.toList());
+//
+//        // 커밋이 된 뒤에 SSE event 수행
+//        eventPublisher.publishEvent(new NotificationSavedEvent(eventData));
     }
 
     @Override

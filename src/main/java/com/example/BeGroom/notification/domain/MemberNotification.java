@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MemberNotification extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) //TODO: Autoincrement인데 그러면 병렬로 insert시 어떻게 될까요?(IDENTity 말고 딴것도 공부해보시고 장단점을 파악해보세요)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

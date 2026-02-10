@@ -30,14 +30,11 @@ public class NotificationHistoryService {
 
         String jsonMetaData = convertToJson(variables);
 
-        List<Member> receivers = memberRepository.findAllById(receiverIds);
-        if (receivers.size() != receiverIds.size()) {
-            throw new EntityNotFoundException("해당하는 멤버가 없습니다.");
-        }
-
-
-        return receivers.stream()
-                .map(receiver -> new MemberNotification(receiver, template, jsonMetaData))
+        return receiverIds.stream()
+                .map(memberId -> {
+                    Member proxyMember = memberRepository.getReferenceById(memberId);
+                    return new MemberNotification(proxyMember, template, jsonMetaData);
+                })
                 .toList();
     }
 
