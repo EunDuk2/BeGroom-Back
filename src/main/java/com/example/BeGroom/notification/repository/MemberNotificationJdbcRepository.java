@@ -1,5 +1,6 @@
 package com.example.BeGroom.notification.repository;
 
+import com.example.BeGroom.common.log.MeasureBlocking;
 import com.example.BeGroom.notification.domain.MemberNotification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -33,6 +34,8 @@ public class MemberNotificationJdbcRepository {
                 });
     }
 
+
+    //TODO: 해당 메서드가 WAS의 리소스(커넥션, 스레드의 이용성 크다) 딴놈이 못쓴다 ㅠ
     public void partitionInsert(Long templateId, Map<String, String> variables, long startId, long endId) {
         String sql =
                 "INSERT INTO member_notification (member_id, notification_id, meta_data, is_read, created_at) " +

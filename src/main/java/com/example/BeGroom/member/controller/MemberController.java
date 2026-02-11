@@ -50,6 +50,12 @@ public class MemberController {
                 );
     }
 
+    @PostMapping("/bulk-insert")
+    public ResponseEntity<String> bulkInsert() {
+        memberService.insertBulkMembers();
+        return ResponseEntity.ok("1,000,000 inserted.");
+    }
+
     @GetMapping("/profile")
     @Operation(summary = "프로필 불러오기", description = "회원의 프로필 정보를 불러온다.")
     public ResponseEntity<CommonSuccessDto<MemberGetProfileResDto>> getMyProfile(@AuthenticationPrincipal UserPrincipal userPrincipal) {

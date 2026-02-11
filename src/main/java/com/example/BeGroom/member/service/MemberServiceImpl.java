@@ -2,6 +2,7 @@ package com.example.BeGroom.member.service;
 
 import com.example.BeGroom.member.domain.Member;
 import com.example.BeGroom.member.dto.*;
+import com.example.BeGroom.member.repository.MemberJdbcRepository;
 import com.example.BeGroom.member.repository.MemberRepository;
 import com.example.BeGroom.order.domain.Order;
 import com.example.BeGroom.order.domain.OrderProduct;
@@ -22,12 +23,14 @@ import com.example.BeGroom.wishlist.repository.WishlistRepository;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -46,6 +49,7 @@ public class MemberServiceImpl implements MemberService {
     private final OrderRepository orderRepository;
     private final WalletTransactionRepository transactionRepository;
     private final WishlistRepository wishlistRepository;
+    private final MemberJdbcRepository memberJdbcRepository;
     private final ProductRepository productRepository;
 
     @Override
@@ -68,6 +72,40 @@ public class MemberServiceImpl implements MemberService {
         walletService.create(member);
 
         return member;
+    }
+
+    @Override
+    public void insertBulkMembers() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        int totalCount = 1_000_000;
+        int batchSize = 10000;
+
+        List<MemberBulkDto> batchList = new ArrayList<>(batchSize);
+
+        for (int i = 1; i <= totalCount; i++) {
+            String email = String.format("user%d@begroom.com", i);
+            String name = "user" + i;
+
+            int mid = 1000 + (i / 10000);
+            int last = i % 10000;
+            String phoneNumber = String.format("010-%04d-%04d", mid, last);
+
+            batchList.add(new MemberBulkDto(email, name, phoneNumber));
+
+            if (batchList.size() >= batchSize) {
+                memberJdbcRepository.bulkInsert(batchList);
+                batchList.clear();
+            }
+        }
+
+        if (!batchList.isEmpty()) {
+            memberJdbcRepository.bulkInsert(batchList);
+        }
+
+        stopWatch.stop();
+        System.out.println("벌크 인서트 완료 시간: " + stopWatch.getDuration() + "초");
     }
 
     @Override

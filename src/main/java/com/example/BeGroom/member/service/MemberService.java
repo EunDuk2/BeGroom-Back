@@ -11,4 +11,5 @@ public interface MemberService {
     GetMemberOrdersResDto getMyOrders(Long memberId);
     GetMemberWishesResDto getMyWishes(Long memberId);
     public GetMemberWalletResDto getWalletTransactions(Long memberId, Pageable pageable);
+    void insertBulkMembers ();
 }

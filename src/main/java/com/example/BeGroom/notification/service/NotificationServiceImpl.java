@@ -94,13 +94,17 @@ public class NotificationServiceImpl implements NotificationService {
         long minId = (Long) row[0];
         long maxId = (Long) row[1];
 
-        int partitionSize = 10000;
+        //1. 파티션 사이즈
+        int partitionSize = 20000;
         List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         for (long start = minId; start <= maxId; start += partitionSize) {
             long end = Math.min(start + partitionSize - 1, maxId);
             final long currentStart = start;
             final long currentEnd = end;
 
+            //TODO: 해당 로직은 실시간 반영이 되어야하나요?(1. 배치에 대한 운영 시간을 달리 보면 어떨까?)
+            //      플랫폼 스레드의 부하를 줄이자!(ex. 가상스레드)
             futures.add(CompletableFuture.runAsync(() -> {
                 memberNotificationJdbcRepository.partitionInsert(templateId, variables, currentStart, currentEnd);
             }, executorService));
