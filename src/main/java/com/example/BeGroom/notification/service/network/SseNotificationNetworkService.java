@@ -108,7 +108,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
                 Long maxId = summary[1] != null ? ((Number) summary[1]).longValue() : 0L;
 
                 if (lostCount > 0) {
-                    sendBySse(emitter, emitterId, String.valueOf(maxId), "recovered-notification", RETRY_RECEIVE_NOTIFICATION_SUCCESS.format(lostCount));
+                    sendBySse(emitter, emitterId, String.valueOf(maxId), "recovered-notification", MessageUtil.createMessageByHashMap(RETRY_RECEIVE_NOTIFICATION_SUCCESS.format(lostCount)));
                     return NotificationSendResult.success(emitterId, String.valueOf(maxId));
                 }
 
@@ -125,7 +125,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
             Long maxId = summary[1] != null ? ((Number) summary[1]).longValue() : 0L;
 
             if (unreadCount > 0) {
-                sendBySse(emitter, emitterId, String.valueOf(maxId), "unread-notification", FIRST_CONNECT_UNREAD.format(unreadCount));
+                sendBySse(emitter, emitterId, String.valueOf(maxId), "unread-notification", MessageUtil.createMessageByHashMap(FIRST_CONNECT_UNREAD.format(unreadCount)));
                 return NotificationSendResult.success(emitterId, String.valueOf(maxId));
             } else {
                 sendHeartBeat(emitter, emitterId);

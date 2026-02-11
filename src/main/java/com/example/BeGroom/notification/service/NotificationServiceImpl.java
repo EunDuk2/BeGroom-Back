@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -103,22 +104,20 @@ public class NotificationServiceImpl implements NotificationService {
             final long currentStart = start;
             final long currentEnd = end;
 
-            //TODO: 해당 로직은 실시간 반영이 되어야하나요?(1. 배치에 대한 운영 시간을 달리 보면 어떨까?)
-            //      플랫폼 스레드의 부하를 줄이자!(ex. 가상스레드)
+            System.out.println("start: " + start + " end: " + end);
             futures.add(CompletableFuture.runAsync(() -> {
-                memberNotificationJdbcRepository.partitionInsert(templateId, variables, currentStart, currentEnd);
+                LocalDateTime now = LocalDateTime.now().minusSeconds(1);
+                System.out.println("Debug cuurent time: " + now);
+                memberNotificationJdbcRepository.partitionInsert(templateId, variables, currentStart, currentEnd); // DB 작성
+                List<NetworkMessageDto> chunkData =
+                        memberNotificationJdbcRepository.findNetworkMessageDtoByRange(templateId, currentStart, currentEnd, now); // 실시간 메시지 객체 생성
+                if (!chunkData.isEmpty()) {
+                    eventPublisher.publishEvent(new NotificationSavedEvent(chunkData)); // 실시간 메시지 전송 이벤트 발송
+                }
             }, executorService));
         }
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-//        // Network message 생성
-//        List<NetworkMessageDto> eventData = notifications.stream()
-//                .map(NetworkMessageDto::of)
-//                .collect(Collectors.toList());
-//
-//        // 커밋이 된 뒤에 SSE event 수행
-//        eventPublisher.publishEvent(new NotificationSavedEvent(eventData));
     }
 
     @Override

@@ -32,7 +32,7 @@ public class EmitterRepository {
     public Map<String, SseEmitter> findAllStartWithById(Long memberId) {
         Map<String, SseEmitter> result = new ConcurrentHashMap<>();
         emitters.forEach((id, emitter) -> {
-            if(id.startsWith(memberId.toString())){
+            if(id.startsWith(memberId.toString() + "_")){
                 if (emitter != null) {
                     result.put(id, emitter);
                 }
