@@ -1,15 +1,12 @@
 package com.example.BeGroom.product.service;
 
 import com.example.BeGroom.product.domain.*;
-import com.example.BeGroom.product.dto.BrandFilterResponse;
-import com.example.BeGroom.product.dto.ProductDetailResponse;
-import com.example.BeGroom.product.dto.ProductListResponse;
-import com.example.BeGroom.product.dto.ProductSearchCondition;
+import com.example.BeGroom.product.dto.*;
 import com.example.BeGroom.product.repository.*;
 import com.example.BeGroom.wishlist.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,21 +20,26 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ProductService {
 
-    private final ProductRepository productRepository;
     private final WishlistRepository wishlistRepository;
+    private final ProductCacheService productCacheService;
 
     /**
      * 상품 검색 (키워드, 필터, 정렬, 페이징)
      */
-    public Page<ProductListResponse> searchProducts(ProductSearchCondition condition,
-                                                    Pageable pageable,
-                                                    Long memberId) {
+    public CustomSlice<ProductListResponse> searchProducts(ProductSearchCondition condition,
+                                                           Pageable pageable,
+                                                           Long memberId) {
 
-        Page<Product> products = productRepository.findAllByCondition(condition, pageable);
+        CustomSlice<ProductListResponse> products = productCacheService.getCachedProducts(condition, pageable);
         Set<Long> wishlistedProductIds = getWishlistedProductIds(memberId);
+        List<ProductListResponse> updatedContent = products.content().stream()
+            .map(product -> product.withWishlist(wishlistedProductIds.contains(product.productId())))
+            .toList();
 
-        return products.map(product ->
-            ProductListResponse.of(product, wishlistedProductIds.contains(product.getId()))
+        return new CustomSlice<>(
+            updatedContent,
+            products.hasNext(),
+            products.numberOfElements()
         );
     }
 
@@ -45,27 +47,14 @@ public class ProductService {
      * 상품 상세 조회
      */
     public ProductDetailResponse getProductDetail(Long productId, Long memberId) {
-        Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-
-        if (product.getDeletedAt() != null) {
-            throw new IllegalStateException("삭제된 상품입니다.");
-        }
-
-        if (product.getProductStatus() == ProductStatus.STOP) {
-            throw new IllegalStateException("판매 중지된 상품입니다.");
-        }
-
+        ProductDetailResponse detail = productCacheService.getCachedProductDetail(productId);
         boolean isWishlisted = checkWishlisted(productId, memberId);
 
-        return ProductDetailResponse.of(product, isWishlisted);
+        return detail.withWishlist(isWishlisted);
     }
 
-    /**
-     * 카테고리/키워드 검색 시 해당하는 상품들의 브랜드 목록
-     */
     public List<BrandFilterResponse> getBrandFilters(ProductSearchCondition condition) {
-        return productRepository.findBrandsBySearchCondition(condition);
+        return productCacheService.getBrandFilters(condition);
     }
 
     // ===== Private Helper Methods =====

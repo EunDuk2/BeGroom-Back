@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,8 +127,8 @@ public class AdminProductService {
     /**
      * 관리자용 상품 목록 조회 (페이징)
      */
-    public Page<ProductListResponse> getAllProductsForAdmin(List<String> statuses, Pageable pageable) {
-        Page<Product> products;
+    public Slice<ProductListResponse> getAllProductsForAdmin(List<String> statuses, Pageable pageable) {
+        Slice<Product> products;
 
         if (statuses != null && !statuses.isEmpty()) {
             List<ProductStatus> statusEnums = statuses.stream()

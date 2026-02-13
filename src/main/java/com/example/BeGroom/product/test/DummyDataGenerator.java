@@ -43,7 +43,7 @@ public class DummyDataGenerator {
 
     private record CategoryInfo(Long id, String name, Long parentId) {}
     private record ProductDetailBatch(Long productId, Long detailNo, String detailName) {}
-    private record ProductInfo(Long id, String name, Long categoryId, Long brandId, String description) {}
+    private record ProductInfo(Long id, String name, Long categoryId, Long parentCategoryId, Long brandId, String description) {}
 
     // 청크별 처리 결과 추적
     private record ChunkResult(int chunkIndex, int productsCreated, int detailsCreated, long durationMs, Throwable error) {
@@ -494,6 +494,7 @@ public class DummyDataGenerator {
                 productId,
                 productName,
                 assignedIds.get(i),
+                category.parentId(),
                 brandId,
                 description
             ));
@@ -538,7 +539,7 @@ public class DummyDataGenerator {
             double random = faker.random().nextDouble();
             int detailCount = random < 0.3 ? 1 : random < 0.7 ? 2 : 3;
 
-            String adjectiveGroup = CATEGORY_TO_ADJECTIVE_GROUP.getOrDefault(p.categoryId(), "FOOD");
+            String adjectiveGroup = CATEGORY_TO_ADJECTIVE_GROUP.getOrDefault(p.parentCategoryId(), "FOOD");
 
             List<String> options = switch (adjectiveGroup) {
                 case "BEVERAGE" -> WEIGHT_OPTIONS_BEVERAGE;
@@ -546,9 +547,12 @@ public class DummyDataGenerator {
                 default -> WEIGHT_OPTIONS_DEFAULT;
             };
 
+            List<String> shuffledOptions = new ArrayList<>(options);
+            Collections.shuffle(shuffledOptions);
+
             for (int j = 0; j < detailCount; j++) {
                 long detailId = detailNoCounter.getAndIncrement();
-                String optionLabel = options.get(faker.random().nextInt(options.size()));
+                String optionLabel = shuffledOptions.get(j % shuffledOptions.size());
                 String detailName = (detailCount == 1) ? p.name() : p.name() + " - " + optionLabel;
                 batches.add(new ProductDetailBatch(p.id(), detailId, detailName));
             }

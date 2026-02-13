@@ -2,16 +2,14 @@ package com.example.BeGroom.product.controller;
 
 import com.example.BeGroom.auth.domain.UserPrincipal;
 import com.example.BeGroom.common.response.CommonSuccessDto;
-import com.example.BeGroom.product.dto.BrandFilterResponse;
-import com.example.BeGroom.product.dto.ProductDetailResponse;
-import com.example.BeGroom.product.dto.ProductListResponse;
-import com.example.BeGroom.product.dto.ProductSearchCondition;
+import com.example.BeGroom.product.dto.*;
 import com.example.BeGroom.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -49,13 +47,13 @@ public class ProductController {
 
     @GetMapping("/search")
     @Operation(summary = "상품 검색", description = "키워드 및 필터로 상품 검색")
-    public ResponseEntity<CommonSuccessDto<Page<ProductListResponse>>> searchProducts(
+    public ResponseEntity<CommonSuccessDto<CustomSlice<ProductListResponse>>> searchProducts(
             @ModelAttribute ProductSearchCondition condition,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal user
     ) {
         Long memberId = (user != null) ? user.getMemberId() : null;
-        Page<ProductListResponse> products = productService.searchProducts(condition, pageable, memberId);
+        CustomSlice<ProductListResponse> products = productService.searchProducts(condition, pageable, memberId);
 
         return ResponseEntity.ok(
                 CommonSuccessDto.of(

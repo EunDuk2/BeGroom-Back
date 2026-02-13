@@ -1,16 +1,45 @@
 server:
   port: 8080
 
+logging:
+  level:
+    root: WARN
+    org.springframework.transaction: WARN #spring 트랜잭션 매니저 로그
+    org.springframework.orm.jpa.JpaTransactionManager: WARN #JPA 연동 트랜잭션 매니저 클래스의 로그
+
 spring:
+  threads:
+    virtual:
+      enabled: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 5000ms
+  cache:
+    type: redis
+
   config:
     activate:
       on-profile: local
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/begroom?rewriteBatchedStatements=true
+    url: jdbc:mysql://localhost:3309/begroom?rewriteBatchedStatements=true
     username: root
     password: 1234
+
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 50
+      connection-timeout: 5000
+      leak-detection-threshold: 60000
 
   jpa:
     hibernate:
@@ -23,6 +52,8 @@ spring:
           batch_size: 100
           batch_versioned_data: true
         order_updates: true
+        default_batch_fetch_size: 100
+    open-in-view: false
 
 management:
   endpoints:

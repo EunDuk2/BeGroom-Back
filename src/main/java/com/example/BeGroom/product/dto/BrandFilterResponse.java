@@ -4,24 +4,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
-@Getter
-public class BrandFilterResponse {
+import java.io.Serializable;
 
+@Builder
+public record BrandFilterResponse(
     @Schema(description = "브랜드 ID", example = "1")
-    private Long brandId;
+    Long brandId,
 
     @Schema(description = "브랜드명", example = "비구름")
-    private String brandName;
+    String brandName,
 
     @Schema(description = "카테고리/검색 키워드에 해당하는 브랜드의 상품 수", example = "5")
-    private Long productCount;
+    Long productCount
+) implements Serializable {
 
-    public BrandFilterResponse(Long brandId, String brandName, Long productCount) {
-        this.brandId = brandId;
-        this.brandName = brandName;
-        this.productCount = productCount;
-    }
+    private static final long serialVersionUID = 1L;
 
+    // 정적 팩토리 메서드 유지 (기존 코드와의 호환성)
     public static BrandFilterResponse of(Long brandId, String brandName, Long productCount) {
         return new BrandFilterResponse(brandId, brandName, productCount);
     }

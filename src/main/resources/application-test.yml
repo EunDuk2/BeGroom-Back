@@ -8,7 +8,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3307/begroom?useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Seoul&rewriteBatchedStatements=true
+    url: jdbc:mysql://localhost:3309/begroom?useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Seoul&rewriteBatchedStatements=true
     username: root
     password: 1234
 
@@ -22,10 +22,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         jdbc:
           batch_size: 500
         order_inserts: true
