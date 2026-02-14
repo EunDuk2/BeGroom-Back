@@ -32,17 +32,7 @@ management:
     web:
       exposure:
         include: "*"
-
   Prometheus:
     metrics:
       export:
         enabled: true
-  influx:
-    metrics:
-      export:
-        enabled: true
-        uri: http://localhost:8086
-        bucket: k6
-        db: k6
-        step: 10s
-        auto-create-db: true

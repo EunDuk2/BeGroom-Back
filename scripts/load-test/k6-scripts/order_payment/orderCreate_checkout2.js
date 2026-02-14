@@ -6,10 +6,11 @@ import { Trend, Rate } from 'k6/metrics';
 // =====================
 // Env
 // =====================
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080/api';
+// const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080/api';
+const BASE_URL = __ENV.BASE_URL || 'https://server-eunduk.duckdns.org/begroom/api';
 const ORDERS_CSV = __ENV.ORDERS_CSV || './orders.csv';
 
-const VUS = Number(__ENV.VUS || 1500);
+const VUS = Number(__ENV.VUS || 300);
 const MAX_DURATION = __ENV.MAX_DURATION || '1m';
 const MAX_FAIL_LOGS = Number(__ENV.MAX_FAIL_LOGS || 3);
 
