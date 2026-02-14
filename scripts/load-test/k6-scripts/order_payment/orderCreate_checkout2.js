@@ -9,7 +9,7 @@ import { Trend, Rate } from 'k6/metrics';
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080/api';
 const ORDERS_CSV = __ENV.ORDERS_CSV || './orders.csv';
 
-const VUS = Number(__ENV.VUS || 1000);
+const VUS = Number(__ENV.VUS || 1500);
 const MAX_DURATION = __ENV.MAX_DURATION || '1m';
 const MAX_FAIL_LOGS = Number(__ENV.MAX_FAIL_LOGS || 3);
 
@@ -26,7 +26,7 @@ const HOT_POOL_PCT = Number(__ENV.HOT_POOL_PCT || 0.01);
 const WARM_POOL_PCT = Number(__ENV.WARM_POOL_PCT || 0.09);
 
 // 사용자 플로우 텀
-const THINK_TIME_SEC = Number(__ENV.THINK_TIME_SEC || 0);
+const THINK_TIME_SEC = Number(__ENV.THINK_TIME_SEC || 0.5);
 
 // 주문 수량
 const QTY_A = Number(__ENV.QTY_A || 1);
@@ -35,8 +35,14 @@ const QTY_B = Number(__ENV.QTY_B || 2);
 // =====================
 // Metrics
 // =====================
+// 기존(클라이언트 관점 전체 duration)
 const createOrderDuration = new Trend('create_order_duration'); // ms
 const checkoutDuration = new Trend('checkout_duration');        // ms
+
+// ✅ 추가: 서버 처리시간에 더 근접한 waiting (TTFB 유사)
+const createOrderWaiting = new Trend('create_order_waiting');   // ms
+const checkoutWaiting = new Trend('checkout_waiting');          // ms
+
 const createOrderFailed = new Rate('create_order_failed');
 const checkoutFailed = new Rate('checkout_failed');
 
@@ -44,18 +50,32 @@ const checkoutFailed = new Rate('checkout_failed');
 // CSV Parse (single file)
 // =====================
 function parseOrdersCsv(text) {
-    const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+    const lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
 
-    const usersHeaderIdx = lines.findIndex((l) => l.replace(/\s+/g, '') === 'memberId,token');
-    if (usersHeaderIdx < 0) throw new Error('orders.csv parse error: "memberId,token" header not found');
-
-    const pdHeaderIdx = lines.findIndex((l) => l.replace(/\s+/g, '') === 'productDetailId');
-    if (pdHeaderIdx < 0) throw new Error('orders.csv parse error: "productDetailId" header not found');
-
-    if (pdHeaderIdx <= usersHeaderIdx) {
-        throw new Error('orders.csv parse error: productDetailId section must come after memberId,token section');
+    const usersHeaderIdx = lines.findIndex(
+        (l) => l.replace(/\s+/g, '') === 'memberId,token'
+    );
+    if (usersHeaderIdx < 0) {
+        throw new Error('orders.csv parse error: "memberId,token" header not found');
     }
 
+    const pdHeaderIdx = lines.findIndex(
+        (l) => l.replace(/\s+/g, '') === 'productDetailId'
+    );
+    if (pdHeaderIdx < 0) {
+        throw new Error('orders.csv parse error: "productDetailId" header not found');
+    }
+
+    if (pdHeaderIdx <= usersHeaderIdx) {
+        throw new Error(
+            'orders.csv parse error: productDetailId section must come after memberId,token section'
+        );
+    }
+
+    // users: from usersHeaderIdx+1 until pdHeaderIdx-1
     const users = [];
     for (let i = usersHeaderIdx + 1; i < pdHeaderIdx; i++) {
         const row = lines[i];
@@ -72,12 +92,15 @@ function parseOrdersCsv(text) {
     }
     if (users.length === 0) throw new Error('orders.csv parse error: no valid user rows');
 
+    // productDetailIds: from pdHeaderIdx+1 to end
     const productDetailIds = [];
     for (let i = pdHeaderIdx + 1; i < lines.length; i++) {
         const n = Number(lines[i]);
         if (Number.isFinite(n)) productDetailIds.push(n);
     }
-    if (productDetailIds.length < 2) throw new Error('orders.csv parse error: need at least 2 productDetailIds');
+    if (productDetailIds.length < 2) {
+        throw new Error('orders.csv parse error: need at least 2 productDetailIds');
+    }
 
     return { users, productDetailIds };
 }
@@ -85,7 +108,7 @@ function parseOrdersCsv(text) {
 const parsed = new SharedArray('orders_csv_parsed', function () {
     const text = open(ORDERS_CSV);
     const { users, productDetailIds } = parseOrdersCsv(text);
-    return [{ users, productDetailIds }];
+    return [{ users, productDetailIds }]; // SharedArray는 배열만 반환 가능
 });
 
 const USERS = parsed[0].users;
@@ -98,12 +121,10 @@ function makeRng(seed) {
     let x = seed | 0;
     if (x === 0) x = 123456789; // 0 회피
     return function rand() {
-        // xorshift32
         x ^= x << 13;
         x ^= x >>> 17;
         x ^= x << 5;
-        // [0,1)
-        return ((x >>> 0) / 4294967296);
+        return (x >>> 0) / 4294967296; // [0,1)
     };
 }
 
@@ -122,6 +143,7 @@ function buildPools(allIds) {
     const warm = allIds.slice(hotEnd, warmEnd);
     const cold = allIds.slice(warmEnd);
 
+    // cold가 비면 warm에서 떼어줌
     if (cold.length === 0) {
         const moved = warm.splice(Math.floor(warm.length / 2));
         cold.push(...moved);
@@ -186,9 +208,15 @@ export const options = {
         },
     },
     thresholds: {
-        iteration_duration: ['p(95)<9000'],
-        create_order_duration: ['p(95)<2000'],
+        iteration_duration: ['p(95)<6000'],
+
+        create_order_duration: ['p(95)<2500'],
         checkout_duration: ['p(95)<3000'],
+
+        // ✅ waiting도 같이 보고 싶으면 uncomment
+        // create_order_waiting: ['p(95)<2000'],
+        // checkout_waiting: ['p(95)<3000'],
+
         http_req_failed: ['rate<0.01'],
         create_order_failed: ['rate<0.01'],
         checkout_failed: ['rate<0.01'],
@@ -248,7 +276,9 @@ export default function () {
         { headers, tags: { step: 'create_order' } }
     );
 
+    // ✅ duration + waiting 둘 다 기록
     createOrderDuration.add(createRes.timings.duration);
+    createOrderWaiting.add(createRes.timings.waiting);
 
     const createOk = check(createRes, { 'create 201': (r) => r.status === 201 });
     createOrderFailed.add(!createOk);
@@ -277,7 +307,9 @@ export default function () {
         { headers, tags: { step: 'checkout' } }
     );
 
+    // ✅ duration + waiting 둘 다 기록
     checkoutDuration.add(checkoutRes.timings.duration);
+    checkoutWaiting.add(checkoutRes.timings.waiting);
 
     const checkoutOk = check(checkoutRes, { 'checkout 200': (r) => r.status === 200 });
     checkoutFailed.add(!checkoutOk);
