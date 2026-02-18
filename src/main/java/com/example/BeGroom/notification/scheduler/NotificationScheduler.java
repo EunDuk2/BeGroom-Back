@@ -20,7 +20,7 @@ public class NotificationScheduler {
     /**
      * 2시간마다 실행
      */
-    @Scheduled(cron = "0 0 */2 * * *")
+//    @Scheduled(cron = "0 0 */2 * * *")
     public void sendPeriodicNotifications() {
         try {
             Map<String, String> eventData = new HashMap<>();

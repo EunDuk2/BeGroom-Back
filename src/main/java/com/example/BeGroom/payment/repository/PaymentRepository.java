@@ -5,8 +5,11 @@ import com.example.BeGroom.payment.domain.PaymentStatus;
 import com.example.BeGroom.seller.dto.res.RecentPaymentResDto;
 import com.example.BeGroom.seller.dto.res.RecentRefundResDto;
 import com.example.BeGroom.seller.repository.projection.RecentRefundProjection;
+import com.example.BeGroom.settlement.dto.res.SettlementTargetDto;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -65,4 +68,40 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     """)
     List<Payment> findApprovedPayments();
 
+    // 정산되지 않은 결제 승인 데이터 - lastId 보다 큰 데이터를 가져옴
+//    @Query("""
+//    select p
+//    from Payment p
+//    where p.id > :lastId
+//        and p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.APPROVED
+//        order by p.id asc
+//    """)
+    @Query("""
+    select new com.example.BeGroom.settlement.dto.res.SettlementTargetDto(
+        p.id,
+        p.amount,
+        s.id
+        )
+    from Payment p
+    join p.order o
+    join o.orderProductList op
+    join op.productDetail pd
+    join pd.product pr
+    join pr.brand b
+    join b.seller s
+    where p.id > :lastId
+        and p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.APPROVED
+        and p.isSettled = false
+    order by p.id asc
+    """)
+    Slice<SettlementTargetDto> findPaymentForSettlement(@Param("lastId") Long lastId, Pageable pageable);
+
+    // @Modifying : 변경 쿼리임을 선언. dirty Checking 거치지 않음, 영속성 컨텍스트를 거치지 않아 CPU와 메모리 부하 감소
+    @Modifying
+    @Query("""
+    update Payment p
+    set p.isSettled = true
+    where p.id in :ids
+    """)
+    void updateSettledStatusByIds(@Param("ids") List<Long> ids);
 }

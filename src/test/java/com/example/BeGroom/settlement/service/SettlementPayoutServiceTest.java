@@ -67,6 +67,8 @@ public class SettlementPayoutServiceTest {
     private OrderProductRepository orderProductRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private SchedulerService schedulerService;
 
     private Member member;
     private Seller seller;
@@ -135,7 +137,7 @@ public class SettlementPayoutServiceTest {
         settlementRepository.save(settlement);
 
         // when
-        settlementService.executeSettlementPayout();
+        schedulerService.executeSettlementPayout();
 
         // then
         List<Settlement> result = settlementRepository.findAll();
@@ -157,7 +159,7 @@ public class SettlementPayoutServiceTest {
         settlementRepository.saveAll(List.of(settled, unsettled));
 
         // when
-        settlementService.executeSettlementPayout();
+        schedulerService.executeSettlementPayout();
 
         // then
         Settlement result1 = settlementRepository.findById(unsettled.getId()).get();

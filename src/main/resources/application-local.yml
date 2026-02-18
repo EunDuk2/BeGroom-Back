@@ -1,11 +1,17 @@
 server:
   port: 8080
+  tomcat:
+    threads:
+      max: 200        # default: 200
+      min-spare: 10   # default: 10
+    accept-count: 100
 
 logging:
   level:
     root: WARN
     org.springframework.transaction: WARN #spring 트랜잭션 매니저 로그
     org.springframework.orm.jpa.JpaTransactionManager: WARN #JPA 연동 트랜잭션 매니저 클래스의 로그
+    com.example.BeGroom.settlement: INFO
 
 spring:
   config:
@@ -17,6 +23,9 @@ spring:
     url: jdbc:mysql://localhost:3308/begroom?rewriteBatchedStatements=true
     username: root
     password: 1234
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
 
   jpa:
     hibernate:
@@ -26,9 +35,10 @@ spring:
       hibernate:
         format_sql: true
         jdbc:
-          batch_size: 100
+          batch_size: 200        # allocationSize와 동일
+          order_inserts: true   # insert 쿼리끼리 정렬
+          order_updates: true   # update 쿼리끼리 정렬
           batch_versioned_data: true
-        order_updates: true
 
 management:
   endpoints:
