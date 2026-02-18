@@ -32,7 +32,16 @@ public class Settlement extends BaseEntity {
 
     // 정산ID
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableGenerator(
+            name = "settlement_id_generator",
+            table = "hibernate_sequences",
+            pkColumnName = "sequence_name",     // 시퀀스명 저장될 컬럼명
+            valueColumnName = "next_val",       // 다음 할당 번호 저장될 컬럼명
+            pkColumnValue = "settlement_seq",   // settlement_seq 이름으로 관리
+            allocationSize = 50
+    )
+    @GeneratedValue(strategy = GenerationType.TABLE, generator = "settlement_id_generator")
     private Long id;
     // 판매자ID
     @ManyToOne(fetch = FetchType.LAZY)
@@ -118,34 +127,34 @@ public class Settlement extends BaseEntity {
     }
 
 
-    public static Settlement create(Payment payment) {
-        Long paymentAmount = payment.getAmount();
-        BigDecimal feeRate = new BigDecimal("10.00");
-        BigDecimal fee = BigDecimal.valueOf(paymentAmount)
-                .multiply(feeRate)
-                .divide(new BigDecimal("100"));
-        BigDecimal settlementAmount = BigDecimal.valueOf(paymentAmount).subtract(fee);
-
-        Optional<Seller> sellerOpt = payment.getOrder()
-                .getOrderProductList()
-                .stream()
-                .findFirst()
-                .map(op -> op.getProductDetail().getProduct().getBrand().getSeller());
-
-        Seller seller = sellerOpt.orElse(null);
-
-        return Settlement.builder()
-                .seller(seller)
-                .payment(payment)
-                .paymentAmount(paymentAmount)
-                .fee(fee)
-                .feeRate(feeRate)
-                .settlementAmount(settlementAmount)
-                .status(UNSETTLED)
-                .settlementPaymentStatus(PAYMENT)
-                .refundAmount(BigDecimal.ZERO)
-                .build();
-    }
+//    public static Settlement create(Payment payment) {
+//        Long paymentAmount = payment.getAmount();
+//        BigDecimal feeRate = new BigDecimal("10.00");
+//        BigDecimal fee = BigDecimal.valueOf(paymentAmount)
+//                .multiply(feeRate)
+//                .divide(new BigDecimal("100"));
+//        BigDecimal settlementAmount = BigDecimal.valueOf(paymentAmount).subtract(fee);
+//
+//        Optional<Seller> sellerOpt = payment.getOrder()
+//                .getOrderProductList()
+//                .stream()
+//                .findFirst()
+//                .map(op -> op.getProductDetail().getProduct().getBrand().getSeller());
+//
+//        Seller seller = sellerOpt.orElse(null);
+//
+//        return Settlement.builder()
+//                .seller(seller)
+//                .payment(payment)
+//                .paymentAmount(paymentAmount)
+//                .fee(fee)
+//                .feeRate(feeRate)
+//                .settlementAmount(settlementAmount)
+//                .status(UNSETTLED)
+//                .settlementPaymentStatus(PAYMENT)
+//                .refundAmount(BigDecimal.ZERO)
+//                .build();
+//    }
 
 
 }

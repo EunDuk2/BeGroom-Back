@@ -9,11 +9,16 @@ import com.example.BeGroom.settlement.repository.daily.DailySettlementRepository
 import com.example.BeGroom.settlement.repository.monthly.MonthlySettlementRepository;
 import com.example.BeGroom.settlement.repository.weekly.WeeklySettlementRepository;
 import com.example.BeGroom.settlement.repository.yearly.YearlySettlementRepository;
+import io.micrometer.core.annotation.Timed;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -26,6 +31,7 @@ import static com.example.BeGroom.payment.domain.PaymentStatus.*;
 import static com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT;
 import static com.example.BeGroom.settlement.domain.SettlementStatus.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -37,6 +43,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final MonthlySettlementRepository monthlySettlementRepository;
     private final YearlySettlementRepository yearlySettlementRepository;
     private final PaymentRepository paymentRepository;
+    private final EntityManager em;
 
     // 정산 요약 정보 조회
     @Override
@@ -106,47 +113,6 @@ public class SettlementServiceImpl implements SettlementService {
         return yearlySettlementRepository.findYearlySettlement(sellerId, pageable);
     }
 
-    // 결제 승인 데이터 정산 반영
-    @Transactional
-    @Override
-    public void aggregateApprovedPayments(){
-        List<Payment> payments = paymentRepository.findApprovedPayments();
-
-        //TODO: insert 쿼리 호출을 줄여보자! (서칭해보세요!!) - batch insert 쓰기
-        for(Payment payment : payments){
-            Settlement settlement = Settlement.create(payment);
-            settlementRepository.save(settlement);
-
-
-            payment.markSettled();
-        }
-    }
-
-    // 정산 후 환불 반영
-    @Transactional
-    @Override
-    public void syncRefundedPayments() {
-
-        List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
-
-        for (Settlement settlement : targets) {
-            settlement.markRefunded(
-                    BigDecimal.valueOf(settlement.getPayment().getAmount())
-            );
-        }
-    }
-
-    // // 미정산 지급 실행
-    @Transactional
-    @Override
-    public void executeSettlementPayout(){
-        // todo : 배치 업데이트 고민하기
-        List<Settlement> targets = settlementRepository.findByStatus(UNSETTLED);
-
-        for(Settlement settlement : targets){
-            settlement.markSettled();
-        }
-    }
 
     // csv 내보내기
     @Override

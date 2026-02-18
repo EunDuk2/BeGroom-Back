@@ -67,6 +67,8 @@ public class SettlementServiceTest {
     private OrderProductRepository orderProductRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private SchedulerService schedulerService;
 
     private Member member;
     private Seller seller;
@@ -138,7 +140,7 @@ public class SettlementServiceTest {
         paymentRepository.save(payment);
 
         // when
-        settlementService.aggregateApprovedPayments();
+        schedulerService.aggregateApprovedPayments();
 
         // then
         assertThat(settlementRepository.count()).isEqualTo(expectedCount);
@@ -153,7 +155,7 @@ public class SettlementServiceTest {
         paymentRepository.save(payment);
 
         // when
-        settlementService.aggregateApprovedPayments();
+        schedulerService.aggregateApprovedPayments();
 
         // then
         Payment updatedPayment = paymentRepository.findById(payment.getId()).orElseThrow();
@@ -169,7 +171,7 @@ public class SettlementServiceTest {
         paymentRepository.save(payment);
 
         // when
-        settlementService.aggregateApprovedPayments();
+        schedulerService.aggregateApprovedPayments();
 
         // then
         Optional<Settlement> settlement = settlementRepository.findByPayment(payment);
@@ -192,7 +194,7 @@ public class SettlementServiceTest {
         settlementRepository.save(settlement);
 
         // when
-        settlementService.syncRefundedPayments();
+        schedulerService.syncRefundedPayments();
 
         // then
         Settlement result = settlementRepository.findById(settlement.getId()).orElseThrow();
