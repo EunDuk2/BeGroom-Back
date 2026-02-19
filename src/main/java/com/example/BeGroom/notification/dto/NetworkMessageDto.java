@@ -2,6 +2,7 @@ package com.example.BeGroom.notification.dto;
 
 import com.example.BeGroom.notification.domain.MemberNotification;
 import com.example.BeGroom.notification.util.MessageUtil;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,19 +17,20 @@ public class NetworkMessageDto {
     private String eventId;
     private String eventName;
     private String message;
-    private Object data;
+    @JsonRawValue
+    private String data;
 
     public static NetworkMessageDto of(MemberNotification entity) {
         return NetworkMessageDto.builder()
                 .receiverId(entity.getMember().getId())
                 .eventId(String.valueOf(entity.getId()))
-                .eventName("notification")
-                .data(MessageUtil.createMessageByHashMap(COMMON_RECEIVE_NOTIFICATION_SUCCESS.getMessageTemplate()))
+                .eventName(COMMON_RECEIVE_NOTIFICATION_SUCCESS.getEventName())
+                .data(COMMON_RECEIVE_NOTIFICATION_SUCCESS.getMessageTemplate())
                 .build();
     }
 
     @Builder
-    private NetworkMessageDto(Long receiverId, String eventId, String eventName, String message, Object data) {
+    private NetworkMessageDto(Long receiverId, String eventId, String eventName, String message, String data) {
         this.receiverId = receiverId;
         this.eventId = eventId;
         this.eventName = eventName;

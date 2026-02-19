@@ -12,6 +12,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,7 @@ public class MemberNotificationJdbcRepository {
                 });
     }
 
+    @Transactional
     public void partitionInsert(Long templateId, Map<String, String> variables, long startId, long endId) {
         String sql =
                 "INSERT INTO member_notification (member_id, notification_id, meta_data, is_read, created_at) " +
@@ -47,12 +49,7 @@ public class MemberNotificationJdbcRepository {
                         "FROM member m " +
                         "WHERE m.id BETWEEN ? AND ?";
 
-        long startTime = System.currentTimeMillis();
-
-        int insertedCount = jdbcTemplate.update(sql, templateId, convertToJson(variables), LocalDateTime.now(), startId, endId);
-
-        System.out.printf("[Range: %d-%d] %d건 저장 (소요시간: %dms)%n",
-                startId, endId, insertedCount, (System.currentTimeMillis() - startTime));
+        jdbcTemplate.update(sql, templateId, convertToJson(variables), LocalDateTime.now(), startId, endId);
     }
 
     public List<NetworkMessageDto> findNetworkMessageDtoByRange(Long templateId, long minMemberId, long maxMemberId, LocalDateTime batchStartTime) {
@@ -62,13 +59,17 @@ public class MemberNotificationJdbcRepository {
                         "WHERE n.notification_id = ? AND n.member_id BETWEEN ? AND ? " +
                         "AND n.created_at >= ?";
 
-        System.out.printf("[Range: TemplateId=%d, MemberId=%d-%d]%n in %s actual time %s", templateId, minMemberId, maxMemberId, batchStartTime, now());
+        Map<String, Object> content = new HashMap<>(
+                MessageUtil.createMessageByHashMap(COMMON_RECEIVE_NOTIFICATION_SUCCESS.getMessageTemplate())
+        );
+        content.put("timestamp", System.currentTimeMillis());
+        String jsonPayload = objectMapper.writeValueAsString(content);
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> NetworkMessageDto.builder()
                         .receiverId(rs.getLong("member_id"))
                         .eventId(String.valueOf(rs.getLong("id")))
                         .eventName("notification")
-                        .data(MessageUtil.createMessageByHashMap(COMMON_RECEIVE_NOTIFICATION_SUCCESS.getMessageTemplate()))
+                        .data(jsonPayload)
                         .build(),
                 templateId, minMemberId, maxMemberId, batchStartTime
         );

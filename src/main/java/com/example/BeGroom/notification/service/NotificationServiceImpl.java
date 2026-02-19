@@ -15,6 +15,7 @@ import com.example.BeGroom.notification.util.MessageUtil;
 import com.google.common.collect.Lists;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ import static com.example.BeGroom.notification.domain.SseEventMessage.COMMON_REC
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
     private final ApplicationEventPublisher eventPublisher;
 
@@ -88,14 +90,13 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional(readOnly = false)
     public void sendToAllMembers(Long templateId, Map<String, String> variables) {
         List<Object[]> result = memberRepository.findMinMaxId();
-        if (result.isEmpty() || result.get(0)[0] == null) {
+        if (result.isEmpty() || result.getFirst()[0] == null) {
             return;
         }
         Object[] row = result.getFirst();
         long minId = (Long) row[0];
         long maxId = (Long) row[1];
 
-        //1. 파티션 사이즈
         int partitionSize = 20000;
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
@@ -104,16 +105,8 @@ public class NotificationServiceImpl implements NotificationService {
             final long currentStart = start;
             final long currentEnd = end;
 
-            System.out.println("start: " + start + " end: " + end);
             futures.add(CompletableFuture.runAsync(() -> {
-                LocalDateTime now = LocalDateTime.now().minusSeconds(1);
-                System.out.println("Debug cuurent time: " + now);
-                memberNotificationJdbcRepository.partitionInsert(templateId, variables, currentStart, currentEnd); // DB 작성
-                List<NetworkMessageDto> chunkData =
-                        memberNotificationJdbcRepository.findNetworkMessageDtoByRange(templateId, currentStart, currentEnd, now); // 실시간 메시지 객체 생성
-                if (!chunkData.isEmpty()) {
-                    eventPublisher.publishEvent(new NotificationSavedEvent(chunkData)); // 실시간 메시지 전송 이벤트 발송
-                }
+                processPartitionSend(templateId, variables, currentStart, currentEnd);
             }, executorService));
         }
 
@@ -132,5 +125,49 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void readAllNotifications(Long memberId) {
         memberNotificationRepository.bulkMarkAsRead(memberId);
+    }
+
+    private void processPartitionSend(Long templateId, Map<String, String> variables, long start, long end) {
+        int maxRetries = 3;
+        long retryDelayMs = 1000;
+
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                LocalDateTime now = LocalDateTime.now().minusSeconds(1);
+
+                // DB Insert
+                memberNotificationJdbcRepository.partitionInsert(templateId, variables, start, end);
+
+                // 실시간 메시지 객체 생성
+                List<NetworkMessageDto> chunkData =
+                        memberNotificationJdbcRepository.findNetworkMessageDtoByRange(templateId, start, end, now);
+
+                // SSE Send 이벤트 발행
+                if (!chunkData.isEmpty()) {
+                    eventPublisher.publishEvent(new NotificationSavedEvent(chunkData));
+                }
+
+                return;
+
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("[Batch Insert Failed] Range: {}-{}, Attempt: {}/{}", start, end, attempt, maxRetries, e);
+
+                if (attempt < maxRetries) {
+                    try {
+                        Thread.sleep(retryDelayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Thread interrupted during retry backoff", ie);
+                    }
+                }
+            }
+        }
+
+        log.error("[FATAL] All retries failed for Range: {}-{}", start, end);
+        throw new RuntimeException("Partition failed after " + maxRetries + " retries", lastException);
+
     }
 }

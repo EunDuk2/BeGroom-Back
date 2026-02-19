@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 import static com.example.BeGroom.notification.domain.SseEventMessage.*;
 import static com.example.BeGroom.notification.util.MessageUtil.makeEmitterId;
@@ -28,6 +29,7 @@ public class SseNotificationNetworkService implements NotificationNetworkService
 
     private final EmitterRepository emitterRepository;
     private final MemberNotificationRepository memberNotificationRepository;
+    private final ExecutorService sseExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @Value("${sse.timeout}")
     private Long defaultTimeout;
@@ -46,27 +48,38 @@ public class SseNotificationNetworkService implements NotificationNetworkService
         emitter.onTimeout(() -> this.timeoutEmitter(emitterId));
         emitter.onError((e)-> this.errorEmitter(emitterId, e));
 
-        emitterRepository.save(emitterId, emitter);
+        emitterRepository.save(memberId, emitterId, emitter);
 
         return emitter;
     }
 
     @Override
     public void send(List<NetworkMessageDto> messages) {
-        for (NetworkMessageDto message : messages) {
+        for (NetworkMessageDto message : messages) { // O(n)
 
             Long receiverId = message.getReceiverId();
 
-            Map<String, SseEmitter> userEmitters = emitterRepository.findAllStartWithById(receiverId);
+            Map<String, SseEmitter> userEmitters = emitterRepository.findAllStartWithById(receiverId); // O(1)
 
+            //o(1)
             userEmitters.forEach((emitterId, emitter) -> {
-                sendBySse(
-                        emitter,
-                        emitterId,
-                        message.getEventId(),
-                        message.getEventName(),
-                        message.getData()
-                );
+                CompletableFuture.runAsync(() -> {
+                            sendBySse(
+                                    emitter,
+                                    emitterId,
+                                    message.getEventId(),
+                                    message.getEventName(),
+                                    message.getData()
+                            );
+                        }, sseExecutor)
+
+                        .orTimeout(3, TimeUnit.SECONDS)
+
+                        .exceptionally(ex -> {
+                            emitter.completeWithError(ex);
+                            emitterRepository.deleteById(emitterId);
+                            return null;
+                        });
             });
         }
     }
