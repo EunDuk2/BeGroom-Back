@@ -32,16 +32,16 @@ public class Settlement extends BaseEntity {
 
     // 정산ID
     @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableGenerator(
-            name = "settlement_id_generator",
-            table = "hibernate_sequences",
-            pkColumnName = "sequence_name",     // 시퀀스명 저장될 컬럼명
-            valueColumnName = "next_val",       // 다음 할당 번호 저장될 컬럼명
-            pkColumnValue = "settlement_seq",   // settlement_seq 이름으로 관리
-            allocationSize = 50
-    )
-    @GeneratedValue(strategy = GenerationType.TABLE, generator = "settlement_id_generator")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @TableGenerator(
+//            name = "settlement_id_generator",
+//            table = "hibernate_sequences",
+//            pkColumnName = "sequence_name",     // 시퀀스명 저장될 컬럼명
+//            valueColumnName = "next_val",       // 다음 할당 번호 저장될 컬럼명
+//            pkColumnValue = "settlement_seq",   // settlement_seq 이름으로 관리
+//            allocationSize = 50
+//    )
+//    @GeneratedValue(strategy = GenerationType.TABLE, generator = "settlement_id_generator")
     private Long id;
     // 판매자ID
     @ManyToOne(fetch = FetchType.LAZY)
