@@ -59,13 +59,14 @@ public class SchedulerServiceImpl implements SchedulerService {
     public void aggregateApprovedPayments(){
         Long lastId = 0L;
         boolean hasNext = true;
-        int pageSize = 1000;
+        int pageSize = 10000;
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();  // ✅ 추가
 
         String executionId = UUID.randomUUID().toString().substring(0, 8);
-        log.warn("========== 정산 시작: {} ==========", executionId);
+//        log.warn("========== 정산 시작: {} ==========", executionId);
 
+        //TODO: 톰캣 스레드 하나가 돌아가고있음
         while(hasNext){
             // 1. Slice로 1,000건 조회 (메인 스레드 혼자 진행)
             Slice<SettlementTargetDto> paymentSlice = paymentRepository.findPaymentForSettlement(lastId, Pageable.ofSize(pageSize));
@@ -74,27 +75,17 @@ public class SchedulerServiceImpl implements SchedulerService {
                 break;
             }
 
-//            // 2. 페이지 크기로 처리하고 DB에 즉시 커밋 (별도 트랜잭션으로 동작)
-//            lastId = settlementProcessor.processChunk(paymentSlice.getContent());
-//            hasNext = paymentSlice.hasNext();
-
             List<SettlementTargetDto> content = paymentSlice.getContent();
             lastId = content.get(content.size() - 1).paymentId();
 
-            log.info("lastId: " + lastId + ", List size: " + paymentSlice.getSize());
+//            log.info("lastId: " + lastId + ", List size: " + paymentSlice.getSize());
 
 //            settlementProcessor.processChunkAsync(content);
-            CompletableFuture<Void> future =
-                    settlementProcessor.processChunkAsync(content);  // ✅ 반환값 받기
+
+            CompletableFuture<Void> future = settlementProcessor.processChunkAsync(content);  // ✅ 반환값 받기
             futures.add(future);  // ✅ 저장
 
             hasNext = paymentSlice.hasNext();
-            log.info("hasNext: " + hasNext);
-
-            // 3. 영속성 컨텍스트 초기화 (CPU 부하 감소)
-            em.clear();
-            log.info("정산 처리 중... 마지막 ID: {}", lastId);
-            log.info("");
         }
 
         // ✅ 모든 비동기 작업이 완료될 때까지 대기
@@ -103,7 +94,7 @@ public class SchedulerServiceImpl implements SchedulerService {
 
         log.warn("========== 정산 완료: {} (모든 스레드 작업 완료) ==========", executionId);
 
-        log.warn("========== 정산 완료: {} ==========", executionId);
+//        log.warn("========== 정산 완료: {} ==========", executionId);
     }
 
 

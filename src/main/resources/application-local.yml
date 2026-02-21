@@ -12,6 +12,8 @@ logging:
     org.springframework.transaction: WARN #spring 트랜잭션 매니저 로그
     org.springframework.orm.jpa.JpaTransactionManager: WARN #JPA 연동 트랜잭션 매니저 클래스의 로그
     com.example.BeGroom.settlement: INFO
+#    org.springframework.jdbc.core.JdbcTemplate: DEBUG
+#    org.springframework.jdbc.core.StatementCreatorUtils: TRACE # 파라미터 바인딩까지 보고 싶을 때
 
 spring:
   config:
@@ -24,8 +26,8 @@ spring:
     username: root
     password: 1234
     hikari:
-      maximum-pool-size: 50
-      minimum-idle: 10
+      maximum-pool-size: 20
+      minimum-idle: 20
 
   jpa:
     hibernate:
@@ -35,7 +37,7 @@ spring:
       hibernate:
         format_sql: true
         jdbc:
-          batch_size: 200        # allocationSize와 동일
+#          batch_size: 200        # allocationSize와 동일
           order_inserts: true   # insert 쿼리끼리 정렬
           order_updates: true   # update 쿼리끼리 정렬
           batch_versioned_data: true
