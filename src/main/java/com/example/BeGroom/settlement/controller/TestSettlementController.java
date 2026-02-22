@@ -33,10 +33,10 @@ public class TestSettlementController {
 
         } finally {
             stopWatch.stop();
-            log.info("##################################################");
-            log.info("전체 처리 시간: {} sec", stopWatch.getTotalTimeSeconds());
-            log.info("상세 리포트: \n{}", stopWatch.prettyPrint());
-            log.info("##################################################");
+            log.warn("##################################################");
+            log.warn("전체 처리 시간: {} sec", stopWatch.getTotalTimeSeconds());
+            log.warn("상세 리포트: \n{}", stopWatch.prettyPrint());
+            log.warn("##################################################");
         }
 
         return ResponseEntity.ok("승인 완료된 미정산 결제건 적재 스케줄러 테스트");

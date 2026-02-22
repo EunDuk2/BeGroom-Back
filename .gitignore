@@ -44,10 +44,7 @@ scripts/load-test/docker-compose.yml
 scripts/load-test/.env
 
 #yml
-src/main/resources/application-prod.yml
-src/main/resources/application.yml
-src/main/resources/application-local.yml
-src/main/resources/application-test.yml
+src/main/resources/application*.yml
 
 #influxdb
 scripts/load-test/influxdb/
