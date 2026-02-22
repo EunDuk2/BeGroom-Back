@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git credentialsId : 'zosunny',
+                git credentialsId : 'begroom-settlement',
                     branch: 'test/settlement',
                     url: 'https://github.com/GroomBBang/BeGroom-Back.git'
             }
