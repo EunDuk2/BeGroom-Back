@@ -49,3 +49,8 @@ src/main/resources/application*.yml
 #influxdb
 scripts/load-test/influxdb/
 scripts/influxdb/
+
+#tar
+/begroom.tar.gz
+/begroom-settlement.tar.gz
+*.tar.gz
