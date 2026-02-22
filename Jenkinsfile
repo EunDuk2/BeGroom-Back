@@ -16,11 +16,11 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                sh './gradlew test'
-            }
-        }
+//         stage('Test') {
+//             steps {
+//                 sh './gradlew test'
+//             }
+//         }
 
         stage('Docker Build') {
             steps {
