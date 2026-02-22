@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'begroom-settlement'
         CONTAINER_NAME = 'begroom-settlement'
-        COMPOSE_PATH = '/home/ec2-user/load-test'
+        COMPOSE_PATH = '/home/ec2-user/scripts/load-test'
     }
 
     stages {
