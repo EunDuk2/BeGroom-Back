@@ -146,13 +146,6 @@ public class SettlementProcessor {
 
         // 2. Payment 상태 대량 변경 (기존 @Modifying 쿼리 호출)
         List<Long> ids = dtos.stream().map(SettlementTargetDto::paymentId).toList();
-
-//        // 1,000개씩 파티션 생성
-//        List<List<Long>> batches = Lists.partition(ids, 10000);
-//        for(List<Long> batch : batches){
-//            paymentRepository.updateSettledStatusByIds(batch);
-//        }
-
         paymentRepository.updateSettledStatusByIds(ids);
 
         return CompletableFuture.completedFuture(null);
