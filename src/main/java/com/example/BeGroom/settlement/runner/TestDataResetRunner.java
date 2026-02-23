@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+// TODO: 테스트 전용. 실서비스 배포 전 반드시 삭제!!
 public class TestDataResetRunner implements ApplicationRunner {
 
     private final EntityManager em;

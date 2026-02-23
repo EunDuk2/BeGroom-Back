@@ -68,8 +68,14 @@ public class SchedulerServiceImpl implements SchedulerService {
 
         //TODO: 톰캣 스레드 하나가 돌아가고있음
         while(hasNext){
+
+            long start = System.currentTimeMillis();
+
             // 1. Slice로 1,000건 조회 (메인 스레드 혼자 진행)
             Slice<SettlementTargetDto> paymentSlice = paymentRepository.findPaymentForSettlement(lastId, Pageable.ofSize(pageSize));
+
+            log.warn("DB 조회 시간: {}ms", System.currentTimeMillis() - start);
+
             if(paymentSlice.isEmpty()){
                 log.warn("========== 정산 종료 (데이터 없음): {} ==========", executionId);
                 break;
