@@ -24,6 +24,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
+                sh "docker image prune -f"  // 빌드 전 이전 이미지 정리
                 sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
