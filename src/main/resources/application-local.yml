@@ -80,7 +80,7 @@ management:
     metrics:
       export:
         enabled: true
-        uri: http://localhost:8086
+        uri: ${INFLUX_URI:http://localhost:8086}
         bucket: k6
         db: k6
         step: 10s
