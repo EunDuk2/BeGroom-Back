@@ -39,164 +39,92 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
     @Override
     public Slice<Product> findAllByCondition(ProductSearchCondition condition, Pageable pageable) {
-
-        List<Long> searchIds = getSearchIds(condition.keyword(), pageable);
-        if (StringUtils.hasText(condition.keyword()) && (searchIds == null || searchIds.isEmpty())) {
-            return new SliceImpl<>(Collections.emptyList(), pageable, false);
-        }
-
+        // 기본 쿼리 구성
         var query = queryFactory
             .selectFrom(product)
             .leftJoin(product.brand, brand).fetchJoin()
-            .where(
-                product.deletedAt.isNull(),
-                product.productStatus.in(ProductStatus.SALE, ProductStatus.SOLD_OUT),
-                productIdIn(searchIds),
-                excludeSoldOutCondition(condition.excludeSoldOut()),
-                categoryExists(condition.categoryIds()),
-                optionExists(condition)
-            )
-            .orderBy(product.id.desc());
+            .distinct();
 
-        if (!StringUtils.hasText(condition.keyword())) {
-            query.offset(pageable.getOffset())
-                .limit(pageable.getPageSize() + 1);
+        // JOIN 추가 (필요한 경우)
+        if (hasCategory(condition)) {
+            query.leftJoin(product.productCategories, productCategory);
         }
 
+        if (hasOption(condition)) {
+            query.leftJoin(product.productDetails, productDetail)
+                .leftJoin(productDetail.optionMappings, productOptionMapping)
+                .leftJoin(productOptionMapping.productOption, productOption);
+        }
+
+        // WHERE 조건
+        query.where(
+                product.deletedAt.isNull(),
+                product.productStatus.in(ProductStatus.SALE, ProductStatus.SOLD_OUT),
+                keywordLike(condition.keyword()),
+                categoryIn(condition.categoryIds()),
+                brandIn(condition.brandIds()),
+                optionIn(condition),
+                excludeSoldOut(condition.excludeSoldOut())
+            )
+            .orderBy(product.id.desc())
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize() + 1);
+
         List<Product> content = query.fetch();
-        return checkNextPage(pageable, content);
+        return toSlice(content, pageable);
     }
 
     @Override
     public List<BrandFilterResponse> findBrandsBySearchCondition(ProductSearchCondition condition) {
-        List<Long> searchIds = getSearchIds(condition.keyword());
-        if (StringUtils.hasText(condition.keyword()) && (searchIds == null || searchIds.isEmpty())) {
-            return Collections.emptyList();
-        }
-
-        return queryFactory
+        var query = queryFactory
             .select(Projections.constructor(
                 BrandFilterResponse.class,
                 brand.id,
                 brand.name,
-                product.id.count()
+                product.id.countDistinct()
             ))
             .from(product)
-            .innerJoin(product.brand, brand)
-            .where(
+            .innerJoin(product.brand, brand);
+
+        // JOIN 추가
+        if (hasCategory(condition)) {
+            query.leftJoin(product.productCategories, productCategory);
+        }
+
+        if (hasOption(condition)) {
+            query.leftJoin(product.productDetails, productDetail)
+                .leftJoin(productDetail.optionMappings, productOptionMapping)
+                .leftJoin(productOptionMapping.productOption, productOption);
+        }
+
+        // WHERE 조건
+        query.where(
                 product.deletedAt.isNull(),
                 product.productStatus.in(ProductStatus.SALE, ProductStatus.SOLD_OUT),
-                productIdIn(searchIds),
-                excludeSoldOutCondition(condition.excludeSoldOut()),
-                categoryExists(condition.categoryIds()),
-                optionExists(condition)
+                keywordLike(condition.keyword()),
+                categoryIn(condition.categoryIds()),
+                optionIn(condition),
+                excludeSoldOut(condition.excludeSoldOut())
             )
             .groupBy(brand.id, brand.name)
-            .orderBy(product.id.count().desc())
-            .fetch();
+            .orderBy(product.id.countDistinct().desc());
+
+        return query.fetch();
     }
 
-    private List<Long> getSearchIds(String keyword, Pageable pageable) {
-        if (!StringUtils.hasText(keyword)) return null;
-
-        String sql = "SELECT p.id FROM product p " +
-            "FORCE INDEX (idx_product_name_fulltext) " +
-            "WHERE MATCH(p.name) AGAINST (:keyword IN BOOLEAN MODE) " +
-            "AND p.deleted_at IS NULL " +
-            "ORDER BY MATCH(p.name) AGAINST (:keyword IN BOOLEAN MODE) DESC " +
-            "LIMIT :limit OFFSET :offset";
-
-        try {
-            Query query = entityManager.createNativeQuery(sql)
-                .setParameter("keyword", keyword)
-                .setParameter("limit", pageable.getPageSize() + 1)
-                .setParameter("offset", pageable.getOffset())
-                .setHint("jakarta.persistence.query.timeout", 5000);
-
-            @SuppressWarnings("unchecked")
-            List<Object> results = query.getResultList();
-
-            return results.stream()
-                .map(id -> ((Number) id).longValue())
-                .toList();
-
-        } catch (Exception e) {  // 추가: 에러 처리
-            log.error("FULLTEXT search failed for keyword '{}': {}", keyword, e.getMessage());
-            return Collections.emptyList();
+    /**
+     * 키워드 검색 (LIKE)
+     */
+    private BooleanExpression keywordLike(String keyword) {
+        if (!StringUtils.hasText(keyword)) {
+            return null;
         }
+        return product.name.containsIgnoreCase(keyword);
     }
 
-    private List<Long> getSearchIds(String keyword) {
-        if (!StringUtils.hasText(keyword)) return null;
-
-        String sql = "SELECT p.id FROM product p " +
-            "FORCE INDEX (idx_product_name_fulltext) " +
-            "WHERE MATCH(p.name) AGAINST (:keyword IN BOOLEAN MODE) " +
-            "AND p.deleted_at IS NULL";
-
-        try {
-            Query query = entityManager.createNativeQuery(sql)
-                .setParameter("keyword", keyword)
-                .setHint("jakarta.persistence.query.timeout", 2000);  // 추가: 2초 타임아웃
-
-            @SuppressWarnings("unchecked")
-            List<Object> results = query.getResultList();
-
-            return results.stream()
-                .map(id -> ((Number) id).longValue())
-                .toList();
-
-        } catch (Exception e) {  // 추가: 에러 처리
-            log.error("FULLTEXT search failed for keyword '{}': {}", keyword, e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-    private BooleanExpression productIdIn(List<Long> ids) {
-        return ids != null ? product.id.in(ids) : null;
-    }
-
-    private Slice<Product> checkNextPage(Pageable pageable, List<Product> content) {
-        boolean hasNext = false;
-
-        // 조회된 결과가 요청한 페이지 사이즈보다 크면 다음 페이지가 있는 것
-        if (content.size() > pageable.getPageSize()) {
-            content.remove(pageable.getPageSize()); // +1로 가져온 마지막 항목 제거
-            hasNext = true;
-        }
-
-        return new SliceImpl<>(content, pageable, hasNext);
-    }
-
-    private BooleanExpression categoryExists(List<Long> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) return null;
-
-        return JPAExpressions
-            .selectOne()
-            .from(productCategory)
-            .where(productCategory.product.eq(product)
-                .and(productCategory.category.id.in(categoryIds)))
-            .exists();
-    }
-
-    private BooleanExpression optionExists(ProductSearchCondition condition) {
-        if (!hasOptionFilter(condition)) return null;
-
-        return JPAExpressions
-            .selectOne()
-            .from(productOptionMapping)
-            .innerJoin(productOptionMapping.productOption, productOption)
-            .where(productOptionMapping.productDetail.product.eq(product)
-                .and(deliveryTypeIn(condition.deliveryTypes()))
-                .and(packagingTypeIn(condition.packagingTypes())))
-            .exists();
-    }
-
-    private boolean hasOptionFilter(ProductSearchCondition condition) {
-        return (condition.deliveryTypes() != null && !condition.deliveryTypes().isEmpty()) ||
-            (condition.packagingTypes() != null && !condition.packagingTypes().isEmpty());
-    }
-    // 카테고리 필터
+    /**
+     * 카테고리 필터
+     */
     private BooleanExpression categoryIn(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return null;
@@ -204,29 +132,78 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return productCategory.category.id.in(categoryIds);
     }
 
-    // 품절 제외 필터
-    private BooleanExpression excludeSoldOutCondition(Boolean excludeSoldOut) {
+    /**
+     * 브랜드 필터
+     */
+    private BooleanExpression brandIn(List<Long> brandIds) {
+        if (brandIds == null || brandIds.isEmpty()) {
+            return null;
+        }
+        return brand.id.in(brandIds);
+    }
+
+    /**
+     * 옵션 필터 (배송/포장)
+     */
+    private BooleanExpression optionIn(ProductSearchCondition condition) {
+        if (!hasOption(condition)) {
+            return null;
+        }
+
+        BooleanExpression result = null;
+
+        // 배송 타입
+        if (condition.deliveryTypes() != null && !condition.deliveryTypes().isEmpty()) {
+            BooleanExpression delivery = productOption.optionType.eq("delivery")
+                .and(productOption.optionValue.in(condition.deliveryTypes()));
+            result = delivery;
+        }
+
+        // 포장 타입 (OR)
+        if (condition.packagingTypes() != null && !condition.packagingTypes().isEmpty()) {
+            BooleanExpression packaging = productOption.optionType.eq("packaging")
+                .and(productOption.optionValue.in(condition.packagingTypes()));
+            result = result == null ? packaging : result.or(packaging);
+        }
+
+        return result;
+    }
+
+    /**
+     * 품절 제외
+     */
+    private BooleanExpression excludeSoldOut(Boolean excludeSoldOut) {
         if (Boolean.TRUE.equals(excludeSoldOut)) {
             return product.productStatus.eq(ProductStatus.SALE);
         }
         return null;
     }
 
-    // 배송 타입 필터
-    private BooleanExpression deliveryTypeIn(List<String> deliveryTypes) {
-        if (deliveryTypes == null || deliveryTypes.isEmpty()) {
-            return null;
-        }
-        return productOption.optionType.eq("delivery")
-            .and(productOption.optionValue.in(deliveryTypes));
+    /**
+     * 카테고리 필터 존재 여부
+     */
+    private boolean hasCategory(ProductSearchCondition condition) {
+        return condition.categoryIds() != null && !condition.categoryIds().isEmpty();
     }
 
-    // 포장 타입 필터
-    private BooleanExpression packagingTypeIn(List<String> packagingTypes) {
-        if (packagingTypes == null || packagingTypes.isEmpty()) {
-            return null;
+    /**
+     * 옵션 필터 존재 여부
+     */
+    private boolean hasOption(ProductSearchCondition condition) {
+        return (condition.deliveryTypes() != null && !condition.deliveryTypes().isEmpty()) ||
+            (condition.packagingTypes() != null && !condition.packagingTypes().isEmpty());
+    }
+
+    /**
+     * Slice 변환
+     */
+    private Slice<Product> toSlice(List<Product> content, Pageable pageable) {
+        boolean hasNext = content.size() > pageable.getPageSize();
+
+        if (hasNext) {
+            content.remove(pageable.getPageSize());
         }
-        return productOption.optionType.eq("packaging")
-            .and(productOption.optionValue.in(packagingTypes));
+
+        return new SliceImpl<>(content, pageable, hasNext);
     }
 }

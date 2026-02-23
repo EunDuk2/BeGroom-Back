@@ -38,7 +38,7 @@ class DummyDataGeneratorTest extends IntegrationTestSupport {
     @Test
     void seedData() {
         // given
-        int productCount = 10_000_000;
+        int productCount = 1_000_000;
 
         // when
         monitor.start();

@@ -2,6 +2,7 @@ package com.example.BeGroom.product.domain;
 
 import com.example.BeGroom.common.converter.JsonListConverter;
 import com.example.BeGroom.common.entity.BaseEntity;
+//import com.example.BeGroom.product.listener.ProductEntityListener;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.lang.Assert;
@@ -17,6 +18,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "product")
 @Entity
+//@EntityListeners(ProductEntityListener.class)
 public class Product extends BaseEntity {
 
     @Id
@@ -164,6 +166,37 @@ public class Product extends BaseEntity {
             .min(Comparator.comparingInt(ProductDetail::getSellingPrice))
             .map(ProductDetail::getDiscountRate)
             .orElse(0);
+    }
+
+    // ===== ElasticSearch =====
+    public List<Long> getCategoryIdsForSearch() {
+        return productCategories.stream()
+            .map(pc -> pc.getCategory().getId())
+            .toList();
+    }
+
+    public List<String> getCategoryNamesForSearch() {
+        return productCategories.stream()
+            .map(pc -> pc.getCategory().getCategoryName())
+            .toList();
+    }
+
+    public List<String> getDeliveryTypesForSearch() {
+        return productDetails.stream()
+            .flatMap(detail -> detail.getOptionMappings().stream())
+            .filter(mapping -> "delivery".equals(mapping.getProductOption().getOptionType()))
+            .map(mapping -> mapping.getProductOption().getOptionValue())
+            .distinct()
+            .toList();
+    }
+
+    public List<String> getPackagingTypesForSearch() {
+        return productDetails.stream()
+            .flatMap(detail -> detail.getOptionMappings().stream())
+            .filter(mapping -> "packaging".equals(mapping.getProductOption().getOptionType()))
+            .map(mapping -> mapping.getProductOption().getOptionValue())
+            .distinct()
+            .toList();
     }
 
     public void markAsOnSale() { this.productStatus = ProductStatus.SALE; }

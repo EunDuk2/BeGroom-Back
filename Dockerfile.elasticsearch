@@ -1,0 +1,7 @@
+FROM docker.elastic.co/elasticsearch/elasticsearch:9.2.2
+
+# Nori 플러그인 설
+RUN bin/elasticsearch-plugin install --batch analysis-nori
+
+# 설치 확인
+RUN bin/elasticsearch-plugin list

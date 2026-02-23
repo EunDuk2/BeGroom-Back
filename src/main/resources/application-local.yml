@@ -12,6 +12,17 @@ spring:
     virtual:
       enabled: true
 
+#  elasticsearch:
+#    uris: http://localhost:9200
+#    connection-timeout: 5s
+#    socket-timeout: 30s
+
+    # ElasticSearch 완전 비활성화
+    autoconfigure:
+      exclude:
+        - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+        - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+
   data:
     redis:
       host: localhost
@@ -74,3 +85,6 @@ management:
         db: k6
         step: 10s
         auto-create-db: true
+  health:
+    elasticsearch:
+      enabled: false

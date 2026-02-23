@@ -6,3 +6,12 @@ scrape_configs:
     metrics_path: '/api/actuator/prometheus'
     static_configs:
       - targets: ['host.docker.internal:8080']
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysqld-exporter:9104']
+    relabel_configs:
+      - source_labels: [job]
+        target_label: instance_group_name
+      - source_labels: [instance]
+        target_label: instance_name
