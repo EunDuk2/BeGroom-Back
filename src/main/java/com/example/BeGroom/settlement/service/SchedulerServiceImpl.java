@@ -100,7 +100,7 @@ public class SchedulerServiceImpl implements SchedulerService {
     public void syncRefundedPayments() {
 
         List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
-
+        
         for (Settlement settlement : targets) {
             settlement.markRefunded(
                     BigDecimal.valueOf(settlement.getPayment().getAmount())

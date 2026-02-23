@@ -26,7 +26,7 @@ public class TestSettlementController {
     public ResponseEntity<String> testAggregate(){
 
         StopWatch stopWatch = new StopWatch("Settlement Process");
-        stopWatch.start("Batch Total Execution");
+        stopWatch.start("Batch Total Execution-1");
 
         try {
             schedulerService.aggregateApprovedPayments();
@@ -45,21 +45,63 @@ public class TestSettlementController {
     // 2. 정산 테이블 적재 후 환불 건 환불 금액 업뎃 테스트용
     @PostMapping("/update-refund-payments")
     public ResponseEntity<String> testRefund(){
-        schedulerService.syncRefundedPayments();
+
+        StopWatch stopWatch = new StopWatch("Settlement Process");
+        stopWatch.start("Batch Total Execution-2");
+
+        try {
+            schedulerService.syncRefundedPayments();
+
+        } finally {
+            stopWatch.stop();
+            log.warn("##################################################");
+            log.warn("전체 처리 시간: {} sec", stopWatch.getTotalTimeSeconds());
+            log.warn("상세 리포트: \n{}", stopWatch.prettyPrint());
+            log.warn("##################################################");
+        }
+
         return ResponseEntity.ok("적재 후 환불 건 환불금액 반영 스케줄러 테스트");
     }
 
     // 3. 정산 완료 -> 기간별(일/주/월/연) 집계 테스트용
     @PostMapping("/period-aggregation")
     public ResponseEntity<String> testPeriodAggregation() {
-        aggregationService.aggregate();
+
+        StopWatch stopWatch = new StopWatch("Settlement Process");
+        stopWatch.start("Batch Total Execution-3");
+
+        try {
+            aggregationService.aggregate();
+
+        } finally {
+            stopWatch.stop();
+            log.warn("##################################################");
+            log.warn("전체 처리 시간: {} sec", stopWatch.getTotalTimeSeconds());
+            log.warn("상세 리포트: \n{}", stopWatch.prettyPrint());
+            log.warn("##################################################");
+        }
+
         return ResponseEntity.ok("기간별 정산 집계 스케줄러 테스트");
     }
 
     // 4. 미정산건 지급 처리 테스트용
     @PostMapping("/payout")
     public ResponseEntity<String> testPayout() {
-        schedulerService.executeSettlementPayout();
+
+        StopWatch stopWatch = new StopWatch("Settlement Process");
+        stopWatch.start("Batch Total Execution-4");
+
+        try {
+            schedulerService.executeSettlementPayout();
+
+        } finally {
+            stopWatch.stop();
+            log.warn("##################################################");
+            log.warn("전체 처리 시간: {} sec", stopWatch.getTotalTimeSeconds());
+            log.warn("상세 리포트: \n{}", stopWatch.prettyPrint());
+            log.warn("##################################################");
+        }
+
         return ResponseEntity.ok("미정산 지급 처리 스케줄러 테스트");
     }
 
