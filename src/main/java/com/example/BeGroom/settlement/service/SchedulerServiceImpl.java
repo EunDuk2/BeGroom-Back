@@ -64,17 +64,12 @@ public class SchedulerServiceImpl implements SchedulerService {
         List<CompletableFuture<Void>> futures = new ArrayList<>();  // ✅ 추가
 
         String executionId = UUID.randomUUID().toString().substring(0, 8);
-//        log.warn("========== 정산 시작: {} ==========", executionId);
 
         //TODO: 톰캣 스레드 하나가 돌아가고있음
         while(hasNext){
 
-            long start = System.currentTimeMillis();
-
             // 1. Slice로 1,000건 조회 (메인 스레드 혼자 진행)
             Slice<SettlementTargetDto> paymentSlice = paymentRepository.findPaymentForSettlement(lastId, Pageable.ofSize(pageSize));
-
-            log.warn("DB 조회 시간: {}ms", System.currentTimeMillis() - start);
 
             if(paymentSlice.isEmpty()){
                 log.warn("========== 정산 종료 (데이터 없음): {} ==========", executionId);
@@ -83,10 +78,6 @@ public class SchedulerServiceImpl implements SchedulerService {
 
             List<SettlementTargetDto> content = paymentSlice.getContent();
             lastId = content.get(content.size() - 1).paymentId();
-
-//            log.info("lastId: " + lastId + ", List size: " + paymentSlice.getSize());
-
-//            settlementProcessor.processChunkAsync(content);
 
             CompletableFuture<Void> future = settlementProcessor.processChunkAsync(content);  // ✅ 반환값 받기
             futures.add(future);  // ✅ 저장
@@ -99,8 +90,6 @@ public class SchedulerServiceImpl implements SchedulerService {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         log.warn("========== 정산 완료: {} (모든 스레드 작업 완료) ==========", executionId);
-
-//        log.warn("========== 정산 완료: {} ==========", executionId);
     }
 
 
