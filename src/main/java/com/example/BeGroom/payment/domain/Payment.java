@@ -20,6 +20,7 @@ import static com.example.BeGroom.wallet.domain.ReferenceType.ORDER;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(indexes = @Index(name = "idx_payment_covering", columnList = "payment_status, is_settled, amount"))
 public class Payment extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

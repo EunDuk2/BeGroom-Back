@@ -3,6 +3,7 @@ package com.example.BeGroom.settlement.service;
 import com.example.BeGroom.payment.domain.Payment;
 import com.example.BeGroom.payment.repository.PaymentRepository;
 import com.example.BeGroom.settlement.domain.Settlement;
+import com.example.BeGroom.settlement.dto.res.SettlementRefundDto;
 import com.example.BeGroom.settlement.dto.res.SettlementTargetDto;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import com.example.BeGroom.settlement.service.processor.SettlementProcessor;
@@ -68,7 +69,7 @@ public class SchedulerServiceImpl implements SchedulerService {
         //TODO: 톰캣 스레드 하나가 돌아가고있음
         while(hasNext){
 
-            // 1. Slice로 1,000건 조회 (메인 스레드 혼자 진행)
+            // 1. Slice로 10,000건 조회 (메인 스레드 혼자 진행)
             Slice<SettlementTargetDto> paymentSlice = paymentRepository.findPaymentForSettlement(lastId, Pageable.ofSize(pageSize));
 
             if(paymentSlice.isEmpty()){
@@ -99,13 +100,40 @@ public class SchedulerServiceImpl implements SchedulerService {
     @Override
     public void syncRefundedPayments() {
 
-        List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
-        
-        for (Settlement settlement : targets) {
-            settlement.markRefunded(
-                    BigDecimal.valueOf(settlement.getPayment().getAmount())
-            );
+        Long lastId = 0L;
+        boolean hasNext = true;
+        int pageSize = 10000;
+
+        String executionId = UUID.randomUUID().toString().substring(0, 8);
+
+        while(hasNext){
+
+            Slice<SettlementRefundDto> settlementSlice = settlementRepository.findSettlementForRefund(lastId, Pageable.ofSize(pageSize));
+
+            if(settlementSlice.isEmpty()){
+                log.warn("========== 정산 종료 (데이터 없음): {} ==========", executionId);
+                break;
+            }
+
+            List<SettlementRefundDto> content = settlementSlice.getContent();
+            lastId = content.get(content.size() - 1).settlementId();
+
+            CompletableFuture<Void> future = settlementProcessor.processChunkAsync2(content);  // ✅ 반환값 받기
+//            futures.add(future);  // ✅ 저장
+
+            hasNext = settlementSlice.hasNext();
+
         }
+
+//        // todo: 메모리 점유 -> slice로 10,000건씩 가져오기
+//        List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
+//
+//        // todo: update는 bulk로 하자
+//        for (Settlement settlement : targets) {
+//            settlement.markRefunded(
+//                    BigDecimal.valueOf(settlement.getPayment().getAmount())
+//            );
+//        }
     }
 
     // // 미정산 지급 실행

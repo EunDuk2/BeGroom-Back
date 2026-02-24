@@ -6,6 +6,7 @@ import com.example.BeGroom.seller.domain.Seller;
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
+import com.example.BeGroom.settlement.dto.res.SettlementRefundDto;
 import com.example.BeGroom.settlement.dto.res.SettlementTargetDto;
 import com.example.BeGroom.settlement.repository.SettlementRepository;
 import jakarta.persistence.EntityManager;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 
@@ -151,6 +153,32 @@ public class SettlementProcessor {
         return CompletableFuture.completedFuture(null);
     }
 
+
+
+    @Async("settlementExecutor")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public CompletableFuture<Void> processChunkAsync2(List<SettlementRefundDto> dtos){
+        log.info("가상 스레드 동작 : {}", Thread.currentThread().getName());
+
+        // 1. Settlement 상태 레코드별 변경 (bulk update - case when then으로)
+        StringBuilder sql = new StringBuilder(
+                "UPDATE settlement SET settlement_payment_status = 'REFUND', refund_amount = CASE id "
+        );
+
+        for(SettlementRefundDto dto : dtos){
+            sql.append("WHEN ").append(dto.settlementId())
+                    .append(" THEN ").append(dto.paymentAmount()).append(" ");
+        }
+
+        List<Long> ids = dtos.stream().map(SettlementRefundDto::settlementId).toList();
+        sql.append("END WHERE id IN (")
+                .append(ids.stream().map(String::valueOf).collect(Collectors.joining(",")))
+                .append(")");
+
+        jdbcTemplate.update(sql.toString());
+
+        return CompletableFuture.completedFuture(null);
+    }
 
 
 }

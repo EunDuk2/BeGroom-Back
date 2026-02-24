@@ -8,7 +8,9 @@ import com.example.BeGroom.seller.repository.projection.RecentSettlementProjecti
 import com.example.BeGroom.settlement.domain.Settlement;
 import com.example.BeGroom.settlement.domain.SettlementPaymentStatus;
 import com.example.BeGroom.settlement.domain.SettlementStatus;
+import com.example.BeGroom.settlement.dto.res.SettlementRefundDto;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -118,15 +120,41 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     """)
     BigDecimal getTotalSettlementAmountBySeller(Long sellerId);
 
-    // 정산 테이블에 아직 반영 안된 환불 된 정산 건
+//    // 정산 테이블에 아직 반영 안된 환불 된 정산 건
+//    @Query("""
+//        select s
+//        from Settlement s
+//        where s.payment.isSettled = true
+//          and s.payment.paymentStatus = :paymentStatus
+//          and s.settlementPaymentStatus = :settlementPaymentStatus
+//    """)
+//    List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") SettlementPaymentStatus settlementPaymentStatus);
+
+    // 정산 테이블에 아직 반영 안된 환불 된 정산 건 조회 - dto, slice로 개선
     @Query("""
-        select s
-        from Settlement s
-        where s.payment.isSettled = true
-          and s.payment.paymentStatus = :paymentStatus
-          and s.settlementPaymentStatus = :settlementPaymentStatus
+    select new com.example.BeGroom.settlement.dto.res.SettlementRefundDto(
+        s.id,
+        p.amount
+        )
+    from Settlement s
+    join s.payment p
+    where p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED
+        and p.isSettled = true
+        and s.settlementPaymentStatus = com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT
+    order by s.id
     """)
-    List<Settlement> findRefundTargets(@Param("paymentStatus")PaymentStatus paymentStatus, @Param("settlementPaymentStatus") SettlementPaymentStatus settlementPaymentStatus);
+    Slice<SettlementRefundDto> findSettlementForRefund(@Param("lastId") Long lastId, Pageable pageable);
+
+//    // 환불 건 정산 반영 - bulk update
+//    @Modifying
+//    @Query("""
+//        update Settlement s
+//        set s.settlementPaymentStatus = com.example.BeGroom.settlement.domain.SettlementPaymentStatus.REFUND,
+//            s.refundAmount = :amount
+//        where s.id in :ids
+//    """)
+//    void updateRefundedSettlement(@Param("amount") BigDecimal amount, @Param("ids") List<Long> ids);
+
 
     Optional<Settlement> findByPayment(Payment payment);
 
