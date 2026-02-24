@@ -104,6 +104,8 @@ public class SchedulerServiceImpl implements SchedulerService {
         boolean hasNext = true;
         int pageSize = 10000;
 
+        List<CompletableFuture<Void>> futures = new ArrayList<>();  // ✅ 추가
+
         String executionId = UUID.randomUUID().toString().substring(0, 8);
 
         while(hasNext){
@@ -119,11 +121,17 @@ public class SchedulerServiceImpl implements SchedulerService {
             lastId = content.get(content.size() - 1).settlementId();
 
             CompletableFuture<Void> future = settlementProcessor.processChunkAsync2(content);  // ✅ 반환값 받기
-//            futures.add(future);  // ✅ 저장
+            futures.add(future);  // ✅ 저장
 
             hasNext = settlementSlice.hasNext();
 
         }
+
+        // ✅ 모든 비동기 작업이 완료될 때까지 대기
+        log.info("[{}] 총 {}개 작업 제출 완료, 완료 대기 중...", executionId, futures.size());
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        log.warn("========== 정산 완료: {} (모든 스레드 작업 완료) ==========", executionId);
 
 //        // todo: 메모리 점유 -> slice로 10,000건씩 가져오기
 //        List<Settlement> targets = settlementRepository.findRefundTargets(REFUNDED, PAYMENT);
