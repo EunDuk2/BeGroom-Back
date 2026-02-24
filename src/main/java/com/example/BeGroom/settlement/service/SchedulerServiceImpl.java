@@ -96,7 +96,6 @@ public class SchedulerServiceImpl implements SchedulerService {
 
     // 정산 후 환불 반영
     @Timed(value = "settlement.process.time", extraTags = {"step", "2_update-refund-payments"})
-    @Transactional
     @Override
     public void syncRefundedPayments() {
 
@@ -110,7 +109,11 @@ public class SchedulerServiceImpl implements SchedulerService {
 
         while(hasNext){
 
+            long start = System.currentTimeMillis();
+
             Slice<SettlementRefundDto> settlementSlice = settlementRepository.findSettlementForRefund(lastId, Pageable.ofSize(pageSize));
+
+            log.info("조회 소요: {}ms", System.currentTimeMillis() - start);
 
             if(settlementSlice.isEmpty()){
                 log.warn("========== 정산 종료 (데이터 없음): {} ==========", executionId);
@@ -118,7 +121,7 @@ public class SchedulerServiceImpl implements SchedulerService {
             }
 
             List<SettlementRefundDto> content = settlementSlice.getContent();
-            lastId = content.get(content.size() - 1).settlementId();
+            lastId = content.get(content.size() - 1).paymentId();
 
             CompletableFuture<Void> future = settlementProcessor.processChunkAsync2(content);  // ✅ 반환값 받기
             futures.add(future);  // ✅ 저장

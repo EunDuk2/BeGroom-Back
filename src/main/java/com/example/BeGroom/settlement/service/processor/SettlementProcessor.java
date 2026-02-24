@@ -175,7 +175,11 @@ public class SettlementProcessor {
                 .append(ids.stream().map(String::valueOf).collect(Collectors.joining(",")))
                 .append(")");
 
+        long start = System.currentTimeMillis();
+
         jdbcTemplate.update(sql.toString());
+
+        log.info("bulk update 소요: {}ms", System.currentTimeMillis() - start);
 
         return CompletableFuture.completedFuture(null);
     }

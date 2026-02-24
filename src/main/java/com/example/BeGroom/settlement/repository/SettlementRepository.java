@@ -134,15 +134,16 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("""
     select new com.example.BeGroom.settlement.dto.res.SettlementRefundDto(
         s.id,
+        p.id,
         p.amount
         )
     from Settlement s
     join s.payment p
-    where s.id > :lastId
+    where p.id > :lastId
         and p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED
         and p.isSettled = true
         and s.settlementPaymentStatus = com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT
-    order by s.id
+    order by p.id
     """)
     Slice<SettlementRefundDto> findSettlementForRefund(@Param("lastId") Long lastId, Pageable pageable);
 
