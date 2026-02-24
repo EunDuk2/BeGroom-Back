@@ -138,7 +138,8 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
         )
     from Settlement s
     join s.payment p
-    where p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED
+    where s.id > :lastId
+        and p.paymentStatus = com.example.BeGroom.payment.domain.PaymentStatus.REFUNDED
         and p.isSettled = true
         and s.settlementPaymentStatus = com.example.BeGroom.settlement.domain.SettlementPaymentStatus.PAYMENT
     order by s.id
