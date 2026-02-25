@@ -3,13 +3,14 @@ spring:
     active: local
 
 server:
+  forward-headers-strategy: native
   servlet:
     context-path: /api
   tomcat:
     mbeanregistry:
       enabled: true
-    max-connections: 33000
-    accept-count: 10000
+    max-connections: 60000
+    accept-count: 20000
     threads:
       max: 400
 

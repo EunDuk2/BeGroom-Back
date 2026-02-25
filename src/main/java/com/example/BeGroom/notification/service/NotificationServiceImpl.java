@@ -7,6 +7,7 @@ import com.example.BeGroom.notification.dto.CreateNotificationReqDto;
 import com.example.BeGroom.notification.dto.GetMemberNotificationResDto;
 import com.example.BeGroom.notification.dto.NetworkMessageDto;
 import com.example.BeGroom.notification.event.NotificationSavedEvent;
+import com.example.BeGroom.notification.event.listener.NotificationPublisher;
 import com.example.BeGroom.notification.repository.MemberNotificationJdbcRepository;
 import com.example.BeGroom.notification.repository.MemberNotificationRepository;
 import com.example.BeGroom.notification.repository.NotificationRepository;
@@ -17,6 +18,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,8 +39,7 @@ import static com.example.BeGroom.notification.domain.SseEventMessage.COMMON_REC
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationServiceImpl implements NotificationService {
-    private final ApplicationEventPublisher eventPublisher;
-
+    private final NotificationPublisher notificationPublisher;
     private final NotificationRepository notificationRepository;
     private final MemberNotificationRepository memberNotificationRepository;
     private final MemberRepository memberRepository;
@@ -109,8 +111,6 @@ public class NotificationServiceImpl implements NotificationService {
                 processPartitionSend(templateId, variables, currentStart, currentEnd);
             }, executorService));
         }
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
     @Override
@@ -146,11 +146,9 @@ public class NotificationServiceImpl implements NotificationService {
 
                 // SSE Send 이벤트 발행
                 if (!chunkData.isEmpty()) {
-                    eventPublisher.publishEvent(new NotificationSavedEvent(chunkData));
+                    notificationPublisher.publish(chunkData);
                 }
-
                 return;
-
             } catch (Exception e) {
                 lastException = e;
                 log.warn("[Batch Insert Failed] Range: {}-{}, Attempt: {}/{}", start, end, attempt, maxRetries, e);

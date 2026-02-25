@@ -79,7 +79,7 @@ public class MemberServiceImpl implements MemberService {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        int totalCount = 1_000_000;
+        int totalCount = 100_000;
         int batchSize = 10000;
 
         List<MemberBulkDto> batchList = new ArrayList<>(batchSize);

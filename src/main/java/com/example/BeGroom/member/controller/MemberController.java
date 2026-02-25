@@ -53,7 +53,7 @@ public class MemberController {
     @PostMapping("/bulk-insert")
     public ResponseEntity<String> bulkInsert() {
         memberService.insertBulkMembers();
-        return ResponseEntity.ok("1,000,000 inserted.");
+        return ResponseEntity.ok("100,000 inserted.");
     }
 
     @GetMapping("/profile")

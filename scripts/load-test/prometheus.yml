@@ -5,4 +5,4 @@ scrape_configs:
   - job_name: 'spring-boot'
     metrics_path: '/api/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8080']
+      - targets: ['15.165.234.125:8080', '54.180.130.39:8080'] # 관측할 PC
