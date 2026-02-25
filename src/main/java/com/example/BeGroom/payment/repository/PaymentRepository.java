@@ -105,3 +105,4 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     """)
     void updateSettledStatusByIds(@Param("ids") List<Long> ids);
 }
+

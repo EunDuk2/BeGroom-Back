@@ -55,6 +55,7 @@ public class SchedulerServiceImpl implements SchedulerService {
 //        }
 //    }
 
+
     @Timed(value = "settlement.process.time", extraTags = {"step", "1_aggregate-payments"})
     @Override
     public void aggregateApprovedPayments(){
