@@ -34,7 +34,7 @@
 ### Infra / DevOps
 
 - Docker
-- On-Premise(12Core, 16GB)
+- On-Premise(12Core, 16GB)<br>
   (팀원별 환경은 달랐으며, 저는 On-Premise 환경에서 진행했습니다.)
 
     </td>
@@ -47,7 +47,7 @@
 - 성능 최적화
 
 ## 주요 내용
-
+_*(파란 글씨 클릭하여 상세 내용 확인 가능)_
 ### [주문→결제 부하 테스트(VUs 400+) 안정화: Nginx 연결 한도 조정으로 실패율 20% → 0%](https://www.notion.so/VUs-400-Nginx-20-0-318b1da1d9f980de891eebd81644c793?pvs=21)
 
 - VUs 400 동시 요청에서 worker_connections 한도로 연결이 포화되어 Nginx가 close()/shutdown()로 일부 연결을 강제 종료 → **‘EOF/connection reset’로 약 20% 실패 발생**
@@ -71,3 +71,4 @@
 ### TDD/BDD 기반으로 개발·테스트를 병행하며 요구사항을 시나리오 중심으로 검증
 
 - 단위/통합 테스트를 구축해 핵심 흐름을 자동화하고, 다양한 엣지 케이스를 테스트에 반영해 안정성을 확보
+
